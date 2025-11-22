@@ -21,16 +21,19 @@ public class Players extends JFrame {
         setLocationRelativeTo(null);
         setResizable(false);
 
-        // Panel personalizado que dibuja la imagen de fondo
+        // Panel personalizado que dibuja la imagen de fondo sin estirar
         JPanel panelPrincipal = new JPanel() {
             private Image imagenFondo;
+            private int imgWidth;
+            private int imgHeight;
 
             {
                 File archivoFondo = new File(rutaFondo);
                 if (archivoFondo.exists()) {
                     ImageIcon icon = new ImageIcon(archivoFondo.getAbsolutePath());
-                    // Escalar imagen al tamaño de la ventana (1024x768)
-                    imagenFondo = icon.getImage().getScaledInstance(1024, 768, Image.SCALE_SMOOTH);
+                    imgWidth = icon.getIconWidth();
+                    imgHeight = icon.getIconHeight();
+                    imagenFondo = icon.getImage();
                 }
             }
 
@@ -38,7 +41,18 @@ public class Players extends JFrame {
             protected void paintComponent(Graphics g) {
                 super.paintComponent(g);
                 if (imagenFondo != null) {
-                    g.drawImage(imagenFondo, 0, 0, this.getWidth(), this.getHeight(), this);
+                    // Dibujar imagen con aspecto original sin estirar
+                    g.drawImage(imagenFondo, 0, 0, imgWidth, imgHeight, this);
+
+                    // Llenar el resto del fondo con color si es necesario
+                    if (imgWidth < this.getWidth()) {
+                        g.setColor(Color.BLACK);
+                        g.fillRect(imgWidth, 0, this.getWidth() - imgWidth, this.getHeight());
+                    }
+                    if (imgHeight < this.getHeight()) {
+                        g.setColor(Color.BLACK);
+                        g.fillRect(0, imgHeight, this.getWidth(), this.getHeight() - imgHeight);
+                    }
                 }
             }
         };
