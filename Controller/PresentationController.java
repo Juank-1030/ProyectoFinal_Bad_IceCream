@@ -2,7 +2,7 @@ package Controller;
 
 import Presentation.Intro;
 import Presentation.MenuInicio;
-import Presentation.Players;
+import Presentation.Modos;
 import java.awt.event.ActionListener;
 
 /**
@@ -13,7 +13,7 @@ public class PresentationController {
 
     private Intro intro;
     private MenuInicio menuInicio;
-    private Players players;
+    private Modos modos;
 
     /**
      * Constructor del controlador
@@ -21,7 +21,7 @@ public class PresentationController {
     public PresentationController() {
         this.intro = new Intro();
         this.menuInicio = new MenuInicio();
-        this.players = new Players();
+        this.modos = new Modos();
 
         prepareElements();
         prepareActions();
@@ -32,7 +32,7 @@ public class PresentationController {
      */
     private void prepareElements() {
         // Configurar visibilidad inicial
-        this.players.setVisible(false);
+        this.modos.setVisible(false);
     }
 
     /**
@@ -43,7 +43,7 @@ public class PresentationController {
         menuInicio.setOnNewGameClick(() -> {
             intro.setVisible(false);
             menuInicio.setVisible(false);
-            players.setVisible(true);
+            modos.setVisible(true);
         });
 
         // Listener para el botón Exit
