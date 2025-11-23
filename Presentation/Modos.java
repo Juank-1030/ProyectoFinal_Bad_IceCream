@@ -69,43 +69,58 @@ public class Modos extends JFrame {
 
         panelFondo.setLayout(new BorderLayout());
 
-        // Panel para los botones de modos - izquierda y mitad inferior
-        JPanel panelModos = new JPanel(new GridBagLayout());
-        panelModos.setOpaque(false);
-
         // Crear botones
         JPanel botonPVP = crearBoton("PVP", "Player vs Player", true); // true = aumentar 15%
         JPanel botonPVM = crearBoton("PVM", "Player vs Machine", false);
         JPanel botonMVM = crearBoton("MVM", "Machine vs Machine", false);
 
-        // Panel contenedor horizontal para los tres botones
-        JPanel panelBotonesFila = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 5));
+        // Panel contenedor horizontal para los tres botones centrado
+        JPanel panelBotonesFila = new JPanel(new FlowLayout(FlowLayout.CENTER, 50, 0));
         panelBotonesFila.setOpaque(false);
         panelBotonesFila.add(botonPVP);
         panelBotonesFila.add(botonPVM);
         panelBotonesFila.add(botonMVM);
 
-        // Panel espaciador a la izquierda
-        JPanel panelEspaciador = new JPanel();
-        panelEspaciador.setOpaque(false);
-        panelEspaciador.setPreferredSize(new Dimension(160, 0)); // 10% más a la izquierda
+        // Panel para los letreros
+        JPanel panelLetresFila = new JPanel(new FlowLayout(FlowLayout.CENTER, 66, 0));
+        panelLetresFila.setOpaque(false);
 
-        // Configurar GridBagConstraints para posicionar en la mitad del JFrame
+        // Agregar letreros
+        agregarLetrero(panelLetresFila, "PVP");
+        agregarLetrero(panelLetresFila, "PVM");
+        agregarLetrero(panelLetresFila, "MVM");
+
+        // Panel contenedor vertical para letreros y botones
+        JPanel panelConLetrero = new JPanel();
+        panelConLetrero.setLayout(new BoxLayout(panelConLetrero, BoxLayout.Y_AXIS));
+        panelConLetrero.setOpaque(false);
+        panelConLetrero.add(panelLetresFila);
+        panelConLetrero.add(Box.createVerticalStrut(10));
+        panelConLetrero.add(panelBotonesFila);
+
+        // Panel para centrar verticalmente y mover con GridBagLayout
+        JPanel panelCentral = new JPanel(new GridBagLayout());
+        panelCentral.setOpaque(false);
+
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.gridx = 0;
-        gbc.gridy = 1; // Segunda fila (mitad inferior)
-        gbc.anchor = GridBagConstraints.WEST;
-        gbc.weighty = 1.0; // Ocupar espacio vertical
+        gbc.gridy = 0;
+        gbc.anchor = GridBagConstraints.NORTH;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.weightx = 1.0;
+        gbc.insets = new Insets(100, 0, 0, 0);
+        panelCentral.add(panelLetresFila, gbc);
 
-        // Panel contenedor para espaciador y botones
-        JPanel panelContenedor = new JPanel(new BorderLayout());
-        panelContenedor.setOpaque(false);
-        panelContenedor.add(panelEspaciador, BorderLayout.WEST);
-        panelContenedor.add(panelBotonesFila, BorderLayout.CENTER);
+        GridBagConstraints gbc2 = new GridBagConstraints();
+        gbc2.gridx = 0;
+        gbc2.gridy = 1;
+        gbc2.anchor = GridBagConstraints.NORTH;
+        gbc2.fill = GridBagConstraints.HORIZONTAL;
+        gbc2.weightx = 1.0;
+        gbc2.insets = new Insets(150, 0, 0, 0);
+        panelCentral.add(panelBotonesFila, gbc2);
 
-        panelModos.add(panelContenedor, gbc);
-
-        panelFondo.add(panelModos, BorderLayout.CENTER);
+        panelFondo.add(panelCentral, BorderLayout.CENTER);
         add(panelFondo);
 
         setVisible(true);
@@ -128,8 +143,8 @@ public class Modos extends JFrame {
         ImageIcon iconoNormal = new ImageIcon(rutaNormal);
         ImageIcon iconoSeleccionado = new ImageIcon(rutaSeleccionado);
 
-        // Escalar botones al 18% de su tamaño original, o 20.7% si es PVP (+15%)
-        double escala = aumentarTamaño ? 0.207 : 0.18; // 0.18 * 1.15 = 0.207
+        // Escalar botones al 18% de su tamaño original, o 23.8% si es PVP (+15%)
+        double escala = aumentarTamaño ? 0.238 : 0.18; // 0.207 * 1.15 = 0.238
         int nuevoAncho = Math.max(1, (int) (iconoNormal.getIconWidth() * escala));
         int nuevoAlto = Math.max(1, (int) (iconoNormal.getIconHeight() * escala));
 
@@ -153,12 +168,12 @@ public class Modos extends JFrame {
         boton.setFocusPainted(false);
         boton.setCursor(new Cursor(Cursor.HAND_CURSOR));
         boton.setMargin(new Insets(0, 0, 0, 0));
-
-        // Crear etiqueta de texto
-        JLabel labelTexto = new JLabel(textoLabel);
-        labelTexto.setForeground(Color.BLACK);
-        labelTexto.setFont(new Font("Arial", Font.BOLD, 14));
-        labelTexto.setAlignmentX(Component.CENTER_ALIGNMENT);
+        // Usar zona de interacción al 100% - tamaño completo escalado
+        int anchoInteraccion = nuevoAncho;
+        int altoInteraccion = nuevoAlto;
+        boton.setPreferredSize(new Dimension(anchoInteraccion, altoInteraccion));
+        boton.setMinimumSize(new Dimension(anchoInteraccion, altoInteraccion));
+        boton.setMaximumSize(new Dimension(anchoInteraccion, altoInteraccion));
 
         // Efectos hover
         boton.addMouseListener(new MouseAdapter() {
@@ -178,10 +193,8 @@ public class Modos extends JFrame {
             }
         });
 
-        // Agregar botón y etiqueta al panel
+        // Agregar botón al panel
         panelBoton.add(boton);
-        panelBoton.add(Box.createVerticalStrut(5));
-        panelBoton.add(labelTexto);
 
         return panelBoton;
     }
@@ -189,6 +202,23 @@ public class Modos extends JFrame {
     private void accionBoton(String nombreBoton) {
         System.out.println("Modo seleccionado: " + nombreBoton);
         System.exit(0); // Cerrar el programa
+    }
+
+    private void agregarLetrero(JPanel panel, String nombreBoton) {
+        String rutaLetrero = "Resources/Letreros/Modo/" + nombreBoton + "_Letrero.png";
+        File archivoLetrero = new File(rutaLetrero);
+        if (archivoLetrero.exists()) {
+            ImageIcon iconoLetrero = new ImageIcon(rutaLetrero);
+            // Escalar letrero al 10% de su tamaño original
+            double escalaLetrero = 0.10;
+            int anchoLetrero = Math.max(1, (int) (iconoLetrero.getIconWidth() * escalaLetrero));
+            int altoLetrero = Math.max(1, (int) (iconoLetrero.getIconHeight() * escalaLetrero));
+            Image imagenLetrero = iconoLetrero.getImage().getScaledInstance(anchoLetrero, altoLetrero,
+                    Image.SCALE_SMOOTH);
+            ImageIcon iconoLetrerEscalado = new ImageIcon(imagenLetrero);
+            JLabel labelLetrero = new JLabel(iconoLetrerEscalado);
+            panel.add(labelLetrero);
+        }
     }
 
     public static void main(String[] args) {
