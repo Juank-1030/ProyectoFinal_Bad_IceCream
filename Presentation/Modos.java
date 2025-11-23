@@ -12,7 +12,7 @@ import java.io.File;
  */
 public class Modos extends JFrame {
     private String rutaFondo = "Resources/Opciones_Menu/Fondo.png";
-    private String rutaBotones = "Resources/Modos/";
+    private String rutaBotones = "Resources/Botones/modes/";
 
     public Modos() {
         inicializarVentana();
