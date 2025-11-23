@@ -67,36 +67,51 @@ public class Modos extends JFrame {
             }
         };
 
-        panelFondo.setLayout(null);
+        panelFondo.setLayout(new BorderLayout());
 
-        // Panel para los botones de modos - con layout vertical box
-        JPanel panelModos = new JPanel();
-        panelModos.setLayout(new BoxLayout(panelModos, BoxLayout.Y_AXIS));
+        // Panel para los botones de modos - izquierda y mitad inferior
+        JPanel panelModos = new JPanel(new GridBagLayout());
         panelModos.setOpaque(false);
-        panelModos.setBounds(200, 150, 400, 300);
-
-        // Panel horizontal para los botones
-        JPanel panelBotones = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 0));
-        panelBotones.setOpaque(false);
 
         // Crear botones
-        JPanel botonPVP = crearBoton("PVP", "Player vs Player");
-        JPanel botonPVM = crearBoton("PVM", "Player vs Machine");
-        JPanel botonMVM = crearBoton("MVM", "Machine vs Machine");
+        JPanel botonPVP = crearBoton("PVP", "Player vs Player", true); // true = aumentar 15%
+        JPanel botonPVM = crearBoton("PVM", "Player vs Machine", false);
+        JPanel botonMVM = crearBoton("MVM", "Machine vs Machine", false);
 
-        panelBotones.add(botonPVP);
-        panelBotones.add(botonPVM);
-        panelBotones.add(botonMVM);
+        // Panel contenedor horizontal para los tres botones
+        JPanel panelBotonesFila = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 5));
+        panelBotonesFila.setOpaque(false);
+        panelBotonesFila.add(botonPVP);
+        panelBotonesFila.add(botonPVM);
+        panelBotonesFila.add(botonMVM);
 
-        panelModos.add(panelBotones);
+        // Panel espaciador a la izquierda
+        JPanel panelEspaciador = new JPanel();
+        panelEspaciador.setOpaque(false);
+        panelEspaciador.setPreferredSize(new Dimension(160, 0)); // 10% más a la izquierda
 
-        panelFondo.add(panelModos);
+        // Configurar GridBagConstraints para posicionar en la mitad del JFrame
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.gridx = 0;
+        gbc.gridy = 1; // Segunda fila (mitad inferior)
+        gbc.anchor = GridBagConstraints.WEST;
+        gbc.weighty = 1.0; // Ocupar espacio vertical
+
+        // Panel contenedor para espaciador y botones
+        JPanel panelContenedor = new JPanel(new BorderLayout());
+        panelContenedor.setOpaque(false);
+        panelContenedor.add(panelEspaciador, BorderLayout.WEST);
+        panelContenedor.add(panelBotonesFila, BorderLayout.CENTER);
+
+        panelModos.add(panelContenedor, gbc);
+
+        panelFondo.add(panelModos, BorderLayout.CENTER);
         add(panelFondo);
 
         setVisible(true);
     }
 
-    private JPanel crearBoton(String nombreBoton, String textoLabel) {
+    private JPanel crearBoton(String nombreBoton, String textoLabel, boolean aumentarTamaño) {
         String rutaNormal = rutaBotones + nombreBoton + ".png";
         String rutaSeleccionado = rutaBotones + nombreBoton + "_Selected.png";
 
@@ -113,14 +128,26 @@ public class Modos extends JFrame {
         ImageIcon iconoNormal = new ImageIcon(rutaNormal);
         ImageIcon iconoSeleccionado = new ImageIcon(rutaSeleccionado);
 
+        // Escalar botones al 18% de su tamaño original, o 20.7% si es PVP (+15%)
+        double escala = aumentarTamaño ? 0.207 : 0.18; // 0.18 * 1.15 = 0.207
+        int nuevoAncho = Math.max(1, (int) (iconoNormal.getIconWidth() * escala));
+        int nuevoAlto = Math.max(1, (int) (iconoNormal.getIconHeight() * escala));
+
+        Image imagenNormal = iconoNormal.getImage().getScaledInstance(nuevoAncho, nuevoAlto, Image.SCALE_SMOOTH);
+        Image imagenSeleccionada = iconoSeleccionado.getImage().getScaledInstance(nuevoAncho, nuevoAlto,
+                Image.SCALE_SMOOTH);
+
+        ImageIcon iconoNormalEscalado = new ImageIcon(imagenNormal);
+        ImageIcon iconoSeleccionadoEscalado = new ImageIcon(imagenSeleccionada);
+
         // Panel para el botón y su etiqueta
         JPanel panelBoton = new JPanel();
         panelBoton.setLayout(new BoxLayout(panelBoton, BoxLayout.Y_AXIS));
         panelBoton.setOpaque(false);
 
         // Crear botón con imagen
-        JButton boton = new JButton(iconoNormal);
-        boton.setPressedIcon(iconoSeleccionado);
+        JButton boton = new JButton(iconoNormalEscalado);
+        boton.setPressedIcon(iconoSeleccionadoEscalado);
         boton.setBorderPainted(false);
         boton.setContentAreaFilled(false);
         boton.setFocusPainted(false);
@@ -137,12 +164,12 @@ public class Modos extends JFrame {
         boton.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseEntered(MouseEvent e) {
-                boton.setIcon(iconoSeleccionado);
+                boton.setIcon(iconoSeleccionadoEscalado);
             }
 
             @Override
             public void mouseExited(MouseEvent e) {
-                boton.setIcon(iconoNormal);
+                boton.setIcon(iconoNormalEscalado);
             }
 
             @Override
