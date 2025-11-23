@@ -1,0 +1,12 @@
+# Compilados
+*.class
+*.jar
+
+# IDE
+.vscode/
+.idea/
+*.iml
+
+# Sistema operativo
+Thumbs.db
+.DS_Store
