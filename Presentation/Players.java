@@ -17,7 +17,7 @@ public class Players extends JFrame {
     private void inicializarVentana() {
         setTitle("Bad Ice Cream - Players");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(1024, 768);
+        setSize(800, 600);
         setLocationRelativeTo(null);
         setResizable(false);
 
@@ -41,18 +41,24 @@ public class Players extends JFrame {
             protected void paintComponent(Graphics g) {
                 super.paintComponent(g);
                 if (imagenFondo != null) {
-                    // Dibujar imagen con aspecto original sin estirar
-                    g.drawImage(imagenFondo, 0, 0, imgWidth, imgHeight, this);
+                    // Escalar imagen para llenar la ventana manteniendo aspecto
+                    double escalaAncho = (double) this.getWidth() / imgWidth;
+                    double escalaAlto = (double) this.getHeight() / imgHeight;
+                    double escala = Math.min(escalaAncho, escalaAlto);
 
-                    // Llenar el resto del fondo con color si es necesario
-                    if (imgWidth < this.getWidth()) {
-                        g.setColor(Color.BLACK);
-                        g.fillRect(imgWidth, 0, this.getWidth() - imgWidth, this.getHeight());
-                    }
-                    if (imgHeight < this.getHeight()) {
-                        g.setColor(Color.BLACK);
-                        g.fillRect(0, imgHeight, this.getWidth(), this.getHeight() - imgHeight);
-                    }
+                    int nuevoAncho = (int) (imgWidth * escala);
+                    int nuevoAlto = (int) (imgHeight * escala);
+
+                    // Centrar la imagen
+                    int x = (this.getWidth() - nuevoAncho) / 2;
+                    int y = (this.getHeight() - nuevoAlto) / 2;
+
+                    // Dibujar fondo negro
+                    g.setColor(Color.BLACK);
+                    g.fillRect(0, 0, this.getWidth(), this.getHeight());
+
+                    // Dibujar imagen escalada
+                    g.drawImage(imagenFondo, x, y, nuevoAncho, nuevoAlto, this);
                 }
             }
         };

@@ -43,23 +43,29 @@ public class MenuInicio extends JFrame {
         // Panel personalizado que dibuja la imagen de fondo
         JPanel panelPrincipal = new JPanel() {
             private Image imagenFondo;
+            private Image imagenEscalada;
 
             {
                 File archivoPanelMenu = new File(rutaPanel);
                 if (archivoPanelMenu.exists()) {
                     ImageIcon icon = new ImageIcon(archivoPanelMenu.getAbsolutePath());
-                    // Escalar imagen al 40%
-                    int anchoNuevo = (int) (icon.getIconWidth() * 0.4);
-                    int altoNuevo = (int) (icon.getIconHeight() * 0.4);
-                    imagenFondo = icon.getImage().getScaledInstance(anchoNuevo, altoNuevo, Image.SCALE_SMOOTH);
+                    imagenFondo = icon.getImage();
                 }
             }
 
             @Override
             protected void paintComponent(Graphics g) {
                 super.paintComponent(g);
+
                 if (imagenFondo != null) {
-                    g.drawImage(imagenFondo, 0, 0, this.getWidth(), this.getHeight(), this);
+                    // Escalar imagen al tamaño exacto del panel
+                    if (imagenEscalada == null || imagenEscalada.getWidth(null) != this.getWidth() ||
+                            imagenEscalada.getHeight(null) != this.getHeight()) {
+                        imagenEscalada = imagenFondo.getScaledInstance(this.getWidth(), this.getHeight(),
+                                Image.SCALE_SMOOTH);
+                    }
+                    // Dibujar imagen ocupando todo el panel desde (0,0)
+                    g.drawImage(imagenEscalada, 0, 0, this.getWidth(), this.getHeight(), this);
                 }
             }
         };
@@ -89,27 +95,10 @@ public class MenuInicio extends JFrame {
         panelBotones.add(btnContinueGame);
         panelBotones.add(btnExit);
 
-        // Panel centrador
-        JPanel panelCentrado = new JPanel();
-        panelCentrado.setLayout(new BorderLayout());
-        panelCentrado.setOpaque(false);
-        panelCentrado.add(panelBotones, BorderLayout.CENTER);
-
-        panelPrincipal.add(panelCentrado, BorderLayout.CENTER);
+        panelPrincipal.add(panelBotones, BorderLayout.CENTER);
 
         setContentPane(panelPrincipal);
-
-        // Configurar tamaño de la ventana
-        File archivoPanelMenu = new File(rutaPanel);
-        if (archivoPanelMenu.exists()) {
-            ImageIcon icon = new ImageIcon(archivoPanelMenu.getAbsolutePath());
-            int anchoNuevo = (int) (icon.getIconWidth() * 0.4);
-            int altoNuevo = (int) (icon.getIconHeight() * 0.4);
-            setSize(anchoNuevo, altoNuevo);
-        } else {
-            setSize(240, 180);
-        }
-
+        setSize(420, 315);
         setLocationRelativeTo(null);
     }
 
@@ -128,9 +117,9 @@ public class MenuInicio extends JFrame {
         ImageIcon iconoNormal = new ImageIcon(rutaNormal);
         ImageIcon iconoPresionado = new ImageIcon(rutaPresionado);
 
-        // Escalar botones al 20% de su tamaño original para mantener proporción
-        int nuevoAncho = Math.max(1, (int) (iconoNormal.getIconWidth() * 0.2));
-        int nuevoAlto = Math.max(1, (int) (iconoNormal.getIconHeight() * 0.2));
+        // Escalar botones al 15% de su tamaño original (25% más pequeño que 20%)
+        int nuevoAncho = Math.max(1, (int) (iconoNormal.getIconWidth() * 0.15));
+        int nuevoAlto = Math.max(1, (int) (iconoNormal.getIconHeight() * 0.15));
 
         Image imagenNormal = iconoNormal.getImage().getScaledInstance(nuevoAncho, nuevoAlto, Image.SCALE_SMOOTH);
         Image imagenPresionada = iconoPresionado.getImage().getScaledInstance(nuevoAncho, nuevoAlto,
