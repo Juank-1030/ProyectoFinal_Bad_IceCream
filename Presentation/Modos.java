@@ -13,6 +13,10 @@ import java.io.File;
 public class Modos extends JFrame {
     private String rutaFondo = "Resources/Opciones_Menu/Fondo.png";
     private String rutaBotones = "Resources/Botones/modes/";
+    private Runnable onBackClick;
+    private Runnable onPVPClick;
+    private Runnable onPVMClick;
+    private Runnable onMVMClick;
 
     public Modos() {
         inicializarVentana();
@@ -82,7 +86,7 @@ public class Modos extends JFrame {
         panelBotonesFila.add(botonMVM);
 
         // Panel para los letreros
-        JPanel panelLetresFila = new JPanel(new FlowLayout(FlowLayout.CENTER, 66, 0));
+        JPanel panelLetresFila = new JPanel(new FlowLayout(FlowLayout.CENTER, 73, 0));
         panelLetresFila.setOpaque(false);
 
         // Agregar letreros
@@ -90,40 +94,81 @@ public class Modos extends JFrame {
         agregarLetrero(panelLetresFila, "PVM");
         agregarLetrero(panelLetresFila, "MVM");
 
-        // Panel contenedor vertical para letreros y botones
-        JPanel panelConLetrero = new JPanel();
-        panelConLetrero.setLayout(new BoxLayout(panelConLetrero, BoxLayout.Y_AXIS));
-        panelConLetrero.setOpaque(false);
-        panelConLetrero.add(panelLetresFila);
-        panelConLetrero.add(Box.createVerticalStrut(10));
-        panelConLetrero.add(panelBotonesFila);
+        // Panel superior que agrupa letreros y botones con tamaño fijo
+        JPanel panelSuperior = new JPanel();
+        panelSuperior.setLayout(new OverlayLayout(panelSuperior));
+        panelSuperior.setOpaque(false);
+
+        // Panel contenedor para letreros y botones con GridBagLayout interno
+        JPanel panelContenedor = new JPanel(new GridBagLayout());
+        panelContenedor.setOpaque(false);
+
+        GridBagConstraints gbcLetrero = new GridBagConstraints();
+        gbcLetrero.gridx = 0;
+        gbcLetrero.gridy = 0;
+        gbcLetrero.anchor = GridBagConstraints.NORTH;
+        gbcLetrero.fill = GridBagConstraints.HORIZONTAL;
+        gbcLetrero.weightx = 1.0;
+        gbcLetrero.weighty = 0.0;
+        gbcLetrero.insets = new Insets(0, 0, 0, 0);
+        panelContenedor.add(panelLetresFila, gbcLetrero);
+
+        GridBagConstraints gbcBoton = new GridBagConstraints();
+        gbcBoton.gridx = 0;
+        gbcBoton.gridy = 1;
+        gbcBoton.anchor = GridBagConstraints.NORTH;
+        gbcBoton.fill = GridBagConstraints.HORIZONTAL;
+        gbcBoton.weightx = 1.0;
+        gbcBoton.weighty = 0.0;
+        gbcBoton.insets = new Insets(-35, 0, 0, 0);
+        panelContenedor.add(panelBotonesFila, gbcBoton);
+
+        panelSuperior.add(panelContenedor);
+        panelSuperior.setPreferredSize(new Dimension(800, 200));
+        panelSuperior.setMaximumSize(new Dimension(800, 200));
 
         // Panel para centrar verticalmente y mover con GridBagLayout
         JPanel panelCentral = new JPanel(new GridBagLayout());
         panelCentral.setOpaque(false);
 
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        gbc.anchor = GridBagConstraints.NORTH;
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.weightx = 1.0;
-        gbc.insets = new Insets(100, 0, 0, 0);
-        panelCentral.add(panelLetresFila, gbc);
+        // Agregar letrero "Modos" en la parte superior
+        JLabel letreromodos = agregarLetreromodos();
+        GridBagConstraints gbcLetreromodos = new GridBagConstraints();
+        gbcLetreromodos.gridx = 0;
+        gbcLetreromodos.gridy = 0;
+        gbcLetreromodos.anchor = GridBagConstraints.NORTH;
+        gbcLetreromodos.fill = GridBagConstraints.NONE;
+        gbcLetreromodos.weightx = 0.0;
+        gbcLetreromodos.weighty = 0.0;
+        gbcLetreromodos.insets = new Insets(5, 0, 0, 0);
+        panelCentral.add(letreromodos, gbcLetreromodos);
 
-        GridBagConstraints gbc2 = new GridBagConstraints();
-        gbc2.gridx = 0;
-        gbc2.gridy = 1;
-        gbc2.anchor = GridBagConstraints.NORTH;
-        gbc2.fill = GridBagConstraints.HORIZONTAL;
-        gbc2.weightx = 1.0;
-        gbc2.insets = new Insets(150, 0, 0, 0);
-        panelCentral.add(panelBotonesFila, gbc2);
+        GridBagConstraints gbcSuperior = new GridBagConstraints();
+        gbcSuperior.gridx = 0;
+        gbcSuperior.gridy = 1;
+        gbcSuperior.anchor = GridBagConstraints.NORTH;
+        gbcSuperior.fill = GridBagConstraints.NONE;
+        gbcSuperior.weightx = 0.0;
+        gbcSuperior.weighty = 0.0;
+        gbcSuperior.insets = new Insets(15, 0, 0, 0);
+        panelCentral.add(panelSuperior, gbcSuperior);
+
+        // Agregar botón Back en la parte inferior
+        JButton botonBack = crearBotonBack();
+        GridBagConstraints gbcBack = new GridBagConstraints();
+        gbcBack.gridx = 0;
+        gbcBack.gridy = 2;
+        gbcBack.anchor = GridBagConstraints.SOUTH;
+        gbcBack.fill = GridBagConstraints.NONE;
+        gbcBack.weightx = 0.0;
+        gbcBack.weighty = 1.0;
+        gbcBack.insets = new Insets(0, 0, 50, 0);
+        panelCentral.add(botonBack, gbcBack);
 
         panelFondo.add(panelCentral, BorderLayout.CENTER);
         add(panelFondo);
 
-        setVisible(true);
+        setVisible(false); // Oculta inicialmente, se mostrará desde el controlador
     }
 
     private JPanel crearBoton(String nombreBoton, String textoLabel, boolean aumentarTamaño) {
@@ -168,9 +213,9 @@ public class Modos extends JFrame {
         boton.setFocusPainted(false);
         boton.setCursor(new Cursor(Cursor.HAND_CURSOR));
         boton.setMargin(new Insets(0, 0, 0, 0));
-        // Usar zona de interacción al 100% - tamaño completo escalado
+        // Zona de interacción: reducida en altura (75%), ancho completo
         int anchoInteraccion = nuevoAncho;
-        int altoInteraccion = nuevoAlto;
+        int altoInteraccion = (int) (nuevoAlto * 0.75);
         boton.setPreferredSize(new Dimension(anchoInteraccion, altoInteraccion));
         boton.setMinimumSize(new Dimension(anchoInteraccion, altoInteraccion));
         boton.setMaximumSize(new Dimension(anchoInteraccion, altoInteraccion));
@@ -200,8 +245,15 @@ public class Modos extends JFrame {
     }
 
     private void accionBoton(String nombreBoton) {
-        System.out.println("Modo seleccionado: " + nombreBoton);
-        System.exit(0); // Cerrar el programa
+        // SOLO ejecutar el callback correspondiente
+        // La lógica de QUID está en el Controller
+        if (nombreBoton.equals("PVP") && onPVPClick != null) {
+            onPVPClick.run();
+        } else if (nombreBoton.equals("PVM") && onPVMClick != null) {
+            onPVMClick.run();
+        } else if (nombreBoton.equals("MVM") && onMVMClick != null) {
+            onMVMClick.run();
+        }
     }
 
     private void agregarLetrero(JPanel panel, String nombreBoton) {
@@ -209,8 +261,8 @@ public class Modos extends JFrame {
         File archivoLetrero = new File(rutaLetrero);
         if (archivoLetrero.exists()) {
             ImageIcon iconoLetrero = new ImageIcon(rutaLetrero);
-            // Escalar letrero al 10% de su tamaño original
-            double escalaLetrero = 0.10;
+            // Escalar letrero al 11% de su tamaño original (10% más)
+            double escalaLetrero = 0.11;
             int anchoLetrero = Math.max(1, (int) (iconoLetrero.getIconWidth() * escalaLetrero));
             int altoLetrero = Math.max(1, (int) (iconoLetrero.getIconHeight() * escalaLetrero));
             Image imagenLetrero = iconoLetrero.getImage().getScaledInstance(anchoLetrero, altoLetrero,
@@ -219,6 +271,102 @@ public class Modos extends JFrame {
             JLabel labelLetrero = new JLabel(iconoLetrerEscalado);
             panel.add(labelLetrero);
         }
+    }
+
+    private JButton crearBotonBack() {
+        String rutaBack = "Resources/Letreros/Modo/back.png";
+        File archivoBack = new File(rutaBack);
+        JButton boton = new JButton();
+        boton.setContentAreaFilled(false);
+        boton.setBorderPainted(false);
+        boton.setFocusPainted(false);
+
+        if (archivoBack.exists()) {
+            ImageIcon iconoNormal = new ImageIcon(rutaBack);
+            // Escalar botón back al 15%
+            double escala = 0.15;
+            int nuevoAncho = Math.max(1, (int) (iconoNormal.getIconWidth() * escala));
+            int nuevoAlto = Math.max(1, (int) (iconoNormal.getIconHeight() * escala));
+
+            // Zona de interacción: reducida en altura (60%), ancho completo
+            int anchoInteraccion = nuevoAncho;
+            int altoInteraccion = (int) (nuevoAlto * 0.60);
+            boton.setPreferredSize(new Dimension(anchoInteraccion, altoInteraccion));
+
+            Image imagenNormal = iconoNormal.getImage().getScaledInstance(nuevoAncho, nuevoAlto,
+                    Image.SCALE_SMOOTH);
+            ImageIcon iconoEscalado = new ImageIcon(imagenNormal);
+            boton.setIcon(iconoEscalado);
+
+            // Agregar efecto hover
+            boton.addMouseListener(new MouseAdapter() {
+                private ImageIcon iconoHover;
+
+                @Override
+                public void mouseEntered(MouseEvent e) {
+                    if (iconoHover == null) {
+                        Image imagenHover = iconoNormal.getImage().getScaledInstance(nuevoAncho, nuevoAlto,
+                                Image.SCALE_SMOOTH);
+                        iconoHover = new ImageIcon(imagenHover);
+                    }
+                    boton.setIcon(iconoHover);
+                }
+
+                @Override
+                public void mouseExited(MouseEvent e) {
+                    boton.setIcon(iconoEscalado);
+                }
+
+                @Override
+                public void mouseClicked(MouseEvent e) {
+                    accionBotonBack();
+                }
+            });
+        }
+
+        return boton;
+    }
+
+    private void accionBotonBack() {
+        if (onBackClick != null) {
+            onBackClick.run();
+        }
+    }
+
+    public void setOnBackClick(Runnable callback) {
+        this.onBackClick = callback;
+    }
+
+    public void setOnPVPClick(Runnable callback) {
+        this.onPVPClick = callback;
+    }
+
+    public void setOnPVMClick(Runnable callback) {
+        this.onPVMClick = callback;
+    }
+
+    public void setOnMVMClick(Runnable callback) {
+        this.onMVMClick = callback;
+    }
+
+    private JLabel agregarLetreromodos() {
+        String rutaLetrero = "Resources/Letreros/Modo/modos.png";
+        File archivoLetrero = new File(rutaLetrero);
+
+        if (archivoLetrero.exists()) {
+            ImageIcon iconoLetrero = new ImageIcon(rutaLetrero);
+            // Escalar letrero al 12% de su tamaño original
+            double escalaLetrero = 0.12;
+            int anchoLetrero = Math.max(1, (int) (iconoLetrero.getIconWidth() * escalaLetrero));
+            int altoLetrero = Math.max(1, (int) (iconoLetrero.getIconHeight() * escalaLetrero));
+            Image imagenLetrero = iconoLetrero.getImage().getScaledInstance(anchoLetrero, altoLetrero,
+                    Image.SCALE_SMOOTH);
+            ImageIcon iconoLetrerEscalado = new ImageIcon(imagenLetrero);
+            JLabel labelLetrero = new JLabel(iconoLetrerEscalado);
+            return labelLetrero;
+        }
+
+        return new JLabel();
     }
 
     public static void main(String[] args) {

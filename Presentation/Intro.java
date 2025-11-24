@@ -151,6 +151,13 @@ public class Intro extends JFrame implements KeyListener, MouseInputListener {
     public void mouseEntered(MouseEvent e) {
     }
 
+    public void mostrarSegundoGif() {
+        continuarAnimacion = true;
+        menuAbierto = false;
+        setVisible(true);
+        mostrarGif("Marca3.gif", 3000);
+    }
+
     @Override
     public void mouseExited(MouseEvent e) {
     }

@@ -18,13 +18,13 @@ public class Game implements Serializable {
     private GameState gameState;
 
     private int score;
-    private int remainingTime;  // En segundos
+    private int remainingTime; // En segundos
     // Sin sistema de vidas (como el juego original)
-    private String iceCreamFlavor;  // Sabor elegido por el jugador
+    private String iceCreamFlavor; // Sabor elegido por el jugador
 
     // Para modos con IA
-    private AI iceCreamAI;  // Para modo MVM
-    private List<AI> enemyAIs;  // Para modos PVM y MVM
+    private AI iceCreamAI; // Para modo MVM
+    private List<AI> enemyAIs; // Para modos PVM y MVM
 
     // Control de tiempo
     private transient long lastUpdateTime;
@@ -33,7 +33,8 @@ public class Game implements Serializable {
 
     /**
      * Constructor del juego
-     * @param gameMode Modo de juego seleccionado
+     * 
+     * @param gameMode       Modo de juego seleccionado
      * @param iceCreamFlavor Sabor del helado seleccionado
      */
     public Game(GameMode gameMode, String iceCreamFlavor) {
@@ -67,7 +68,7 @@ public class Game implements Serializable {
 
         // Crear el tablero
         board = new Board(currentLevel.getBoardWidth(), currentLevel.getBoardHeight());
-        
+
         // Configurar el tablero con el nivel
         setupBoard();
 
@@ -112,7 +113,7 @@ public class Game implements Serializable {
                     // Generar posición aleatoria válida
                     fruitPos = getRandomEmptyPosition();
                 }
-                
+
                 Fruit fruit = createFruit(config.fruitType, fruitPos);
                 if (fruit != null) {
                     board.addFruit(fruit);
@@ -147,15 +148,15 @@ public class Game implements Serializable {
                     return new Troll(config.startPosition, config.pattern, config.stepsPerDirection);
                 }
                 return new Troll(config.startPosition);
-                
+
             case "maceta":
             case "pot":
                 return new Pot(config.startPosition, board);
-                
+
             case "calamar":
             case "orangesquid":
                 return new OrangeSquid(config.startPosition, board);
-                
+
             default:
                 return null;
         }
@@ -169,21 +170,21 @@ public class Game implements Serializable {
             case "uvas":
             case "grape":
                 return new Grape(position);
-                
+
             case "plátano":
             case "platano":
             case "banana":
                 return new Banana(position);
-                
+
             case "piña":
             case "pina":
             case "pineapple":
                 return new Pineapple(position, board);
-                
+
             case "cereza":
             case "cherry":
                 return new Cherry(position, board);
-                
+
             default:
                 return null;
         }
@@ -195,7 +196,7 @@ public class Game implements Serializable {
     private Position getRandomEmptyPosition() {
         List<Position> emptyPositions = board.getEmptyPositions();
         if (emptyPositions.isEmpty()) {
-            return new Position(1, 1);  // Fallback
+            return new Position(1, 1); // Fallback
         }
         Random random = new Random();
         return emptyPositions.get(random.nextInt(emptyPositions.size()));
@@ -242,7 +243,7 @@ public class Game implements Serializable {
             Direction move = iceCreamAI.getNextMove();
             if (move != null) {
                 boolean moved = board.moveIceCream(move);
-                
+
                 // Sumar puntos si recolectó fruta
                 if (moved) {
                     Fruit fruit = board.getAndClearLastCollectedFruit();
@@ -260,7 +261,7 @@ public class Game implements Serializable {
         if (deltaTime >= 1000) {
             remainingTime--;
             lastUpdateTime = currentTime;
-            
+
             if (remainingTime <= 0) {
                 gameState = GameState.LOST;
             }
@@ -274,11 +275,11 @@ public class Game implements Serializable {
         // En modo PVP, los enemigos NO se mueven automáticamente
         // El Jugador 2 los controla manualmente con moveEnemy()
         if (gameMode == GameMode.PVP) {
-            return;  // Salir sin mover enemigos
+            return; // Salir sin mover enemigos
         }
-        
+
         List<Enemy> enemies = board.getEnemies();
-        
+
         for (int i = 0; i < enemies.size(); i++) {
             Enemy enemy = enemies.get(i);
             if (!enemy.isAlive()) {
@@ -286,7 +287,7 @@ public class Game implements Serializable {
             }
 
             Direction nextMove;
-            
+
             // Usar IA en modos PVM y MVM
             if (gameMode == GameMode.PVM || gameMode == GameMode.MVM) {
                 // Usar IA
@@ -344,15 +345,15 @@ public class Game implements Serializable {
             return false;
         }
         boolean moved = board.moveIceCream(direction);
-        
+
         // Verificar si recolectó una fruta y sumar puntos
         if (moved) {
             Fruit fruit = board.getAndClearLastCollectedFruit();
             if (fruit != null) {
-                score += 50;  // Todas las frutas valen 50 puntos
+                score += 50; // Todas las frutas valen 50 puntos
             }
         }
-        
+
         return moved;
     }
 
@@ -366,22 +367,22 @@ public class Game implements Serializable {
         if (gameState != GameState.PLAYING || gameMode == GameMode.MVM) {
             return 0;
         }
-        
+
         // Verificar si hay un bloque enfrente
         Direction direction = board.getIceCream().getCurrentDirection();
         Position targetPos = board.getIceCream().getPosition().move(direction);
-        
+
         if (board.hasIceBlock(targetPos)) {
             // Hay bloque enfrente → ROMPER UN bloque
             boolean broken = board.breakIceBlock();
-            return broken ? -1 : 0;  // -1 indica que rompió
+            return broken ? -1 : 0; // -1 indica que rompió
         } else {
             // No hay bloque → CREAR FILA de bloques
             int created = board.createIceBlock();
-            return created;  // Número positivo indica cuántos creó
+            return created; // Número positivo indica cuántos creó
         }
     }
-    
+
     /**
      * @deprecated Usa toggleIceBlocks() en su lugar
      */
@@ -451,11 +452,12 @@ public class Game implements Serializable {
     public void setGameState(GameState state) {
         this.gameState = state;
     }
-    
+
     /**
      * Mueve un enemigo (para modo PVP - Jugador 2)
+     * 
      * @param enemyIndex Índice del enemigo (0, 1, 2...)
-     * @param direction Dirección del movimiento
+     * @param direction  Dirección del movimiento
      * @return true si el movimiento fue exitoso
      */
     public boolean moveEnemy(int enemyIndex, Direction direction) {
@@ -463,18 +465,19 @@ public class Game implements Serializable {
         if (gameState != GameState.PLAYING || gameMode != GameMode.PVP) {
             return false;
         }
-        
+
         List<Enemy> enemies = board.getEnemies();
         if (enemyIndex < 0 || enemyIndex >= enemies.size()) {
             return false;
         }
-        
+
         Enemy enemy = enemies.get(enemyIndex);
         return board.moveEnemy(enemy, direction);
     }
-    
+
     /**
      * Obtiene el número de enemigos en el juego
+     * 
      * @return Cantidad de enemigos
      */
     public int getEnemyCount() {
