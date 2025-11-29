@@ -7,18 +7,19 @@ package Domain;
 public abstract class IceCream extends GameObject {
     private static final long serialVersionUID = 1L;
 
-    protected String flavor;  // Sabor del helado (Vainilla, Fresa, Chocolate)
-    protected int fruitsCollected;  // Frutas recolectadas
-    protected boolean canCreateIce;  // Si puede crear hielo en este momento
-    protected boolean canBreakIce;   // Si puede romper hielo en este momento
+    protected String flavor; // Sabor del helado (Vainilla, Fresa, Chocolate)
+    protected int fruitsCollected; // Frutas recolectadas
+    protected boolean canCreateIce; // Si puede crear hielo en este momento
+    protected boolean canBreakIce; // Si puede romper hielo en este momento
 
     /**
      * Constructor de IceCream
+     * 
      * @param position Posición inicial
-     * @param flavor Sabor del helado
+     * @param flavor   Sabor del helado
      */
     public IceCream(Position position, String flavor) {
-        super(position, 1);  // Velocidad estándar de 1
+        super(position, 250); // 250ms por celda = 4 celdas por segundo
         this.flavor = flavor;
         this.fruitsCollected = 0;
         this.canCreateIce = true;
@@ -27,6 +28,7 @@ public abstract class IceCream extends GameObject {
 
     /**
      * Crea un bloque de hielo en la dirección actual
+     * 
      * @return La posición donde se creó el bloque, o null si no se pudo crear
      */
     public Position createIceBlock() {
@@ -39,6 +41,7 @@ public abstract class IceCream extends GameObject {
 
     /**
      * Rompe bloques de hielo en la dirección actual (efecto dominó)
+     * 
      * @return Array de posiciones de bloques rotos
      */
     public Position[] breakIceBlocks() {

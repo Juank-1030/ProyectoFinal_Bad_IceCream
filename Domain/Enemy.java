@@ -1,22 +1,26 @@
 package Domain;
 
+import java.awt.Color;
 
 /**
  * Clase abstracta que representa un enemigo
- * Los enemigos se mueven según diferentes patrones y pueden tener habilidades especiales
+ * Los enemigos se mueven según diferentes patrones y pueden tener habilidades
+ * especiales
  */
 public abstract class Enemy extends GameObject {
     private static final long serialVersionUID = 1L;
 
-    protected String enemyType;  // Tipo de enemigo (Troll, Maceta, Calamar)
-    protected MovementBehavior movementBehavior;  // Patrón de movimiento
-    protected boolean canBreakIce;  // Si puede romper bloques de hielo
+    protected String enemyType; // Tipo de enemigo (Troll, Maceta, Calamar)
+    protected MovementBehavior movementBehavior; // Patrón de movimiento
+    protected boolean canBreakIce; // Si puede romper bloques de hielo
+    protected Color color; // Color de identificación del enemigo
 
     /**
      * Constructor de Enemy
-     * @param position Posición inicial
-     * @param enemyType Tipo de enemigo
-     * @param speed Velocidad del enemigo
+     * 
+     * @param position    Posición inicial
+     * @param enemyType   Tipo de enemigo
+     * @param speed       Velocidad del enemigo
      * @param canBreakIce Si puede romper bloques
      */
     public Enemy(Position position, String enemyType, int speed, boolean canBreakIce) {
@@ -34,6 +38,7 @@ public abstract class Enemy extends GameObject {
 
     /**
      * Calcula el siguiente movimiento según el patrón de comportamiento
+     * 
      * @return Dirección del siguiente movimiento
      */
     public Direction getNextMove() {
@@ -51,6 +56,7 @@ public abstract class Enemy extends GameObject {
 
     /**
      * Rompe un bloque de hielo en la dirección actual
+     * 
      * @return La posición del bloque roto, o null si no puede romper
      */
     public Position breakIceBlock() {
@@ -99,5 +105,13 @@ public abstract class Enemy extends GameObject {
 
     public MovementBehavior getMovementBehavior() {
         return movementBehavior;
+    }
+
+    public Color getColor() {
+        return color;
+    }
+
+    public void setColor(Color color) {
+        this.color = color;
     }
 }

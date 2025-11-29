@@ -15,7 +15,7 @@ public class Level implements Serializable {
     private String levelName;
     private int boardWidth;
     private int boardHeight;
-    private int timeLimit;  // Tiempo límite en segundos (3 minutos = 180)
+    private int timeLimit; // Tiempo límite en segundos (3 minutos = 180)
 
     // Configuración de entidades
     private List<EnemyConfig> enemyConfigs;
@@ -31,7 +31,7 @@ public class Level implements Serializable {
         this.levelName = levelName;
         this.boardWidth = boardWidth;
         this.boardHeight = boardHeight;
-        this.timeLimit = 180;  // 3 minutos por defecto
+        this.timeLimit = 180; // 3 minutos por defecto
         this.enemyConfigs = new ArrayList<>();
         this.fruitConfigs = new ArrayList<>();
         this.wallPositions = new ArrayList<>();
@@ -42,11 +42,11 @@ public class Level implements Serializable {
      */
     public static class EnemyConfig implements Serializable {
         private static final long serialVersionUID = 1L;
-        
-        public String enemyType;  // "Troll", "Maceta", "Calamar"
+
+        public String enemyType; // "Troll", "Maceta", "Calamar"
         public Position startPosition;
-        public Direction[] pattern;  // Para Troll
-        public int stepsPerDirection;  // Para Troll
+        public Direction[] pattern; // Para Troll
+        public int stepsPerDirection; // Para Troll
 
         public EnemyConfig(String enemyType, Position startPosition) {
             this.enemyType = enemyType;
@@ -66,10 +66,10 @@ public class Level implements Serializable {
      */
     public static class FruitConfig implements Serializable {
         private static final long serialVersionUID = 1L;
-        
-        public String fruitType;  // "Uvas", "Plátano", "Piña", "Cereza"
+
+        public String fruitType; // "Uvas", "Plátano", "Piña", "Cereza"
         public Position startPosition;
-        public int quantity;  // Cantidad de esta fruta
+        public int quantity; // Cantidad de esta fruta
 
         public FruitConfig(String fruitType, Position startPosition) {
             this.fruitType = fruitType;
@@ -80,7 +80,7 @@ public class Level implements Serializable {
         public FruitConfig(String fruitType, int quantity) {
             this.fruitType = fruitType;
             this.quantity = quantity;
-            this.startPosition = null;  // Se generará aleatoriamente
+            this.startPosition = null; // Se generará aleatoriamente
         }
     }
 
@@ -88,16 +88,16 @@ public class Level implements Serializable {
      * Crea los niveles predefinidos del juego
      */
     public static Level createLevel1() {
-        Level level = new Level(1, "Nivel 1 - Troll's Maze", 15, 11);
-        
+        Level level = new Level(1, "Nivel 1 - Troll's Maze", 13, 14);
+
         // Posición inicial del helado
-        level.setIceCreamStartPosition(new Position(7, 5));
+        level.setIceCreamStartPosition(new Position(6, 7));
 
         // 2 Trolls con patrones diferentes
-        Direction[] pattern1 = {Direction.RIGHT, Direction.DOWN, Direction.LEFT, Direction.UP};
+        Direction[] pattern1 = { Direction.RIGHT, Direction.DOWN, Direction.LEFT, Direction.UP };
         level.addEnemyConfig(new EnemyConfig("Troll", new Position(3, 3), pattern1, 3));
-        
-        Direction[] pattern2 = {Direction.LEFT, Direction.UP, Direction.RIGHT, Direction.DOWN};
+
+        Direction[] pattern2 = { Direction.LEFT, Direction.UP, Direction.RIGHT, Direction.DOWN };
         level.addEnemyConfig(new EnemyConfig("Troll", new Position(11, 7), pattern2, 3));
 
         // 8 Uvas y 8 Plátanos
@@ -114,9 +114,9 @@ public class Level implements Serializable {
      * Nivel 2 - Maceta persigue
      */
     public static Level createLevel2() {
-        Level level = new Level(2, "Nivel 2 - Pot Chase", 15, 11);
-        
-        level.setIceCreamStartPosition(new Position(7, 5));
+        Level level = new Level(2, "Nivel 2 - Pot Chase", 13, 14);
+
+        level.setIceCreamStartPosition(new Position(6, 7));
 
         // 1 Maceta
         level.addEnemyConfig(new EnemyConfig("Maceta", new Position(1, 1)));
@@ -131,15 +131,15 @@ public class Level implements Serializable {
     }
 
     /**
-     * Nivel 3 - Calamar rompe bloques
+     * Nivel 3 - Calamar amarillo rompe bloques
      */
     public static Level createLevel3() {
-        Level level = new Level(3, "Nivel 3 - Orange Squid", 15, 11);
-        
-        level.setIceCreamStartPosition(new Position(7, 5));
+        Level level = new Level(3, "Nivel 3 - Yellow Squid", 13, 14);
 
-        // 1 Calamar Naranja
-        level.addEnemyConfig(new EnemyConfig("Calamar", new Position(1, 1)));
+        level.setIceCreamStartPosition(new Position(6, 7));
+
+        // 1 Calamar Amarillo
+        level.addEnemyConfig(new EnemyConfig("YellowSquid", new Position(1, 1)));
 
         // 8 Piñas y 8 Cerezas
         level.addFruitConfig(new FruitConfig("Piña", 8));
@@ -156,12 +156,12 @@ public class Level implements Serializable {
     private void createLevel1Walls() {
         // Bordes del tablero
         for (int x = 0; x < boardWidth; x++) {
-            addWallPosition(new Position(x, 0));  // Borde superior
-            addWallPosition(new Position(x, boardHeight - 1));  // Borde inferior
+            addWallPosition(new Position(x, 0)); // Borde superior
+            addWallPosition(new Position(x, boardHeight - 1)); // Borde inferior
         }
         for (int y = 0; y < boardHeight; y++) {
-            addWallPosition(new Position(0, y));  // Borde izquierdo
-            addWallPosition(new Position(boardWidth - 1, y));  // Borde derecho
+            addWallPosition(new Position(0, y)); // Borde izquierdo
+            addWallPosition(new Position(boardWidth - 1, y)); // Borde derecho
         }
 
         // Obstáculos internos (laberinto simple)

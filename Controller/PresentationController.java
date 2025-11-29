@@ -1,10 +1,15 @@
 package Controller;
 
+import Domain.GameMode;
 import Presentation.Intro;
-import Presentation.MenuInicio;
-import Presentation.Modos;
-import Presentation.PVP;
+import Presentation.StartMenu;
+import Presentation.Modes;
+import Presentation.SelectIceCream;
+import Presentation.SelectMonster;
 import java.awt.event.ActionListener;
+import java.io.File;
+import javax.swing.JFrame;
+import javax.swing.JPanel;
 
 /**
  * Controlador de Presentación - Punto de entrada principal de la aplicación
@@ -13,18 +18,24 @@ import java.awt.event.ActionListener;
 public class PresentationController {
 
     private Intro intro;
-    private MenuInicio menuInicio;
-    private Modos modos;
-    private PVP pvp;
+    private StartMenu menuInicio;
+    private Modes modos;
+    private SelectIceCream pvp;
+    private SelectMonster selectMonster;
+    private GameMode selectedGameMode; // Almacena el modo de juego seleccionado
+    private String selectedIceCream; // Almacena el helado seleccionado
+    private GameController gameController; // Controlador del juego
+    private JFrame gameFrame; // Ventana para mostrar el GamePanel
 
     /**
      * Constructor del controlador
      */
     public PresentationController() {
         this.intro = new Intro();
-        this.menuInicio = new MenuInicio();
-        this.modos = new Modos();
-        this.pvp = new PVP();
+        this.menuInicio = new StartMenu();
+        this.modos = new Modes();
+        this.pvp = new SelectIceCream();
+        this.selectMonster = new SelectMonster();
 
         prepareElements();
         prepareActions();
@@ -39,6 +50,7 @@ public class PresentationController {
         this.menuInicio.setVisible(false);
         this.modos.setVisible(false);
         this.pvp.setVisible(false);
+        this.selectMonster.setVisible(false);
     }
 
     /**
@@ -71,6 +83,7 @@ public class PresentationController {
 
         // Listener para el botón PVP en Modos
         modos.setOnPVPClick(() -> {
+            selectedGameMode = GameMode.PVP; // Guardar el modo seleccionado
             modos.setVisible(false);
             pvp.setVisible(true);
         });
@@ -79,6 +92,38 @@ public class PresentationController {
         pvp.setOnBackClick(() -> {
             pvp.setVisible(false);
             modos.setVisible(true);
+            selectedGameMode = null;
+        });
+
+        // Listener para Chocolate en PVP
+        pvp.setOnChocolateClick(() -> {
+            selectedIceCream = "Chocolate";
+            pvp.setVisible(false);
+            registrarCallbacksMonstruos();
+            selectMonster.setVisible(true);
+        });
+
+        // Listener para Vainilla en PVP
+        pvp.setOnVainillaClick(() -> {
+            selectedIceCream = "Vainilla";
+            pvp.setVisible(false);
+            registrarCallbacksMonstruos();
+            selectMonster.setVisible(true);
+        });
+
+        // Listener para Fresa en PVP
+        pvp.setOnFresaClick(() -> {
+            selectedIceCream = "Fresa";
+            pvp.setVisible(false);
+            registrarCallbacksMonstruos();
+            selectMonster.setVisible(true);
+        });
+
+        // Listener para el botón Back en SelectMonster
+        selectMonster.setOnBackClick(() -> {
+            selectMonster.setVisible(false);
+            pvp.setVisible(true);
+            selectedIceCream = null;
         });
 
         // Listener para el botón PVM en Modos
@@ -92,6 +137,92 @@ public class PresentationController {
             // Aquí irá la lógica para MVM cuando esté lista
             System.out.println("MVM seleccionado");
         });
+    }
+
+    /**
+     * Inicia el juego con el modo, helado y monstruo seleccionados
+     */
+    private void iniciarJuego(GameMode gameMode, String iceCreamFlavor, String monsterType) {
+        if (gameMode == null) {
+            System.err.println("Error: Modo de juego no seleccionado");
+            return;
+        }
+
+        // Ocultar pantallas de selección
+        pvp.setVisible(false);
+        selectMonster.setVisible(false);
+        modos.setVisible(false);
+        menuInicio.setVisible(false);
+        intro.setVisible(false);
+
+        // Crear el controlador del juego
+        gameController = new GameController(gameMode, iceCreamFlavor, monsterType);
+
+        // Crear una ventana para el juego si no existe
+        if (gameFrame == null) {
+            gameFrame = new JFrame("Bad Ice Cream - Juego");
+            gameFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+            gameFrame.setResizable(true);
+        }
+
+        // Agregar el GamePanel a la ventana
+        gameFrame.getContentPane().removeAll(); // Limpiar contenido anterior
+        JPanel gamePanel = gameController.getGamePanel();
+        gameFrame.getContentPane().add(gamePanel);
+
+        // Configurar y mostrar la ventana con tamaño apropiado
+        gameFrame.pack();
+        gameFrame.setExtendedState(JFrame.MAXIMIZED_BOTH); // Maximizar ventana
+        gameFrame.setLocationRelativeTo(null);
+        gameFrame.setVisible(true);
+
+        // Iniciar el primer nivel
+        gameController.startLevel(1);
+
+        System.out.println("Juego iniciado - Modo: " + gameMode + ", Helado: " + iceCreamFlavor);
+    }
+
+    /**
+     * Registra callbacks dinámicamente para todos los monstruos disponibles
+     */
+    private void registrarCallbacksMonstruos() {
+        // Buscar todos los monstruos disponibles
+        File carpetaBotones = new File("Resources/Botones/Monstruos/");
+        if (!carpetaBotones.exists()) {
+            System.err.println("❌ Carpeta de monstruos no encontrada: " + carpetaBotones.getAbsolutePath());
+            return;
+        }
+
+        // Buscar archivos Selected.gif para identificar monstruos disponibles
+        File[] archivos = carpetaBotones.listFiles((d, n) -> n.endsWith("Selected.gif"));
+        if (archivos == null || archivos.length == 0) {
+            System.err.println("❌ No se encontraron monstruos (Selected.gif)");
+            return;
+        }
+
+        System.out.println("🔄 Registrando callbacks para " + archivos.length + " monstruos...");
+
+        for (File archivo : archivos) {
+            String nombreMonstruo = archivo.getName()
+                    .replace("Selected.gif", "")
+                    .trim();
+
+            // Verificar que exista Normal.png
+            String rutaNormal = carpetaBotones.getAbsolutePath() + File.separator + nombreMonstruo + "Normal.png";
+            if (!new File(rutaNormal).exists()) {
+                System.out.println("⚠️ No se encontró Normal.png para: " + nombreMonstruo);
+                continue;
+            }
+
+            // Registrar callback para este monstruo
+            selectMonster.setOnMonstruoClick(nombreMonstruo, () -> {
+                System.out.println("✅ Configuración seleccionada:");
+                System.out.println("  Modo: " + selectedGameMode);
+                System.out.println("  Helado (J1): " + selectedIceCream);
+                System.out.println("  Monstruo (J2): " + nombreMonstruo);
+                iniciarJuego(selectedGameMode, selectedIceCream, nombreMonstruo);
+            });
+        }
     }
 
     /**

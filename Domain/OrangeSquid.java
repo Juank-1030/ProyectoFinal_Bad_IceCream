@@ -1,6 +1,5 @@
 package Domain;
 
-
 /**
  * OrangeSquid (Calamar Naranja) - Enemigo del nivel 3
  * - Persigue al helado
@@ -9,10 +8,10 @@ package Domain;
 public class OrangeSquid extends Enemy {
     private static final long serialVersionUID = 1L;
 
-    public OrangeSquid(Position position, Board board) {
+    public OrangeSquid(Position position, BoardStateProvider stateProvider) {
         super(position, "Calamar Naranja", 1, true);
-        // Establecer comportamiento de persecución
-        this.setMovementBehavior(new ChaseMovement(board));
+        // Establecer comportamiento de persecución (desacoplado con interfaz)
+        this.setMovementBehavior(new ChaseMovement(stateProvider));
     }
 
     @Override
@@ -23,11 +22,11 @@ public class OrangeSquid extends Enemy {
     }
 
     /**
-     * Actualiza la referencia al tablero (necesario para persistencia)
+     * Actualiza el proveedor de estado (necesario para persistencia)
      */
-    public void updateBoardReference(Board board) {
+    public void updateStateProvider(BoardStateProvider stateProvider) {
         if (this.movementBehavior instanceof ChaseMovement) {
-            ((ChaseMovement) this.movementBehavior).setBoard(board);
+            ((ChaseMovement) this.movementBehavior).setStateProvider(stateProvider);
         }
     }
 }

@@ -1,42 +1,45 @@
 package Domain;
 
-
 /**
  * Comportamiento de movimiento que persigue al jugador (helado)
  * El enemigo siempre intenta acercarse al helado
  * Usado por Maceta y Calamar Naranja
+ * 
+ * Mejora MVC:
+ * - Usa BoardStateProvider en lugar de Board directo
+ * - Desacoplamiento: No depende de la clase Board concreta
+ * - Fácil de testear: Se puede inyectar un mock de BoardStateProvider
  */
 public class ChaseMovement implements MovementBehavior {
     private static final long serialVersionUID = 1L;
 
-    private transient Board board;  // Referencia al tablero (para encontrar al helado)
-    private int updateCounter;
+    private transient BoardStateProvider stateProvider; // Interfaz desacoplada
 
     /**
      * Constructor
-     * @param board Referencia al tablero del juego
+     * 
+     * @param stateProvider Proveedor del estado del tablero (abstracción)
      */
-    public ChaseMovement(Board board) {
-        this.board = board;
-        this.updateCounter = 0;
+    public ChaseMovement(BoardStateProvider stateProvider) {
+        this.stateProvider = stateProvider;
     }
 
     /**
-     * Establece la referencia al tablero (necesario después de deserialización)
+     * Establece el proveedor de estado (necesario después de deserialización)
      */
-    public void setBoard(Board board) {
-        this.board = board;
+    public void setStateProvider(BoardStateProvider stateProvider) {
+        this.stateProvider = stateProvider;
     }
 
     @Override
     public Direction getNextMove(Enemy enemy) {
-        if (board == null) {
-            // Si no hay referencia al tablero, moverse aleatoriamente
+        if (stateProvider == null) {
+            // Si no hay referencia al estado, moverse aleatoriamente
             return getRandomDirection();
         }
 
         // Obtener posición del helado más cercano
-        Position iceCreamPosition = board.getIceCreamPosition();
+        Position iceCreamPosition = stateProvider.getIceCreamPosition();
         if (iceCreamPosition == null) {
             return enemy.getCurrentDirection(); // Mantener dirección actual
         }
@@ -70,11 +73,11 @@ public class ChaseMovement implements MovementBehavior {
 
     @Override
     public void update() {
-        updateCounter++;
+        // Comportamiento de seguimiento se ejecuta en getNextMove()
     }
 
     @Override
     public void reset() {
-        updateCounter = 0;
+        // Reiniciar estado si es necesario
     }
 }

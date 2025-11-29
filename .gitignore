@@ -1,12 +1,32 @@
 # Compilados
 *.class
 *.jar
+*.war
+*.ear
+out/
+bin/
+build/
 
 # IDE
 .vscode/
 .idea/
 *.iml
+*.iws
+*.ipr
+*.swp
+*.swo
+*~
 
 # Sistema operativo
 Thumbs.db
 .DS_Store
+
+# Logs
+*.log
+logs/
+
+# Temporales
+temp/
+tmp/
+*.tmp
+

@@ -12,19 +12,23 @@ public abstract class GameObject implements Serializable {
 
     protected Position position;
     protected Direction currentDirection;
-    protected int speed;  // Velocidad de movimiento (celdas por turno)
+    protected int speed; // Velocidad de movimiento (milisegundos entre movimientos)
     protected boolean alive;
+    protected long lastMovementTime; // Último tiempo que se movió (para throttling)
 
     /**
      * Constructor de GameObject
+     * 
      * @param position Posición inicial
-     * @param speed Velocidad del objeto
+     * @param speed    Velocidad del objeto (ms entre movimientos: 250ms = 4 cps,
+     *                 1000ms = 1 cps)
      */
     public GameObject(Position position, int speed) {
         this.position = new Position(position);
         this.currentDirection = Direction.DOWN;
         this.speed = speed;
         this.alive = true;
+        this.lastMovementTime = System.currentTimeMillis();
     }
 
     // Getters y Setters
@@ -58,6 +62,7 @@ public abstract class GameObject implements Serializable {
 
     /**
      * Mueve el objeto en una dirección específica
+     * 
      * @param direction Dirección del movimiento
      * @return La nueva posición después del movimiento
      */
@@ -69,6 +74,7 @@ public abstract class GameObject implements Serializable {
 
     /**
      * Calcula la siguiente posición sin mover el objeto
+     * 
      * @param direction Dirección a calcular
      * @return La posición resultante
      */
@@ -78,10 +84,32 @@ public abstract class GameObject implements Serializable {
 
     /**
      * Actualiza la posición del objeto
+     * 
      * @param newPosition Nueva posición
      */
     public void updatePosition(Position newPosition) {
         this.position = new Position(newPosition);
+    }
+
+    /**
+     * Verifica si es tiempo de moverse basado en la velocidad
+     * 
+     * @return true si es tiempo de moverse, false si debe esperar
+     */
+    public boolean canMoveNow() {
+        long currentTime = System.currentTimeMillis();
+        if (currentTime - lastMovementTime >= speed) {
+            this.lastMovementTime = currentTime;
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Resetea el tiempo de movimiento (útil para cambios de dirección)
+     */
+    public void resetMovementTimer() {
+        this.lastMovementTime = System.currentTimeMillis();
     }
 
     /**

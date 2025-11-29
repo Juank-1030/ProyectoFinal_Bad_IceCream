@@ -37,14 +37,23 @@ public class Game implements Serializable {
      * @param gameMode       Modo de juego seleccionado
      * @param iceCreamFlavor Sabor del helado seleccionado
      */
-    public Game(GameMode gameMode, String iceCreamFlavor) {
+    private String monsterType; // Tipo de monstruo seleccionado en PVP
+
+    public Game(GameMode gameMode, String iceCreamFlavor, String monsterType) {
         this.gameMode = gameMode;
         this.iceCreamFlavor = iceCreamFlavor;
+        this.monsterType = monsterType; // PVP: Tipo de monstruo controlado
         this.gameState = GameState.MENU;
         this.score = 0;
         // Sin sistema de vidas (como el juego original)
         this.enemyAIs = new ArrayList<>();
         this.lastUpdateTime = System.currentTimeMillis();
+    }
+
+    // Constructor sin monsterType (retrocompatibilidad)
+    @Deprecated
+    public Game(GameMode gameMode, String iceCreamFlavor) {
+        this(gameMode, iceCreamFlavor, null);
     }
 
     /**
@@ -95,10 +104,36 @@ public class Game implements Serializable {
         board.setIceCream(iceCream);
 
         // Crear enemigos
-        for (Level.EnemyConfig config : currentLevel.getEnemyConfigs()) {
-            Enemy enemy = createEnemy(config);
-            if (enemy != null) {
-                board.addEnemy(enemy);
+        // En PVP: usar solo el monstruo seleccionado
+        // En PVM/MVM: usar todos los enemigos del nivel
+        if (gameMode == GameMode.PVP && monsterType != null) {
+            // Crear solo el monstruo seleccionado en posición aleatoria del nivel
+            List<Position> emptyPositions = new ArrayList<>();
+            for (int x = 1; x < currentLevel.getBoardWidth() - 1; x++) {
+                for (int y = 1; y < currentLevel.getBoardHeight() - 1; y++) {
+                    Position pos = new Position(x, y);
+                    if (board.isValidPosition(pos)) {
+                        emptyPositions.add(pos);
+                    }
+                }
+            }
+
+            if (!emptyPositions.isEmpty()) {
+                Random random = new Random();
+                Position enemyPos = emptyPositions.get(random.nextInt(emptyPositions.size()));
+                Level.EnemyConfig config = new Level.EnemyConfig(monsterType, enemyPos, null, 0);
+                Enemy enemy = createEnemy(config);
+                if (enemy != null) {
+                    board.addEnemy(enemy);
+                }
+            }
+        } else {
+            // PVM/MVM: crear todos los enemigos del nivel
+            for (Level.EnemyConfig config : currentLevel.getEnemyConfigs()) {
+                Enemy enemy = createEnemy(config);
+                if (enemy != null) {
+                    board.addEnemy(enemy);
+                }
             }
         }
 
@@ -126,15 +161,12 @@ public class Game implements Serializable {
      * Crea un helado según el sabor seleccionado
      */
     private IceCream createIceCream(Position position) {
-        switch (iceCreamFlavor.toLowerCase()) {
-            case "vainilla":
-                return new VanillaIceCream(position);
-            case "fresa":
-                return new StrawberryIceCream(position);
-            case "chocolate":
-                return new ChocolateIceCream(position);
-            default:
-                return new VanillaIceCream(position);
+        try {
+            return IceCreamFactory.create(iceCreamFlavor, position);
+        } catch (IllegalArgumentException e) {
+            // Fallback a vainilla si hay error
+            System.err.println("Error al crear helado: " + e.getMessage());
+            return new VanillaIceCream(position);
         }
     }
 
@@ -142,24 +174,37 @@ public class Game implements Serializable {
      * Crea un enemigo según la configuración
      */
     private Enemy createEnemy(Level.EnemyConfig config) {
+        Enemy enemy = null;
+
         switch (config.enemyType.toLowerCase()) {
             case "troll":
                 if (config.pattern != null) {
-                    return new Troll(config.startPosition, config.pattern, config.stepsPerDirection);
+                    enemy = new Troll(config.startPosition, config.pattern, config.stepsPerDirection);
+                } else {
+                    enemy = new Troll(config.startPosition);
                 }
-                return new Troll(config.startPosition);
+                enemy.setColor(new java.awt.Color(34, 177, 76)); // Verde
+                break;
 
             case "maceta":
             case "pot":
-                return new Pot(config.startPosition, board);
+                enemy = new Pot(config.startPosition, board);
+                enemy.setColor(new java.awt.Color(255, 165, 0)); // Naranja
+                break;
 
             case "calamar":
-            case "orangesquid":
-                return new OrangeSquid(config.startPosition, board);
+            case "yellowsquid":
+                enemy = new YellowSquid(config.startPosition, board);
+                enemy.setColor(new java.awt.Color(255, 255, 0)); // Amarillo
+                break;
 
-            default:
-                return null;
+            case "narval":
+                enemy = new Narval(config.startPosition, board);
+                enemy.setColor(new java.awt.Color(0, 112, 192)); // Azul
+                break;
         }
+
+        return enemy;
     }
 
     /**
@@ -272,13 +317,22 @@ public class Game implements Serializable {
      * Actualiza los enemigos (movimiento y IA)
      */
     private void updateEnemies() {
-        // En modo PVP, los enemigos NO se mueven automáticamente
-        // El Jugador 2 los controla manualmente con moveEnemy()
-        if (gameMode == GameMode.PVP) {
-            return; // Salir sin mover enemigos
-        }
-
         List<Enemy> enemies = board.getEnemies();
+
+        // En modo PVP, solo actualizar Narval en carga automáticamente
+        if (gameMode == GameMode.PVP) {
+            for (Enemy enemy : enemies) {
+                if (enemy instanceof Narval) {
+                    Narval narval = (Narval) enemy;
+                    if (narval.isCharging()) {
+                        // El Narval está en modo carga: moverse automáticamente
+                        board.moveEnemy(narval, narval.getChargeDirection());
+                    }
+                }
+                enemy.update();
+            }
+            return; // Salir sin mover otros enemigos
+        }
 
         for (int i = 0; i < enemies.size(); i++) {
             Enemy enemy = enemies.get(i);
@@ -363,29 +417,24 @@ public class Game implements Serializable {
      * - Si hay bloque enfrente: rompe UN bloque
      * (Como en el Bad Ice-Cream original)
      */
+    /**
+     * Toggle de hielo: Crea o rompe bloques según si hay obstáculos
+     * - Si NO hay bloques en dirección: Crea hilera
+     * - Si HAY bloques en dirección: Los rompe (efecto dominó)
+     * 
+     * Devuelve: >0 si creó bloques, <0 si rompió bloques, 0 si no pudo hacer nada
+     */
     public int toggleIceBlocks() {
         if (gameState != GameState.PLAYING || gameMode == GameMode.MVM) {
             return 0;
         }
-
-        // Verificar si hay un bloque enfrente
-        Direction direction = board.getIceCream().getCurrentDirection();
-        Position targetPos = board.getIceCream().getPosition().move(direction);
-
-        if (board.hasIceBlock(targetPos)) {
-            // Hay bloque enfrente → ROMPER UN bloque
-            boolean broken = board.breakIceBlock();
-            return broken ? -1 : 0; // -1 indica que rompió
-        } else {
-            // No hay bloque → CREAR FILA de bloques
-            int created = board.createIceBlock();
-            return created; // Número positivo indica cuántos creó
-        }
+        return board.toggleIceBlocks();
     }
 
     /**
      * @deprecated Usa toggleIceBlocks() en su lugar
      */
+    @Deprecated
     public boolean createIceBlock() {
         if (gameState != GameState.PLAYING || gameMode == GameMode.MVM) {
             return false;
@@ -397,11 +446,22 @@ public class Game implements Serializable {
     /**
      * @deprecated Usa toggleIceBlocks() en su lugar
      */
+    @Deprecated
     public int breakIceBlocks() {
         if (gameState != GameState.PLAYING || gameMode == GameMode.MVM) {
             return 0;
         }
         return board.breakIceBlocks();
+    }
+
+    /**
+     * Rompe UN SOLO bloque de hielo en la dirección actual del helado
+     */
+    public boolean breakIceBlock() {
+        if (gameState != GameState.PLAYING || gameMode == GameMode.MVM) {
+            return false;
+        }
+        return board.breakIceBlock();
     }
 
     /**
@@ -416,7 +476,13 @@ public class Game implements Serializable {
         }
     }
 
-    // Getters
+    /**
+     * Getter para el tipo de monstruo seleccionado
+     */
+    public String getMonsterType() {
+        return monsterType;
+    }
+
     public Board getBoard() {
         return board;
     }
@@ -451,6 +517,27 @@ public class Game implements Serializable {
 
     public void setGameState(GameState state) {
         this.gameState = state;
+    }
+
+    /**
+     * Actualiza referencias después de desserialización
+     * Necesario porque los comportamientos tienen referencias transient a Board
+     */
+    public void updateBoardReferences() {
+        if (board == null || board.getEnemies() == null) {
+            return;
+        }
+
+        // Actualizar referencias en enemigos que usan ChaseMovement
+        for (Enemy enemy : board.getEnemies()) {
+            if (enemy instanceof Pot) {
+                ((Pot) enemy).updateStateProvider(board);
+            } else if (enemy instanceof YellowSquid) {
+                ((YellowSquid) enemy).updateStateProvider(board);
+            } else if (enemy instanceof Narval) {
+                ((Narval) enemy).updateStateProvider(board);
+            }
+        }
     }
 
     /**

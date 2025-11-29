@@ -248,35 +248,31 @@ public class GamePanel extends JPanel {
     private void drawEnemies(Graphics2D g, Board board) {
         List<Enemy> enemies = board.getEnemies();
 
-        for (Enemy enemy : enemies) {
+        for (int i = 0; i < enemies.size(); i++) {
+            Enemy enemy = enemies.get(i);
             if (enemy.isAlive()) {
                 Position pos = enemy.getPosition();
                 int x = pos.getX() * CELL_SIZE + 5;
                 int y = pos.getY() * CELL_SIZE + 5 + UI_HEIGHT;
 
-                // Color según tipo
-                Color color;
-                switch (enemy.getEnemyType().toLowerCase()) {
-                    case "troll":
-                        color = COLOR_TROLL;
-                        break;
-                    case "maceta":
-                        color = COLOR_POT;
-                        break;
-                    case "calamar naranja":
-                        color = COLOR_SQUID;
-                        break;
-                    default:
-                        color = Color.RED;
-                }
+                // Usar el color asignado al enemigo
+                Color color = enemy.getColor() != null ? enemy.getColor() : Color.RED;
 
                 g.setColor(color);
                 g.fillRect(x, y, CELL_SIZE - 10, CELL_SIZE - 10);
 
-                // Borde
+                // Borde más grueso
                 g.setColor(color.darker());
-                g.setStroke(new BasicStroke(2));
+                g.setStroke(new BasicStroke(3));
                 g.drawRect(x, y, CELL_SIZE - 10, CELL_SIZE - 10);
+
+                // Etiqueta en PVP: mostrar P2 para el primer monstruo
+                Game game = controller.getGame();
+                if (game != null && game.getGameMode() == GameMode.PVP && i == 0) {
+                    g.setColor(Color.WHITE);
+                    g.setFont(new Font("Arial", Font.BOLD, 12));
+                    g.drawString("P2", x + 5, y + 20);
+                }
             }
         }
     }
@@ -311,10 +307,18 @@ public class GamePanel extends JPanel {
             g.setColor(color);
             g.fillOval(x - 15, y - 15, 30, 30);
 
-            // Borde
+            // Borde más grueso
             g.setColor(color.darker());
-            g.setStroke(new BasicStroke(3));
+            g.setStroke(new BasicStroke(4));
             g.drawOval(x - 15, y - 15, 30, 30);
+
+            // Etiqueta en PVP
+            Game game = controller.getGame();
+            if (game != null && game.getGameMode() == GameMode.PVP) {
+                g.setColor(Color.BLACK);
+                g.setFont(new Font("Arial", Font.BOLD, 14));
+                g.drawString("P1", x - 8, y + 5);
+            }
         }
     }
 
@@ -344,6 +348,16 @@ public class GamePanel extends JPanel {
 
         // Frutas restantes
         g.drawString("FRUTAS: " + game.getBoard().getRemainingFruits(), 450, 35);
+
+        // Modo PVP: mostrar controles
+        if (game.getGameMode() == GameMode.PVP) {
+            g.setFont(new Font("Arial", Font.PLAIN, 14));
+            g.setColor(new Color(173, 216, 230)); // Helado (azul claro)
+            g.drawString("P1 (Helado): W/A/S/D", 650, 35);
+
+            g.setColor(new Color(255, 140, 0)); // Monstruo (naranja)
+            g.drawString("P2 (Monstruo): ↑←↓→", 650, 65);
+        }
     }
 
     /**

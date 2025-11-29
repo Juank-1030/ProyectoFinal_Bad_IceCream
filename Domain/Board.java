@@ -1,14 +1,14 @@
 package Domain;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
  * Representa el tablero de juego (matriz)
- * Gestiona la posición de todos los elementos: helados, enemigos, frutas, bloques de hielo
+ * Gestiona la posición de todos los elementos: helados, enemigos, frutas,
+ * bloques de hielo
  */
-public class Board implements Serializable {
+public class Board implements BoardStateProvider {
     private static final long serialVersionUID = 1L;
 
     // Dimensiones del tablero
@@ -20,14 +20,15 @@ public class Board implements Serializable {
     private List<Enemy> enemies;
     private List<Fruit> fruits;
     private List<IceBlock> iceBlocks;
-    private List<Position> walls;  // Paredes permanentes
+    private List<Position> walls; // Paredes permanentes
 
     // Matriz de celdas (para búsqueda rápida)
     private CellType[][] cells;
 
     /**
      * Constructor del tablero
-     * @param width Ancho del tablero
+     * 
+     * @param width  Ancho del tablero
      * @param height Alto del tablero
      */
     public Board(int width, int height) {
@@ -69,7 +70,7 @@ public class Board implements Serializable {
      */
     public boolean isInBounds(Position pos) {
         return pos.getX() >= 0 && pos.getX() < width &&
-               pos.getY() >= 0 && pos.getY() < height;
+                pos.getY() >= 0 && pos.getY() < height;
     }
 
     /**
@@ -150,10 +151,17 @@ public class Board implements Serializable {
 
     /**
      * Mueve el helado a una nueva posición
+     * Los bloques de hielo BLOQUEAN el paso (no se rompen automáticamente)
+     * 
      * @return true si el movimiento fue exitoso
      */
     public boolean moveIceCream(Direction direction) {
         if (iceCream == null || !iceCream.isAlive()) {
+            return false;
+        }
+
+        // Verificar si es tiempo de moverse según su velocidad
+        if (!iceCream.canMoveNow()) {
             return false;
         }
 
@@ -172,22 +180,23 @@ public class Board implements Serializable {
         if (fruit != null && !fruit.isCollected()) {
             fruit.collect();
             iceCream.collectFruit();
-            lastCollectedFruit = fruit;  // Guardar para que Game sume puntos
+            lastCollectedFruit = fruit; // Guardar para que Game sume puntos
         }
 
         // Verificar colisión con enemigo
         Enemy enemy = getEnemyAt(newPos);
         if (enemy != null) {
-            iceCream.setAlive(false);  // El helado muere
+            iceCream.setAlive(false); // El helado muere
         }
 
         return true;
     }
-    
+
     private Fruit lastCollectedFruit = null;
-    
+
     /**
      * Obtiene y limpia la última fruta recolectada
+     * 
      * @return La última fruta recolectada, o null
      */
     public Fruit getAndClearLastCollectedFruit() {
@@ -198,20 +207,87 @@ public class Board implements Serializable {
 
     /**
      * Mueve un enemigo
+     * Maneja velocidades especiales (multiplicadores) y habilidades específicas
+     * - YellowSquid: ejecuta executeAbility cada movimiento para contador de rotura
+     * - Pot: ejecuta executeAbility para manejar turbo
+     * - Narval: ejecuta executeAbility y maneja cargas destructivas
      */
     public boolean moveEnemy(Enemy enemy, Direction direction) {
         if (enemy == null || !enemy.isAlive()) {
             return false;
         }
 
+        // Verificar si es tiempo de moverse según su velocidad
+        if (!enemy.canMoveNow()) {
+            return false;
+        }
+
+        // Caso especial: Narval en modo carga
+        if (enemy instanceof Narval) {
+            Narval narval = (Narval) enemy;
+            if (narval.isCharging()) {
+                // En modo carga: intentar avanzar continuamente en la dirección de carga
+                Position newPos = narval.getPosition().move(narval.getChargeDirection());
+
+                // Verificar si está fuera de los límites del mapa
+                if (!isInBounds(newPos)) {
+                    // Chocó con el borde del mapa
+                    narval.deactivateCharge();
+                    return false;
+                }
+
+                // Romper hielo si hay
+                if (hasIceBlock(newPos)) {
+                    removeIceBlock(newPos);
+                    System.out.println("💥 Narval rompiendo bloque en carga");
+                    narval.updatePosition(newPos);
+                    narval.setCurrentDirection(narval.getChargeDirection());
+                    return true;
+                }
+
+                // Verificar colisión con helado
+                if (iceCream != null && iceCream.getPosition().equals(newPos)) {
+                    narval.updatePosition(newPos);
+                    narval.setCurrentDirection(narval.getChargeDirection());
+                    iceCream.setAlive(false);
+                    System.out.println("💥 Narval chocó contra el helado");
+                    narval.deactivateCharge();
+                    return true;
+                }
+
+                // Verificar colisión con pared o muro
+                if (isWall(newPos)) {
+                    narval.deactivateCharge();
+                    System.out.println("💥 Narval chocó contra una pared");
+                    return false;
+                }
+
+                // Si es posición válida y vacía, moverse
+                if (isValidPosition(newPos)) {
+                    narval.updatePosition(newPos);
+                    narval.setCurrentDirection(narval.getChargeDirection());
+                    return true;
+                }
+
+                // Algo más bloqueó el camino, detener carga
+                narval.deactivateCharge();
+                return false;
+            }
+        }
+
         Position newPos = enemy.getNextPosition(direction);
 
         // Los enemigos pueden intentar romper bloques si tienen la habilidad
+        // EXCEPCIÓN: YellowSquid NO rompe automáticamente (requiere ESPACIO)
         if (!isValidPosition(newPos)) {
-            if (enemy.canBreakIce() && hasIceBlock(newPos)) {
+            if (enemy.canBreakIce() && hasIceBlock(newPos) && !(enemy instanceof YellowSquid)) {
                 removeIceBlock(newPos);
                 enemy.updatePosition(newPos);
                 enemy.setCurrentDirection(direction);
+
+                // Ejecutar habilidad especial del enemigo
+                enemy.executeAbility();
+
                 return true;
             }
             return false;
@@ -220,12 +296,63 @@ public class Board implements Serializable {
         enemy.updatePosition(newPos);
         enemy.setCurrentDirection(direction);
 
+        // Ejecutar habilidad especial del enemigo
+        enemy.executeAbility();
+
         // Verificar colisión con helado
         if (iceCream != null && iceCream.getPosition().equals(newPos)) {
             iceCream.setAlive(false);
         }
 
         return true;
+    }
+
+    /**
+     * Intenta que YellowSquid rompa un bloque de hielo en su dirección actual
+     * Solo funciona si hay un bloque en esa dirección
+     * Requiere 3 interacciones ESPACIO
+     */
+    public boolean yellowSquidBreakIce(YellowSquid squid) {
+        if (squid == null || !squid.isAlive()) {
+            return false;
+        }
+
+        Direction direction = squid.getCurrentDirection();
+        Position targetPos = squid.getPosition().move(direction);
+
+        // Verificar si hay un bloque en la dirección apuntada
+        if (isInBounds(targetPos) && hasIceBlock(targetPos)) {
+            // Incrementar contador de golpes
+            squid.executeAbility();
+
+            // Verificar si llegó a 3 golpes (executeAbility resetea a 0 después de 3)
+            if (squid.getIceBreakCounter() == 0) {
+                // Acababa de completar 3 golpes, se rompió el bloque
+                removeIceBlock(targetPos);
+                System.out.println("💥 ¡Bloque de hielo roto!");
+                return true;
+            }
+            return false;
+        }
+
+        return false;
+    }
+
+    /**
+     * Maneja la carga del Narval
+     * NO mueve inmediatamente, solo activa la carga
+     * El movimiento se hace gradualmente respetando la velocidad
+     * 
+     * @param narval    El Narval que ejecuta la carga
+     * @param direction Dirección de la carga
+     */
+    public void executeNarvalCharge(Narval narval, Direction direction) {
+        // Solo marcar que la carga está activa
+        // El movimiento se hará gradualmente respetando la velocidad
+        if (narval.isCharging()) {
+            // Si hay una carga activa, detenerse
+            narval.deactivateCharge();
+        }
     }
 
     /**
@@ -248,12 +375,12 @@ public class Board implements Serializable {
             if (getEnemyAt(currentPos) != null) {
                 break;
             }
-            
+
             // Verificar si hay fruta (no crear bloque ahí)
             if (getFruitAt(currentPos) != null) {
                 break;
             }
-            
+
             // Crear bloque si no hay ninguno
             if (!hasIceBlock(currentPos)) {
                 IceBlock newBlock = new IceBlock(currentPos, true, iceCream);
@@ -292,11 +419,42 @@ public class Board implements Serializable {
 
         return false;
     }
-    
+
     /**
      * Rompe bloques de hielo en la dirección del helado (efecto dominó)
      * DEPRECATED: Este método se mantiene por compatibilidad pero no se usa
      */
+    /**
+     * Toggle de hielo: Verifica si hay bloques en la dirección
+     * - Si HAY bloques: Los rompe todos (efecto dominó)
+     * - Si NO hay bloques: Los crea en hilera
+     * 
+     * Devuelve: >0 si creó bloques, <0 si rompió bloques, 0 si no pudo hacer nada
+     */
+    public int toggleIceBlocks() {
+        if (iceCream == null) {
+            return 0;
+        }
+
+        Direction direction = iceCream.getCurrentDirection();
+        Position checkPos = iceCream.getPosition().move(direction);
+
+        // Verificar si hay un bloque de hielo en la posición inmediata
+        if (isInBounds(checkPos) && hasIceBlock(checkPos)) {
+            // HAY BLOQUES: Romper en efecto dominó
+            if (!iceCream.canBreakIce()) {
+                return 0;
+            }
+            return -breakIceBlocks(); // Devuelve negativo para indicar ruptura
+        } else {
+            // NO HAY BLOQUES: Crear hilera
+            if (!iceCream.canCreateIce()) {
+                return 0;
+            }
+            return createIceBlock(); // Devuelve positivo para indicar creación
+        }
+    }
+
     public int breakIceBlocks() {
         if (iceCream == null || !iceCream.canBreakIce()) {
             return 0;
@@ -314,7 +472,7 @@ public class Board implements Serializable {
                 brokenBlocks++;
                 currentPos = currentPos.move(direction);
             } else {
-                break;  // Bloque no rompible, detener
+                break; // Bloque no rompible, detener
             }
         }
 
@@ -351,9 +509,9 @@ public class Board implements Serializable {
         for (int y = 0; y < height; y++) {
             for (int x = 0; x < width; x++) {
                 Position pos = new Position(x, y);
-                if (isValidPosition(pos) && getFruitAt(pos) == null && 
-                    (iceCream == null || !iceCream.getPosition().equals(pos)) &&
-                    getEnemyAt(pos) == null) {
+                if (isValidPosition(pos) && getFruitAt(pos) == null &&
+                        (iceCream == null || !iceCream.getPosition().equals(pos)) &&
+                        getEnemyAt(pos) == null) {
                     emptyPositions.add(pos);
                 }
             }

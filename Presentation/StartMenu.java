@@ -5,7 +5,7 @@ import java.awt.*;
 import java.awt.event.*;
 import java.io.File;
 
-public class MenuInicio extends JFrame {
+public class StartMenu extends JFrame {
     private String rutaPanel = "Resources/Opciones_Menu/Panel_menu.png";
     private String rutaBotones = "Resources/Botones/Inicio/";
 
@@ -17,7 +17,7 @@ public class MenuInicio extends JFrame {
     private Runnable onNewGameClick;
     private Runnable onExitClick;
 
-    public MenuInicio() {
+    public StartMenu() {
         setTitle("Menú de Inicio");
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setResizable(false);
@@ -143,13 +143,13 @@ public class MenuInicio extends JFrame {
     private void accionBoton(String nombreBoton) {
         switch (nombreBoton) {
             case "New_Game":
-                System.out.println("Nuevo Juego");
+                // Nuevo Juego
                 if (onNewGameClick != null) {
                     onNewGameClick.run();
                 }
                 break;
             case "Continue_Game":
-                System.out.println("Continuar Juego");
+                // Continuar Juego
                 break;
             case "Exit":
                 if (onExitClick != null) {

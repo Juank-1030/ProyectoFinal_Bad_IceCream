@@ -164,23 +164,24 @@ public class ConsoleGame {
     private void mostrarAyuda() {
         System.out.println("\n" + "-".repeat(60));
         System.out.println("COMANDOS JUGADOR 1 (Helado):");
-        System.out.println("  w/arriba    - Mover arriba");
-        System.out.println("  s/abajo     - Mover abajo");
-        System.out.println("  a/izquierda - Mover izquierda");
-        System.out.println("  d/derecha   - Mover derecha");
-        System.out.println("  espacio     - Crear fila O romper 1 bloque");
-        System.out.println("                (igual que el Bad Ice-Cream original)");
-        
+        System.out.println("  w         - Mover arriba");
+        System.out.println("  s         - Mover abajo");
+        System.out.println("  a         - Mover izquierda");
+        System.out.println("  d         - Mover derecha");
+        System.out.println("  espacio   - Crear/Romper bloques de hielo");
+
         if (game.getGameMode() == GameMode.PVP) {
-            System.out.println("\nCOMANDOS JUGADOR 2 (Enemigos):");
-            System.out.println("  i/k/j/l     - Mover Enemigo 1 (arriba/abajo/izq/der)");
-            System.out.println("  8/5/4/6     - Mover Enemigo 2 (arriba/abajo/izq/der)");
+            System.out.println("\nCOMANDOS JUGADOR 2 (Monstruo):");
+            System.out.println("  i         - Mover monstruo ARRIBA");
+            System.out.println("  k         - Mover monstruo ABAJO");
+            System.out.println("  j         - Mover monstruo IZQUIERDA");
+            System.out.println("  l         - Mover monstruo DERECHA");
         }
-        
+
         System.out.println("\nOTROS COMANDOS:");
-        System.out.println("  p/pausa     - Pausar/Reanudar");
-        System.out.println("  h/ayuda     - Mostrar esta ayuda");
-        System.out.println("  q/salir     - Salir del juego");
+        System.out.println("  p/pausa   - Pausar/Reanudar");
+        System.out.println("  h/ayuda   - Mostrar esta ayuda");
+        System.out.println("  q/salir   - Salir del juego");
         System.out.println("-".repeat(60));
     }
 
@@ -276,72 +277,48 @@ public class ConsoleGame {
             System.out.println("   • Si hay bloque enfrente: rompe UN bloque");
             return false;
         }
-        
+
         // ========== JUGADOR 2 (Enemigos - Solo en PVP) ==========
+        // ========== JUGADOR 2 (Monstruo - Solo en PVP) ==========
         if (game.getGameMode() == GameMode.PVP) {
-            // Controles para primer enemigo (teclas I/J/K/L)
+            Direction dirEnemy = null;
+            String dirName = "";
+
+            // Comandos de teclas (i, k, j, l)
             if (comando.equals("i")) {
-                boolean moved = game.moveEnemy(0, Direction.UP);
-                if (moved) {
-                    System.out.println("👹 J2: ↑ Enemigo 1 arriba");
-                }
-                return true;
+                dirEnemy = Direction.UP;
+                dirName = "arriba (i)";
+            } else if (comando.equals("k")) {
+                dirEnemy = Direction.DOWN;
+                dirName = "abajo (k)";
+            } else if (comando.equals("j")) {
+                dirEnemy = Direction.LEFT;
+                dirName = "izquierda (j)";
+            } else if (comando.equals("l")) {
+                dirEnemy = Direction.RIGHT;
+                dirName = "derecha (l)";
             }
-            
-            if (comando.equals("k")) {
-                boolean moved = game.moveEnemy(0, Direction.DOWN);
-                if (moved) {
-                    System.out.println("👹 J2: ↓ Enemigo 1 abajo");
+
+            // Si se detectó una dirección, mover TODOS los enemigos
+            if (dirEnemy != null) {
+                int enemyIndex = 0;
+                int movidosCount = 0;
+
+                for (Enemy enemy : game.getBoard().getEnemies()) {
+                    boolean moved = game.moveEnemy(enemyIndex, dirEnemy);
+                    if (moved) {
+                        movidosCount++;
+                        Position pos = enemy.getPosition();
+                        System.out.println("👹 J2 Monstruo " + (enemyIndex + 1) + " (" + enemy.getEnemyType() +
+                                "): ← " + dirName + " → Ahora en [" + pos.getX() + ", " + pos.getY() + "]");
+                    }
+                    enemyIndex++;
                 }
-                return true;
-            }
-            
-            if (comando.equals("j")) {
-                boolean moved = game.moveEnemy(0, Direction.LEFT);
-                if (moved) {
-                    System.out.println("👹 J2: ← Enemigo 1 izquierda");
+
+                if (movidosCount == 0) {
+                    System.out.println("⚠️ Monstruos no pudieron moverse (obstáculo o borde)");
                 }
-                return true;
-            }
-            
-            if (comando.equals("l")) {
-                boolean moved = game.moveEnemy(0, Direction.RIGHT);
-                if (moved) {
-                    System.out.println("👹 J2: → Enemigo 1 derecha");
-                }
-                return true;
-            }
-            
-            // Controles para segundo enemigo (teclas 8/4/5/6 del teclado numérico)
-            if (comando.equals("8")) {
-                boolean moved = game.moveEnemy(1, Direction.UP);
-                if (moved) {
-                    System.out.println("👹 J2: ↑ Enemigo 2 arriba");
-                }
-                return true;
-            }
-            
-            if (comando.equals("5")) {
-                boolean moved = game.moveEnemy(1, Direction.DOWN);
-                if (moved) {
-                    System.out.println("👹 J2: ↓ Enemigo 2 abajo");
-                }
-                return true;
-            }
-            
-            if (comando.equals("4")) {
-                boolean moved = game.moveEnemy(1, Direction.LEFT);
-                if (moved) {
-                    System.out.println("👹 J2: ← Enemigo 2 izquierda");
-                }
-                return true;
-            }
-            
-            if (comando.equals("6")) {
-                boolean moved = game.moveEnemy(1, Direction.RIGHT);
-                if (moved) {
-                    System.out.println("👹 J2: → Enemigo 2 derecha");
-                }
+
                 return true;
             }
         }

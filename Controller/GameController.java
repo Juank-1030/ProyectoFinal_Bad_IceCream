@@ -6,6 +6,7 @@ import Presentation.GamePanel;
 import javax.swing.*;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
+import java.util.List;
 
 /**
  * GameController - Controlador del juego
@@ -33,15 +34,28 @@ public class GameController implements KeyListener {
     private static final int FPS = 60;
     private static final int FRAME_TIME = 1000 / FPS; // 16ms por frame
 
+    // Sistema de teclas presionadas actualmente (Input Buffering Pattern)
+    private java.util.Set<Integer> keysPressed = new java.util.HashSet<>();
+
+    // Control de orientación/movimiento: primer click = orientación, clicks
+    // subsecuentes = movimiento
+    private Direction lastIceCreamDirection = null; // Última dirección establecida del helado
+    private Direction lastEnemyDirection = null; // Última dirección establecida del enemigo (PVP)
+    private long lastDirectionChangeTime = 0; // Momento del último cambio de dirección
+    private static final long DIRECTION_TIMEOUT = 200; // 200ms para cambiar de dirección sin mover
+
     /**
      * Constructor del GameController
      * 
      * @param gameMode       Modo de juego (PVP, PVM, MVM)
      * @param iceCreamFlavor Sabor del helado elegido
      */
-    public GameController(GameMode gameMode, String iceCreamFlavor) {
+    private String monsterType; // Tipo de monstruo seleccionado
+
+    public GameController(GameMode gameMode, String iceCreamFlavor, String monsterType) {
         // 1. Crear el Model (Game)
-        this.game = new Game(gameMode, iceCreamFlavor);
+        this.monsterType = monsterType;
+        this.game = new Game(gameMode, iceCreamFlavor, monsterType);
 
         // 2. Crear la View (GamePanel)
         this.gamePanel = new GamePanel(this);
@@ -58,20 +72,72 @@ public class GameController implements KeyListener {
 
     /**
      * Configura el Timer que ejecuta el game loop
+     * Implementa el patrón Game Loop con sincronización en tiempo real
      */
     private void setupGameTimer() {
         gameTimer = new Timer(FRAME_TIME, e -> {
             if (running) {
-                // 1. Actualizar el Model (lógica del juego)
+                // 1. Procesar entradas de teclado presionadas actualmente
+                processInputs();
+
+                // 2. Actualizar el Model (lógica del juego)
                 game.update();
 
-                // 2. Actualizar la View (redibujar)
+                // 3. Actualizar la View (redibujar)
                 gamePanel.repaint();
 
-                // 3. Verificar si terminó el juego
+                // 4. Verificar si terminó el juego
                 checkGameEnd();
             }
         });
+    }
+
+    /**
+     * Procesa todas las teclas presionadas actualmente
+     * Esto permite movimiento en tiempo real sin esperar a keyPressed/keyReleased
+     */
+    private void processInputs() {
+        // Procesar movimientos de WASD (Helado)
+        if (keysPressed.contains(KeyEvent.VK_W)) {
+            game.moveIceCream(Direction.UP);
+        } else if (keysPressed.contains(KeyEvent.VK_S)) {
+            game.moveIceCream(Direction.DOWN);
+        } else if (keysPressed.contains(KeyEvent.VK_A)) {
+            game.moveIceCream(Direction.LEFT);
+        } else if (keysPressed.contains(KeyEvent.VK_D)) {
+            game.moveIceCream(Direction.RIGHT);
+        }
+
+        // Procesar movimientos de Flechas (Monstruos en PVP)
+        // EXCEPTO si el Narval está en modo carga (se mueve automáticamente)
+        if (game.getGameMode() == GameMode.PVP) {
+            List<Enemy> enemies = game.getBoard().getEnemies();
+            boolean narvalCharging = false;
+
+            // Verificar si el Narval está cargando
+            for (Enemy enemy : enemies) {
+                if (enemy instanceof Narval) {
+                    Narval narval = (Narval) enemy;
+                    if (narval.isCharging()) {
+                        narvalCharging = true;
+                        break;
+                    }
+                }
+            }
+
+            // Solo procesar entrada de flechas si el Narval NO está cargando
+            if (!narvalCharging) {
+                if (keysPressed.contains(KeyEvent.VK_UP)) {
+                    game.moveEnemy(0, Direction.UP);
+                } else if (keysPressed.contains(KeyEvent.VK_DOWN)) {
+                    game.moveEnemy(0, Direction.DOWN);
+                } else if (keysPressed.contains(KeyEvent.VK_LEFT)) {
+                    game.moveEnemy(0, Direction.LEFT);
+                } else if (keysPressed.contains(KeyEvent.VK_RIGHT)) {
+                    game.moveEnemy(0, Direction.RIGHT);
+                }
+            }
+        }
     }
 
     /**
@@ -217,6 +283,7 @@ public class GameController implements KeyListener {
     @Override
     public void keyPressed(KeyEvent e) {
         int keyCode = e.getKeyCode();
+        keysPressed.add(keyCode); // Agregar tecla al Set para input buffering
 
         // Pausar/Reanudar con P o ESC
         if (keyCode == KeyEvent.VK_P || keyCode == KeyEvent.VK_ESCAPE) {
@@ -229,9 +296,9 @@ public class GameController implements KeyListener {
             return;
         }
 
-        // Movimiento del helado (solo en modos PVP y PVM)
+        // Solo procesar acciones de bloques de hielo y habilidades aquí
+        // El movimiento es procesado por processInputs() en cada frame del game loop
         if (game.getGameMode() != GameMode.MVM) {
-            handleMovement(keyCode);
             handleIceBlockActions(keyCode, e);
         }
     }
@@ -271,58 +338,184 @@ public class GameController implements KeyListener {
     }
 
     /**
-     * Maneja el movimiento del helado
+     * Maneja el movimiento del helado y monstruos con sistema de orientación
+     * SISTEMA DE CONTROLES:
+     * - Primer click en dirección: establece orientación del personaje
+     * - Clicks subsecuentes en MISMA dirección: mueve el personaje
+     * - Click en DIFERENTE dirección: cambia orientación (sin mover)
+     * 
+     * En PVP: WASD para helado (jugador 1), Flechas para monstruos (jugador 2)
+     * En PVM: WASD para helado, Flechas para IA del monstruo (ignoradas)
      */
     private void handleMovement(int keyCode) {
         Direction direction = null;
+        boolean isWASD = false;
+        boolean isArrow = false;
 
-        // Flechas o WASD
+        // Detectar si es WASD (helado - Jugador 1)
         switch (keyCode) {
-            case KeyEvent.VK_UP:
             case KeyEvent.VK_W:
                 direction = Direction.UP;
+                isWASD = true;
                 break;
-            case KeyEvent.VK_DOWN:
             case KeyEvent.VK_S:
                 direction = Direction.DOWN;
+                isWASD = true;
                 break;
-            case KeyEvent.VK_LEFT:
             case KeyEvent.VK_A:
                 direction = Direction.LEFT;
+                isWASD = true;
                 break;
-            case KeyEvent.VK_RIGHT:
             case KeyEvent.VK_D:
                 direction = Direction.RIGHT;
+                isWASD = true;
                 break;
         }
 
-        // Si se detectó una dirección, mover
-        if (direction != null) {
-            boolean moved = game.moveIceCream(direction);
+        // Procesar WASD (Helado/Jugador 1)
+        if (direction != null && isWASD) {
+            // Verificar si es la misma dirección
+            if (direction == lastIceCreamDirection) {
+                // MISMA dirección → MOVER el helado
+                boolean moved = game.moveIceCream(direction);
+                if (!moved) {
+                    System.out.println("→ Helado no puede avanzar: " + direction);
+                }
+            } else {
+                // DIFERENTE dirección → ORIENTAR el helado (sin mover)
+                lastIceCreamDirection = direction;
+                game.getBoard().getIceCream().setCurrentDirection(direction);
+                lastDirectionChangeTime = System.currentTimeMillis();
+                System.out.println("→ Helado orientado a: " + direction);
+            }
+            return;
+        }
 
-            // Debug (opcional)
-            if (!moved) {
-                System.out.println("Movimiento bloqueado: " + direction);
+        // Detectar si es flecha (monstruos/Jugador 2 - solo en PVP)
+        direction = null;
+        switch (keyCode) {
+            case KeyEvent.VK_UP:
+                direction = Direction.UP;
+                isArrow = true;
+                break;
+            case KeyEvent.VK_DOWN:
+                direction = Direction.DOWN;
+                isArrow = true;
+                break;
+            case KeyEvent.VK_LEFT:
+                direction = Direction.LEFT;
+                isArrow = true;
+                break;
+            case KeyEvent.VK_RIGHT:
+                direction = Direction.RIGHT;
+                isArrow = true;
+                break;
+        }
+
+        // Procesar Flechas (Monstruo/Jugador 2 - solo en PVP)
+        if (direction != null && isArrow && game.getGameMode() == GameMode.PVP) {
+            // Verificar si es la misma dirección
+            if (direction == lastEnemyDirection) {
+                // MISMA dirección → MOVER el monstruo
+                boolean moved = game.moveEnemy(0, direction);
+                if (!moved) {
+                    System.out.println("→ Monstruo no puede avanzar: " + direction);
+                }
+            } else {
+                // DIFERENTE dirección → ORIENTAR el monstruo (sin mover)
+                lastEnemyDirection = direction;
+                List<Enemy> enemies = game.getBoard().getEnemies();
+                if (!enemies.isEmpty()) {
+                    enemies.get(0).setCurrentDirection(direction);
+                    lastDirectionChangeTime = System.currentTimeMillis();
+                    System.out.println("→ Monstruo orientado a: " + direction);
+                }
             }
         }
     }
 
     /**
-     * Maneja acciones de bloques de hielo
+     * Maneja acciones de bloques de hielo y habilidades
+     * 
+     * HELADO (WASD): Tecla Q o ESPACIO para crear/romper bloques
+     * MONSTRUOS (Flechas): Tecla ESPACIO para activar habilidades
      */
     private void handleIceBlockActions(int keyCode, KeyEvent e) {
+        // Tecla Q: Para helado (crear/romper bloques de hielo)
+        if (keyCode == KeyEvent.VK_Q) {
+            int result = game.toggleIceBlocks();
+
+            if (result > 0) {
+                // Se crearon bloques
+                System.out.println("✓ Hilera de " + result + " bloque(s) de hielo creada");
+            } else if (result < 0) {
+                // Se rompieron bloques
+                System.out.println("✓ Hilera de " + (-result) + " bloque(s) roto(s) en efecto dominó");
+            }
+            return;
+        }
+
+        // Tecla ESPACIO: Para helado O monstruos (PVP)
         if (keyCode == KeyEvent.VK_SPACE) {
-            if (e.isShiftDown()) {
-                // SHIFT + ESPACIO = Romper bloques
-                int brokenBlocks = game.breakIceBlocks();
-                if (brokenBlocks > 0) {
-                    System.out.println("Bloques rotos: " + brokenBlocks);
+            // En PVP: determinar quién controla
+            if (game.getGameMode() == GameMode.PVP) {
+                // El ESPACIO controla al monstruo (habilidades)
+                List<Enemy> enemies = game.getBoard().getEnemies();
+                if (!enemies.isEmpty()) {
+                    Enemy controlledEnemy = enemies.get(0);
+
+                    // Activar habilidad según el tipo de enemigo
+                    if (controlledEnemy instanceof Pot) {
+                        Pot pot = (Pot) controlledEnemy;
+                        if (pot.isTurboActive()) {
+                            System.out
+                                    .println("⚡ Turbo activo: " + (pot.getTurboTimeRemaining() / 1000) + "s restantes");
+                        } else if (pot.getTurboRechargeTimeRemaining() <= 0) {
+                            pot.executeAbility(); // Activar turbo manualmente
+                            System.out.println("⚡ ¡Turbo ACTIVADO!");
+                        } else {
+                            System.out.println(
+                                    "⏳ Turbo en recarga: " + (pot.getTurboRechargeTimeRemaining() / 1000) + "s");
+                        }
+                    } else if (controlledEnemy instanceof Narval) {
+                        Narval narval = (Narval) controlledEnemy;
+                        if (narval.canCharge()) {
+                            narval.activateCharge(controlledEnemy.getCurrentDirection());
+                            System.out.println("🔱 ¡Carga de Narval ACTIVADA!");
+                        } else {
+                            System.out.println(
+                                    "⏳ Carga en recarga: " + (narval.getChargeRechargeTimeRemaining() / 1000) + "s");
+                        }
+                    } else if (controlledEnemy instanceof YellowSquid) {
+                        YellowSquid squid = (YellowSquid) controlledEnemy;
+
+                        // Intentar romper hielo en la dirección apuntada
+                        boolean broken = game.getBoard().yellowSquidBreakIce(squid);
+
+                        if (broken) {
+                            System.out.println("🟡 ¡Bloque roto!");
+                        } else {
+                            // Mostrar progreso si no hay bloque o si sigue contando
+                            Position targetPos = squid.getPosition().move(squid.getCurrentDirection());
+                            if (game.getBoard().hasIceBlock(targetPos)) {
+                                System.out.println("🟡 Golpe " + squid.getIceBreakCounter() + "/3");
+                            } else {
+                                System.out.println("⚠️ No hay bloque en esa dirección");
+                                squid.resetIceBreakCounter(); // Resetear si no hay bloque
+                            }
+                        }
+                    }
                 }
             } else {
-                // ESPACIO = Crear bloque
-                boolean created = game.createIceBlock();
-                if (created) {
-                    System.out.println("Bloque de hielo creado");
+                // En PVM/MVM: El ESPACIO controla al helado (crear/romper bloques)
+                int result = game.toggleIceBlocks();
+
+                if (result > 0) {
+                    // Se crearon bloques
+                    System.out.println("✓ Hilera de " + result + " bloque(s) de hielo creada");
+                } else if (result < 0) {
+                    // Se rompieron bloques
+                    System.out.println("✓ Hilera de " + (-result) + " bloque(s) roto(s) en efecto dominó");
                 }
             }
         }
@@ -330,7 +523,8 @@ public class GameController implements KeyListener {
 
     @Override
     public void keyReleased(KeyEvent e) {
-        // No se usa por ahora
+        int keyCode = e.getKeyCode();
+        keysPressed.remove(keyCode); // Remover tecla del Set cuando se suelta
     }
 
     @Override
