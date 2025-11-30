@@ -47,15 +47,19 @@ public class GameController implements KeyListener {
     /**
      * Constructor del GameController
      * 
-     * @param gameMode       Modo de juego (PVP, PVM, MVM)
-     * @param iceCreamFlavor Sabor del helado elegido
+     * @param gameMode             Modo de juego (PVP, PVM, MVM)
+     * @param iceCreamFlavor       Sabor del helado elegido
+     * @param secondIceCreamFlavor Segundo sabor para modo cooperativo (puede ser
+     *                             null)
      */
     private String monsterType; // Tipo de monstruo seleccionado
+    private String secondIceCreamFlavor; // Segundo sabor para modo cooperativo
 
-    public GameController(GameMode gameMode, String iceCreamFlavor, String monsterType) {
+    public GameController(GameMode gameMode, String iceCreamFlavor, String secondIceCreamFlavor, String monsterType) {
         // 1. Crear el Model (Game)
         this.monsterType = monsterType;
-        this.game = new Game(gameMode, iceCreamFlavor, monsterType);
+        this.secondIceCreamFlavor = secondIceCreamFlavor;
+        this.game = new Game(gameMode, iceCreamFlavor, secondIceCreamFlavor, monsterType);
 
         // 2. Crear la View (GamePanel)
         this.gamePanel = new GamePanel(this);
@@ -68,6 +72,12 @@ public class GameController implements KeyListener {
         // 4. Inicializar timer (pero no iniciarlo aún)
         this.running = false;
         setupGameTimer();
+    }
+
+    // Constructor sin secondIceCreamFlavor (retrocompatibilidad para Helado vs
+    // Monstruo)
+    public GameController(GameMode gameMode, String iceCreamFlavor, String monsterType) {
+        this(gameMode, iceCreamFlavor, null, monsterType);
     }
 
     /**
@@ -97,7 +107,7 @@ public class GameController implements KeyListener {
      * Esto permite movimiento en tiempo real sin esperar a keyPressed/keyReleased
      */
     private void processInputs() {
-        // Procesar movimientos de WASD (Helado)
+        // Procesar movimientos de WASD (Helado 1)
         if (keysPressed.contains(KeyEvent.VK_W)) {
             game.moveIceCream(Direction.UP);
         } else if (keysPressed.contains(KeyEvent.VK_S)) {
@@ -108,9 +118,21 @@ public class GameController implements KeyListener {
             game.moveIceCream(Direction.RIGHT);
         }
 
-        // Procesar movimientos de Flechas (Monstruos en PVP)
-        // EXCEPTO si el Narval está en modo carga (se mueve automáticamente)
-        if (game.getGameMode() == GameMode.PVP) {
+        // Procesar movimientos de FLECHAS (Helado 2 - Modo Cooperativo O Monstruo -
+        // PVP)
+        if (secondIceCreamFlavor != null) {
+            // Modo Cooperativo: Flechas controlan Helado 2
+            if (keysPressed.contains(KeyEvent.VK_UP)) {
+                game.moveSecondIceCream(Direction.UP);
+            } else if (keysPressed.contains(KeyEvent.VK_DOWN)) {
+                game.moveSecondIceCream(Direction.DOWN);
+            } else if (keysPressed.contains(KeyEvent.VK_LEFT)) {
+                game.moveSecondIceCream(Direction.LEFT);
+            } else if (keysPressed.contains(KeyEvent.VK_RIGHT)) {
+                game.moveSecondIceCream(Direction.RIGHT);
+            }
+        } else if (game.getGameMode() == GameMode.PVP) {
+            // Modo PVP: Flechas controlan Monstruo
             List<Enemy> enemies = game.getBoard().getEnemies();
             boolean narvalCharging = false;
 
@@ -437,29 +459,52 @@ public class GameController implements KeyListener {
     /**
      * Maneja acciones de bloques de hielo y habilidades
      * 
-     * HELADO (WASD): Tecla Q o ESPACIO para crear/romper bloques
-     * MONSTRUOS (Flechas): Tecla ESPACIO para activar habilidades
+     * MODO COOPERATIVO (Dos Helados):
+     * - P1 (Helado 1): WASD + Q para crear/romper bloques
+     * - P2 (Helado 2): FLECHAS + ESPACIO para crear/romper bloques
+     * 
+     * MODO PVP (Helado vs Monstruo):
+     * - Helado (WASD): Q para crear/romper bloques
+     * - Monstruo (Flechas): ESPACIO para activar habilidades
+     * 
+     * MODO PVM (Helado vs IA):
+     * - Helado (WASD): Q para crear/romper bloques
      */
     private void handleIceBlockActions(int keyCode, KeyEvent e) {
-        // Tecla Q: Para helado (crear/romper bloques de hielo)
+        // Tecla Q: Para P1 (Helado 1) en todos los modos
         if (keyCode == KeyEvent.VK_Q) {
             int result = game.toggleIceBlocks();
-
             if (result > 0) {
-                // Se crearon bloques
-                System.out.println("✓ Hilera de " + result + " bloque(s) de hielo creada");
+                if (secondIceCreamFlavor != null) {
+                    System.out.println("✓ (P1) Hilera de " + result + " bloque(s) de hielo creada");
+                } else {
+                    System.out.println("✓ Hilera de " + result + " bloque(s) de hielo creada");
+                }
             } else if (result < 0) {
-                // Se rompieron bloques
-                System.out.println("✓ Hilera de " + (-result) + " bloque(s) roto(s) en efecto dominó");
+                if (secondIceCreamFlavor != null) {
+                    System.out.println("✓ (P1) Hilera de " + (-result) + " bloque(s) roto(s) en efecto dominó");
+                } else {
+                    System.out.println("✓ Hilera de " + (-result) + " bloque(s) roto(s) en efecto dominó");
+                }
             }
             return;
         }
 
-        // Tecla ESPACIO: Para helado O monstruos (PVP)
+        // Tecla ESPACIO: Diferentes acciones según el modo
         if (keyCode == KeyEvent.VK_SPACE) {
-            // En PVP: determinar quién controla
+            // En modo Cooperativo: ESPACIO controla helado 2 (P2)
+            if (secondIceCreamFlavor != null) {
+                int result = game.toggleIceBlocksSecond();
+                if (result > 0) {
+                    System.out.println("✓ (P2) Hilera de " + result + " bloque(s) de hielo creada");
+                } else if (result < 0) {
+                    System.out.println("✓ (P2) Hilera de " + (-result) + " bloque(s) roto(s) en efecto dominó");
+                }
+                return;
+            }
+
+            // En PVP: ESPACIO controla al monstruo (habilidades)
             if (game.getGameMode() == GameMode.PVP) {
-                // El ESPACIO controla al monstruo (habilidades)
                 List<Enemy> enemies = game.getBoard().getEnemies();
                 if (!enemies.isEmpty()) {
                     Enemy controlledEnemy = enemies.get(0);
@@ -507,16 +552,8 @@ public class GameController implements KeyListener {
                     }
                 }
             } else {
-                // En PVM/MVM: El ESPACIO controla al helado (crear/romper bloques)
-                int result = game.toggleIceBlocks();
-
-                if (result > 0) {
-                    // Se crearon bloques
-                    System.out.println("✓ Hilera de " + result + " bloque(s) de hielo creada");
-                } else if (result < 0) {
-                    // Se rompieron bloques
-                    System.out.println("✓ Hilera de " + (-result) + " bloque(s) roto(s) en efecto dominó");
-                }
+                // En PVM/MVM: ESPACIO no hace nada en estos modos (solo Q controla hielo)
+                // Esto es solo para monstruo en PVP
             }
         }
     }

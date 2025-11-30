@@ -17,6 +17,7 @@ public class Board implements BoardStateProvider {
 
     // Entidades del juego
     private IceCream iceCream;
+    private IceCream secondIceCream; // Segundo helado para modo cooperativo
     private List<Enemy> enemies;
     private List<Fruit> fruits;
     private List<IceBlock> iceBlocks;
@@ -187,6 +188,46 @@ public class Board implements BoardStateProvider {
         Enemy enemy = getEnemyAt(newPos);
         if (enemy != null) {
             iceCream.setAlive(false); // El helado muere
+        }
+
+        return true;
+    }
+
+    /**
+     * Mueve el segundo helado (modo cooperativo)
+     */
+    public boolean moveSecondIceCream(Direction direction) {
+        if (secondIceCream == null || !secondIceCream.isAlive()) {
+            return false;
+        }
+
+        // Verificar si es tiempo de moverse según su velocidad
+        if (!secondIceCream.canMoveNow()) {
+            return false;
+        }
+
+        Position newPos = secondIceCream.getNextPosition(direction);
+
+        if (!isValidPosition(newPos)) {
+            return false;
+        }
+
+        // Actualizar posición
+        secondIceCream.updatePosition(newPos);
+        secondIceCream.setCurrentDirection(direction);
+
+        // Verificar colisión con fruta
+        Fruit fruit = getFruitAt(newPos);
+        if (fruit != null && !fruit.isCollected()) {
+            fruit.collect();
+            secondIceCream.collectFruit();
+            lastCollectedFruit = fruit;
+        }
+
+        // Verificar colisión con enemigo
+        Enemy enemy = getEnemyAt(newPos);
+        if (enemy != null) {
+            secondIceCream.setAlive(false); // El segundo helado muere
         }
 
         return true;
@@ -397,6 +438,45 @@ public class Board implements BoardStateProvider {
     }
 
     /**
+     * Crea bloques de hielo para el segundo helado
+     */
+    public int createIceBlockSecond() {
+        if (secondIceCream == null || !secondIceCream.canCreateIce()) {
+            return 0;
+        }
+
+        Direction direction = secondIceCream.getCurrentDirection();
+        Position currentPos = secondIceCream.getPosition().move(direction);
+        int blocksCreated = 0;
+
+        // Crear bloques en línea recta hasta encontrar obstáculo
+        while (isInBounds(currentPos) && isValidPosition(currentPos)) {
+            // Verificar si hay enemigo (no crear bloque ahí)
+            if (getEnemyAt(currentPos) != null) {
+                break;
+            }
+
+            // Verificar si hay fruta (no crear bloque ahí)
+            if (getFruitAt(currentPos) != null) {
+                break;
+            }
+
+            // Crear bloque si no hay ninguno
+            if (!hasIceBlock(currentPos)) {
+                IceBlock newBlock = new IceBlock(currentPos, true, secondIceCream);
+                iceBlocks.add(newBlock);
+                blocksCreated++;
+                currentPos = currentPos.move(direction);
+            } else {
+                // Ya hay un bloque, detener
+                break;
+            }
+        }
+
+        return blocksCreated;
+    }
+
+    /**
      * Rompe UN SOLO bloque de hielo en la dirección del helado
      * (Como en el Bad Ice-Cream original - mismo botón que crear)
      */
@@ -455,6 +535,33 @@ public class Board implements BoardStateProvider {
         }
     }
 
+    /**
+     * Toggle de hielo para el segundo helado (modo cooperativo)
+     */
+    public int toggleIceBlocksSecond() {
+        if (secondIceCream == null) {
+            return 0;
+        }
+
+        Direction direction = secondIceCream.getCurrentDirection();
+        Position checkPos = secondIceCream.getPosition().move(direction);
+
+        // Verificar si hay un bloque de hielo en la posición inmediata
+        if (isInBounds(checkPos) && hasIceBlock(checkPos)) {
+            // HAY BLOQUES: Romper en efecto dominó
+            if (!secondIceCream.canBreakIce()) {
+                return 0;
+            }
+            return -breakIceBlocksSecond(); // Devuelve negativo para indicar ruptura
+        } else {
+            // NO HAY BLOQUES: Crear hilera
+            if (!secondIceCream.canCreateIce()) {
+                return 0;
+            }
+            return createIceBlockSecond(); // Devuelve positivo para indicar creación
+        }
+    }
+
     public int breakIceBlocks() {
         if (iceCream == null || !iceCream.canBreakIce()) {
             return 0;
@@ -462,6 +569,33 @@ public class Board implements BoardStateProvider {
 
         Direction direction = iceCream.getCurrentDirection();
         Position currentPos = iceCream.getPosition().move(direction);
+        int brokenBlocks = 0;
+
+        // Romper bloques en línea recta (efecto dominó)
+        while (isInBounds(currentPos) && hasIceBlock(currentPos)) {
+            IceBlock block = getIceBlockAt(currentPos);
+            if (block != null && block.isBreakable()) {
+                iceBlocks.remove(block);
+                brokenBlocks++;
+                currentPos = currentPos.move(direction);
+            } else {
+                break; // Bloque no rompible, detener
+            }
+        }
+
+        return brokenBlocks;
+    }
+
+    /**
+     * Rompe bloques de hielo para el segundo helado
+     */
+    public int breakIceBlocksSecond() {
+        if (secondIceCream == null || !secondIceCream.canBreakIce()) {
+            return 0;
+        }
+
+        Direction direction = secondIceCream.getCurrentDirection();
+        Position currentPos = secondIceCream.getPosition().move(direction);
         int brokenBlocks = 0;
 
         // Romper bloques en línea recta (efecto dominó)
@@ -547,6 +681,14 @@ public class Board implements BoardStateProvider {
 
     public void setIceCream(IceCream iceCream) {
         this.iceCream = iceCream;
+    }
+
+    public IceCream getSecondIceCream() {
+        return secondIceCream;
+    }
+
+    public void setSecondIceCream(IceCream secondIceCream) {
+        this.secondIceCream = secondIceCream;
     }
 
     public List<Enemy> getEnemies() {

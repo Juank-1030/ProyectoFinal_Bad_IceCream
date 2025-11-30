@@ -136,8 +136,9 @@ public class GamePanel extends JPanel {
         // Dibujar enemigos
         drawEnemies(g, board);
 
-        // Dibujar helado
+        // Dibujar helados
         drawIceCream(g, board);
+        drawSecondIceCream(g, board);
     }
 
     /**
@@ -318,6 +319,51 @@ public class GamePanel extends JPanel {
                 g.setColor(Color.BLACK);
                 g.setFont(new Font("Arial", Font.BOLD, 14));
                 g.drawString("P1", x - 8, y + 5);
+            }
+        }
+    }
+
+    /**
+     * Dibuja el segundo helado (modo cooperativo)
+     */
+    private void drawSecondIceCream(Graphics2D g, Board board) {
+        IceCream secondIceCream = board.getSecondIceCream();
+
+        if (secondIceCream != null && secondIceCream.isAlive()) {
+            Position pos = secondIceCream.getPosition();
+            int x = pos.getX() * CELL_SIZE + CELL_SIZE / 2;
+            int y = pos.getY() * CELL_SIZE + CELL_SIZE / 2 + UI_HEIGHT;
+
+            // Color según sabor
+            Color color;
+            switch (secondIceCream.getFlavor().toLowerCase()) {
+                case "vainilla":
+                    color = COLOR_VANILLA;
+                    break;
+                case "fresa":
+                    color = COLOR_STRAWBERRY;
+                    break;
+                case "chocolate":
+                    color = COLOR_CHOCOLATE;
+                    break;
+                default:
+                    color = Color.WHITE;
+            }
+
+            g.setColor(color);
+            g.fillOval(x - 15, y - 15, 30, 30);
+
+            // Borde más grueso
+            g.setColor(color.darker());
+            g.setStroke(new BasicStroke(4));
+            g.drawOval(x - 15, y - 15, 30, 30);
+
+            // Etiqueta para P2 (Cooperativo)
+            Game game = controller.getGame();
+            if (game != null && game.getSecondIceCreamFlavor() != null) {
+                g.setColor(Color.WHITE);
+                g.setFont(new Font("Arial", Font.BOLD, 14));
+                g.drawString("P2", x - 8, y + 5);
             }
         }
     }

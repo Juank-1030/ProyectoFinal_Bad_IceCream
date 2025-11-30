@@ -21,6 +21,7 @@ public class Game implements Serializable {
     private int remainingTime; // En segundos
     // Sin sistema de vidas (como el juego original)
     private String iceCreamFlavor; // Sabor elegido por el jugador
+    private String secondIceCreamFlavor; // Segundo sabor para modo cooperativo
 
     // Para modos con IA
     private AI iceCreamAI; // Para modo MVM
@@ -34,14 +35,17 @@ public class Game implements Serializable {
     /**
      * Constructor del juego
      * 
-     * @param gameMode       Modo de juego seleccionado
-     * @param iceCreamFlavor Sabor del helado seleccionado
+     * @param gameMode             Modo de juego seleccionado
+     * @param iceCreamFlavor       Sabor del helado seleccionado
+     * @param secondIceCreamFlavor Segundo sabor para modo cooperativo (puede ser
+     *                             null)
      */
     private String monsterType; // Tipo de monstruo seleccionado en PVP
 
-    public Game(GameMode gameMode, String iceCreamFlavor, String monsterType) {
+    public Game(GameMode gameMode, String iceCreamFlavor, String secondIceCreamFlavor, String monsterType) {
         this.gameMode = gameMode;
         this.iceCreamFlavor = iceCreamFlavor;
+        this.secondIceCreamFlavor = secondIceCreamFlavor; // null para modo vs Monstruo
         this.monsterType = monsterType; // PVP: Tipo de monstruo controlado
         this.gameState = GameState.MENU;
         this.score = 0;
@@ -50,10 +54,16 @@ public class Game implements Serializable {
         this.lastUpdateTime = System.currentTimeMillis();
     }
 
-    // Constructor sin monsterType (retrocompatibilidad)
+    // Constructor sin secondIceCreamFlavor (retrocompatibilidad para Helado vs
+    // Monstruo)
+    public Game(GameMode gameMode, String iceCreamFlavor, String monsterType) {
+        this(gameMode, iceCreamFlavor, null, monsterType);
+    }
+
+    // Constructor antiguo (retrocompatibilidad)
     @Deprecated
     public Game(GameMode gameMode, String iceCreamFlavor) {
-        this(gameMode, iceCreamFlavor, null);
+        this(gameMode, iceCreamFlavor, null, null);
     }
 
     /**
@@ -102,6 +112,27 @@ public class Game implements Serializable {
         // Crear el helado
         IceCream iceCream = createIceCream(currentLevel.getIceCreamStartPosition());
         board.setIceCream(iceCream);
+
+        // Crear segundo helado si es modo cooperativo
+        if (secondIceCreamFlavor != null) {
+            // Crear segunda posición para el segundo helado (diferente a la primera)
+            List<Position> emptyPositions = new ArrayList<>();
+            for (int x = 1; x < currentLevel.getBoardWidth() - 1; x++) {
+                for (int y = 1; y < currentLevel.getBoardHeight() - 1; y++) {
+                    Position pos = new Position(x, y);
+                    if (board.isValidPosition(pos) && !pos.equals(currentLevel.getIceCreamStartPosition())) {
+                        emptyPositions.add(pos);
+                    }
+                }
+            }
+
+            if (!emptyPositions.isEmpty()) {
+                Random random = new Random();
+                Position secondIceCreamPos = emptyPositions.get(random.nextInt(emptyPositions.size()));
+                IceCream secondIceCream = createSecondIceCream(secondIceCreamPos);
+                board.setSecondIceCream(secondIceCream);
+            }
+        }
 
         // Crear enemigos
         // En PVP: usar solo el monstruo seleccionado
@@ -166,6 +197,19 @@ public class Game implements Serializable {
         } catch (IllegalArgumentException e) {
             // Fallback a vainilla si hay error
             System.err.println("Error al crear helado: " + e.getMessage());
+            return new VanillaIceCream(position);
+        }
+    }
+
+    /**
+     * Crea el segundo helado según el sabor seleccionado (modo cooperativo)
+     */
+    private IceCream createSecondIceCream(Position position) {
+        try {
+            return IceCreamFactory.create(secondIceCreamFlavor, position);
+        } catch (IllegalArgumentException e) {
+            // Fallback a vainilla si hay error
+            System.err.println("Error al crear segundo helado: " + e.getMessage());
             return new VanillaIceCream(position);
         }
     }
@@ -412,6 +456,26 @@ public class Game implements Serializable {
     }
 
     /**
+     * Mueve el segundo helado (modo cooperativo)
+     */
+    public boolean moveSecondIceCream(Direction direction) {
+        if (gameState != GameState.PLAYING || board.getSecondIceCream() == null) {
+            return false;
+        }
+        boolean moved = board.moveSecondIceCream(direction);
+
+        // Verificar si recolectó una fruta y sumar puntos
+        if (moved) {
+            Fruit fruit = board.getAndClearLastCollectedFruit();
+            if (fruit != null) {
+                score += 50;
+            }
+        }
+
+        return moved;
+    }
+
+    /**
      * Crea o rompe bloques de hielo (mismo botón)
      * - Si hay espacio: crea FILA de bloques
      * - Si hay bloque enfrente: rompe UN bloque
@@ -429,6 +493,16 @@ public class Game implements Serializable {
             return 0;
         }
         return board.toggleIceBlocks();
+    }
+
+    /**
+     * Toggle de hielo para el segundo helado (modo cooperativo)
+     */
+    public int toggleIceBlocksSecond() {
+        if (gameState != GameState.PLAYING || board.getSecondIceCream() == null) {
+            return 0;
+        }
+        return board.toggleIceBlocksSecond();
     }
 
     /**
@@ -513,6 +587,10 @@ public class Game implements Serializable {
 
     public String getIceCreamFlavor() {
         return iceCreamFlavor;
+    }
+
+    public String getSecondIceCreamFlavor() {
+        return secondIceCreamFlavor;
     }
 
     public void setGameState(GameState state) {

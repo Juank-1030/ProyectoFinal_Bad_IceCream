@@ -1,11 +1,13 @@
 package Controller;
 
 import Domain.GameMode;
+import Domain.PVPMode;
 import Presentation.Intro;
 import Presentation.StartMenu;
 import Presentation.Modes;
 import Presentation.SelectIceCream;
 import Presentation.SelectMonster;
+import Presentation.SelectPVPMode;
 import java.awt.event.ActionListener;
 import java.io.File;
 import javax.swing.JFrame;
@@ -20,10 +22,13 @@ public class PresentationController {
     private Intro intro;
     private StartMenu menuInicio;
     private Modes modos;
+    private SelectPVPMode selectPVPMode;
     private SelectIceCream pvp;
     private SelectMonster selectMonster;
     private GameMode selectedGameMode; // Almacena el modo de juego seleccionado
+    private PVPMode selectedPVPMode; // Almacena el tipo de PVP seleccionado
     private String selectedIceCream; // Almacena el helado seleccionado
+    private String selectedSecondIceCream; // Almacena el segundo helado seleccionado (para PVP cooperativo)
     private GameController gameController; // Controlador del juego
     private JFrame gameFrame; // Ventana para mostrar el GamePanel
 
@@ -34,6 +39,7 @@ public class PresentationController {
         this.intro = new Intro();
         this.menuInicio = new StartMenu();
         this.modos = new Modes();
+        this.selectPVPMode = new SelectPVPMode();
         this.pvp = new SelectIceCream();
         this.selectMonster = new SelectMonster();
 
@@ -49,6 +55,7 @@ public class PresentationController {
         this.intro.setVisible(true); // MOSTRAR Intro primero
         this.menuInicio.setVisible(false);
         this.modos.setVisible(false);
+        this.selectPVPMode.setVisible(false);
         this.pvp.setVisible(false);
         this.selectMonster.setVisible(false);
     }
@@ -85,38 +92,105 @@ public class PresentationController {
         modos.setOnPVPClick(() -> {
             selectedGameMode = GameMode.PVP; // Guardar el modo seleccionado
             modos.setVisible(false);
-            pvp.setVisible(true);
+            selectPVPMode.setVisible(true); // Mostrar selector de tipo de PVP
+        });
+
+        // Listener para el botón Back en SelectPVPMode
+        selectPVPMode.setOnBackClick(() -> {
+            selectPVPMode.setVisible(false);
+            modos.setVisible(true);
+            selectedGameMode = null;
+            selectedPVPMode = null;
+        });
+
+        // Listener para Helado vs Monstruo
+        selectPVPMode.setOnIceCreamVsMonsterClick(() -> {
+            selectedPVPMode = PVPMode.ICE_CREAM_VS_MONSTER;
+            selectPVPMode.setVisible(false);
+            pvp.setVisible(true); // Mostrar selección de helado
+        });
+
+        // Listener para Helado Cooperativo
+        selectPVPMode.setOnIceCreamCooperativeClick(() -> {
+            selectedPVPMode = PVPMode.ICE_CREAM_COOPERATIVE;
+            selectPVPMode.setVisible(false);
+            pvp.setVisible(true); // Mostrar selección del primer helado
         });
 
         // Listener para el botón Back en PVP
         pvp.setOnBackClick(() -> {
             pvp.setVisible(false);
-            modos.setVisible(true);
-            selectedGameMode = null;
+            if (selectedPVPMode == PVPMode.ICE_CREAM_COOPERATIVE && selectedIceCream != null
+                    && selectedSecondIceCream == null) {
+                // Si es cooperativo y ya seleccionamos el primer helado, mostrar de nuevo para
+                // el segundo
+                selectedIceCream = null;
+                pvp.setVisible(true);
+            } else {
+                selectPVPMode.setVisible(true);
+                selectedIceCream = null;
+                selectedSecondIceCream = null;
+            }
         });
 
         // Listener para Chocolate en PVP
         pvp.setOnChocolateClick(() -> {
-            selectedIceCream = "Chocolate";
-            pvp.setVisible(false);
-            registrarCallbacksMonstruos();
-            selectMonster.setVisible(true);
+            if (selectedIceCream == null) {
+                selectedIceCream = "Chocolate";
+                if (selectedPVPMode == PVPMode.ICE_CREAM_COOPERATIVE) {
+                    // Mostrar pantalla para seleccionar segundo helado
+                    pvp.setVisible(false);
+                    pvp.setVisible(true); // Mostrar nuevamente para segundo helado
+                } else {
+                    // Helado vs Monstruo
+                    pvp.setVisible(false);
+                    registrarCallbacksMonstruos();
+                    selectMonster.setVisible(true);
+                }
+            } else {
+                // Segundo helado en modo cooperativo
+                selectedSecondIceCream = "Chocolate";
+                pvp.setVisible(false);
+                iniciarJuegoCooperativo(selectedIceCream, selectedSecondIceCream);
+            }
         });
 
         // Listener para Vainilla en PVP
         pvp.setOnVainillaClick(() -> {
-            selectedIceCream = "Vainilla";
-            pvp.setVisible(false);
-            registrarCallbacksMonstruos();
-            selectMonster.setVisible(true);
+            if (selectedIceCream == null) {
+                selectedIceCream = "Vainilla";
+                if (selectedPVPMode == PVPMode.ICE_CREAM_COOPERATIVE) {
+                    pvp.setVisible(false);
+                    pvp.setVisible(true);
+                } else {
+                    pvp.setVisible(false);
+                    registrarCallbacksMonstruos();
+                    selectMonster.setVisible(true);
+                }
+            } else {
+                selectedSecondIceCream = "Vainilla";
+                pvp.setVisible(false);
+                iniciarJuegoCooperativo(selectedIceCream, selectedSecondIceCream);
+            }
         });
 
         // Listener para Fresa en PVP
         pvp.setOnFresaClick(() -> {
-            selectedIceCream = "Fresa";
-            pvp.setVisible(false);
-            registrarCallbacksMonstruos();
-            selectMonster.setVisible(true);
+            if (selectedIceCream == null) {
+                selectedIceCream = "Fresa";
+                if (selectedPVPMode == PVPMode.ICE_CREAM_COOPERATIVE) {
+                    pvp.setVisible(false);
+                    pvp.setVisible(true);
+                } else {
+                    pvp.setVisible(false);
+                    registrarCallbacksMonstruos();
+                    selectMonster.setVisible(true);
+                }
+            } else {
+                selectedSecondIceCream = "Fresa";
+                pvp.setVisible(false);
+                iniciarJuegoCooperativo(selectedIceCream, selectedSecondIceCream);
+            }
         });
 
         // Listener para el botón Back en SelectMonster
@@ -223,6 +297,48 @@ public class PresentationController {
                 iniciarJuego(selectedGameMode, selectedIceCream, nombreMonstruo);
             });
         }
+    }
+
+    /**
+     * Inicia el juego en modo cooperativo (dos helados)
+     */
+    private void iniciarJuegoCooperativo(String helado1, String helado2) {
+        System.out.println("✅ Configuración Cooperativa seleccionada:");
+        System.out.println("  Modo: " + selectedGameMode);
+        System.out.println("  Helado (J1): " + helado1);
+        System.out.println("  Helado (J2): " + helado2);
+
+        // Ocultar pantallas de selección
+        pvp.setVisible(false);
+        selectMonster.setVisible(false);
+        selectPVPMode.setVisible(false);
+        modos.setVisible(false);
+        menuInicio.setVisible(false);
+        intro.setVisible(false);
+
+        // Crear el controlador del juego con ambos helados
+        gameController = new GameController(selectedGameMode, helado1, helado2, null);
+
+        // Crear una ventana para el juego si no existe
+        if (gameFrame == null) {
+            gameFrame = new JFrame("Bad Ice Cream - Juego Cooperativo");
+            gameFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+            gameFrame.setResizable(true);
+        }
+
+        // Agregar el GamePanel a la ventana
+        gameFrame.getContentPane().removeAll();
+        JPanel gamePanel = gameController.getGamePanel();
+        gameFrame.getContentPane().add(gamePanel);
+
+        // Configurar y mostrar la ventana con tamaño apropiado
+        gameFrame.pack();
+        gameFrame.setExtendedState(JFrame.MAXIMIZED_BOTH);
+        gameFrame.setLocationRelativeTo(null);
+        gameFrame.setVisible(true);
+
+        // Iniciar el primer nivel
+        gameController.startLevel(1);
     }
 
     /**
