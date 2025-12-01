@@ -7,6 +7,7 @@ import javax.swing.*;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.util.List;
+import Domain.GameState;
 
 /**
  * GameController - Controlador del juego
@@ -339,25 +340,149 @@ public class GameController implements KeyListener {
         }
     }
 
-    /**
-     * Muestra mensaje de pausa
-     */
-    private void showPauseMessage() {
-        int option = JOptionPane.showConfirmDialog(
-                gamePanel,
-                "JUEGO PAUSADO\n\n" +
-                        "¿Continuar jugando?",
-                "Pausa",
-                JOptionPane.YES_NO_OPTION,
-                JOptionPane.QUESTION_MESSAGE);
+/**
+ * Muestra mensaje de pausa con opciones de Guardar/Cargar
+ */
+private void showPauseMessage() {
+    String[] opciones = {
+        "Continuar jugando",
+        "Guardar Partida",
+        "Cargar Partida",
+        "Salir al menú"
+    };
 
-        if (option == JOptionPane.YES_OPTION) {
-            game.togglePause(); // Reanudar
+    int opcion = JOptionPane.showOptionDialog(
+            gamePanel,
+            "JUEGO PAUSADO\n\n¿Qué deseas hacer?",
+            "Pausa",
+            JOptionPane.DEFAULT_OPTION,
+            JOptionPane.QUESTION_MESSAGE,
+            null,
+            opciones,
+            opciones[0]);
+
+    switch (opcion) {
+        case 0: // Continuar jugando
+            game.togglePause();
             resumeGame();
-        } else {
+            break;
+
+        case 1: // Guardar Partida
+            handleSaveGame();
+            break;
+
+        case 2: // Cargar Partida
+            handleLoadGame();
+            break;
+
+        case 3: // Salir al menú
             returnToMenu();
+            break;
+
+        default: // Si cierra el diálogo (X)
+            game.togglePause();
+            resumeGame();
+            break;
+    }
+}
+
+/**
+ * Maneja el guardado de partida
+ */
+private void handleSaveGame() {
+    String nombreArchivo = JOptionPane.showInputDialog(
+            gamePanel,
+            "Ingresa un nombre para la partida:",
+            "Guardar Partida",
+            JOptionPane.QUESTION_MESSAGE);
+
+    if (nombreArchivo != null && !nombreArchivo.trim().isEmpty()) {
+        boolean guardado = game.saveGame(nombreArchivo.trim());
+
+        if (guardado) {
+            JOptionPane.showMessageDialog(
+                    gamePanel,
+                    "¡Partida guardada exitosamente!\n" +
+                            "Archivo: saves/" + nombreArchivo.trim() + ".dat",
+                    "Guardado exitoso",
+                    JOptionPane.INFORMATION_MESSAGE);
+        } else {
+            JOptionPane.showMessageDialog(
+                    gamePanel,
+                    "Error al guardar la partida.\nIntenta con otro nombre.",
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE);
         }
     }
+
+    // Volver a mostrar el menú de pausa
+    showPauseMessage();
+}
+
+/**
+ * Maneja la carga de partida
+ */
+private void handleLoadGame() {
+    String[] partidasGuardadas = Game.listSavedGames();
+
+    if (partidasGuardadas == null || partidasGuardadas.length == 0) {
+        JOptionPane.showMessageDialog(
+                gamePanel,
+                "No hay partidas guardadas.\n¡Guarda una partida primero!",
+                "Sin partidas",
+                JOptionPane.INFORMATION_MESSAGE);
+        showPauseMessage();
+        return;
+    }
+
+    String seleccion = (String) JOptionPane.showInputDialog(
+            gamePanel,
+            "Selecciona la partida a cargar:",
+            "Cargar Partida",
+            JOptionPane.QUESTION_MESSAGE,
+            null,
+            partidasGuardadas,
+            partidasGuardadas[0]);
+
+    if (seleccion == null) {
+        // Usuario canceló
+        showPauseMessage();
+        return;
+    }
+
+    Game partidaCargada = Game.loadGame(seleccion);
+
+    if (partidaCargada != null) {
+        // Detener el juego actual
+        stopGame();
+
+        // Reemplazar el juego con el cargado
+        this.game = partidaCargada;
+
+        // Reiniciar el timer y actualizar vista
+        setupGameTimer();
+        gamePanel.repaint();
+
+        JOptionPane.showMessageDialog(
+                gamePanel,
+                "¡Partida cargada exitosamente!\n" +
+                        "Nivel: " + partidaCargada.getCurrentLevel().getLevelNumber() + "\n" +
+                        "Puntos: " + partidaCargada.getScore(),
+                "Carga exitosa",
+                JOptionPane.INFORMATION_MESSAGE);
+
+        // Reanudar el juego cargado
+        game.setGameState(GameState.PLAYING);
+        resumeGame();
+    } else {
+        JOptionPane.showMessageDialog(
+                gamePanel,
+                "Error al cargar la partida.\nEl archivo puede estar corrupto.",
+                "Error",
+                JOptionPane.ERROR_MESSAGE);
+        showPauseMessage();
+    }
+}
 
     /**
      * Maneja el movimiento del helado y monstruos con sistema de orientación
