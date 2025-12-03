@@ -263,6 +263,13 @@ public class GameController implements KeyListener {
             System.err.println("Error al inicializar recursos: " + e.getMessage());
         }
 
+        // RESETEAR EL ESTADO DE LAS TECLAS PRESIONADAS
+        keysPressed.clear();
+        keyPressTime.clear();
+        lastIceCreamDirection = null;
+        lastEnemyDirection = null;
+        lastDirectionChangeTime = 0;
+
         // Iniciar el nivel en el Model
         game.startLevel(levelNumber);
 
@@ -362,6 +369,13 @@ public class GameController implements KeyListener {
     private void pauseGame() {
         running = false;
         gameTimer.stop();
+        
+        // RESETEAR EL ESTADO DE LAS TECLAS PRESIONADAS AL PAUSAR
+        keysPressed.clear();
+        keyPressTime.clear();
+        lastIceCreamDirection = null;
+        lastEnemyDirection = null;
+        lastDirectionChangeTime = 0;
     }
 
     /**
