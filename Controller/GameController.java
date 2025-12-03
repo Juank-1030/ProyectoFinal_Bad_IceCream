@@ -30,6 +30,9 @@ public class GameController implements KeyListener {
     private GamePanel gamePanel;
     private Timer gameTimer;
 
+    // Callbacks
+    private Runnable onReturnToMenuClick; // Callback para volver al menú
+
     // Control del juego
     private boolean running;
     private static final int FPS = 60;
@@ -382,9 +385,10 @@ public class GameController implements KeyListener {
      */
     private void returnToMenu() {
         pauseGame();
-        // Aquí se llamaría a PresentationController para cambiar de vista
-        System.out.println("Regresando al menú...");
-        // TODO: Implementar navegación al menú
+        System.out.println("✅ Regresando al menú...");
+        if (onReturnToMenuClick != null) {
+            onReturnToMenuClick.run();
+        }
     }
 
     // ========================================
@@ -409,8 +413,14 @@ public class GameController implements KeyListener {
             return;
         }
 
-        // No procesar teclas si está pausado
+        // Si está pausado, permitir volver al menú con M
         if (game.getGameState() == GameState.PAUSED) {
+            if (keyCode == KeyEvent.VK_M) {
+                // Volver al menú
+                if (onReturnToMenuClick != null) {
+                    onReturnToMenuClick.run();
+                }
+            }
             return;
         }
 
@@ -755,6 +765,7 @@ public class GameController implements KeyListener {
      * Establece el callback para volver al menú
      */
     public void setOnReturnToMenuClick(Runnable callback) {
+        this.onReturnToMenuClick = callback; // Guardar referencia directa
         gamePanel.setOnReturnToMenuClick(callback);
     }
 

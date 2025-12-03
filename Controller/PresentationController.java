@@ -431,10 +431,16 @@ public class PresentationController {
         selectedPVPMode = null;
         selectedIceCream = null;
         selectedSecondIceCream = null;
-        gameController = null;
+        
+        // Detener el juego y ocultar la ventana, pero no cerrarla
+        if (gameController != null) {
+            gameController.stopGame();
+            gameController = null;
+        }
+        
         if (gameFrame != null) {
-            gameFrame.dispose();
-            gameFrame = null;
+            gameFrame.setVisible(false);
+            // No hacer dispose() por ahora, solo ocultar
         }
     }
 
@@ -467,17 +473,21 @@ public class PresentationController {
     private Runnable createReturnToMenuCallback() {
         return () -> {
             System.out.println("✅ Volviendo al menú desde juego...");
-            gameController.stopGame(); // Detener el juego
             
             // Ocultar ventana del juego
             if (gameFrame != null) {
-                gameFrame.setVisible(false); // Primero ocultar
-                gameFrame.dispose(); // Luego cerrar
+                gameFrame.setVisible(false);
             }
             
-            resetGameState(); // Limpiar estado del juego
+            // Detener el juego
+            if (gameController != null) {
+                gameController.stopGame();
+            }
             
-            // Volver a mostrar intro
+            // Limpiar estado
+            resetGameState();
+            
+            // Mostrar intro
             intro.setVisible(true);
             intro.mostrarSegundoGif();
             

@@ -554,6 +554,12 @@ public class GamePanel extends JPanel {
         x = (getWidth() - fm.stringWidth(msg)) / 2;
         g.drawString(msg, x, y + 50);
 
+        g.setFont(new Font("Arial", Font.PLAIN, 16));
+        msg = "Presiona M para volver al menú";
+        fm = g.getFontMetrics();
+        x = (getWidth() - fm.stringWidth(msg)) / 2;
+        g.drawString(msg, x, y + 85);
+
         // Dibujar botones de pausa
         drawPauseButtons(g);
     }
