@@ -56,10 +56,12 @@ public class TestInputBuffering {
             System.out.println("╚════════════════════════════════════════════════════════════════╝");
             System.out.println("✓ El sistema de Input Buffering funciona correctamente");
             System.out.println("✓ Se pueden mantener múltiples teclas presionadas simultáneamente");
+            System.exit(0);
 
         } catch (Exception e) {
             System.err.println("✗ Error durante la prueba: " + e.getMessage());
             e.printStackTrace();
+            System.exit(1);
         }
     }
 }
