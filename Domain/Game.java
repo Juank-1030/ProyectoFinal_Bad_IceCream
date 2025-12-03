@@ -658,159 +658,159 @@ public class Game implements Serializable {
     }
     // ==================== MÉTODOS DE PERSISTENCIA ====================
 
-/**
- * Guarda la partida actual en un archivo .dat
- * La partida se guarda en la carpeta "saves/" del proyecto
- * 
- * @param filename Nombre del archivo donde guardar (ej: "partida1.dat")
- * @return true si se guardó exitosamente, false en caso de error
- */
-public boolean saveGame(String filename) {
-    // Crear directorio "saves" si no existe
-    File savesDir = new File("saves");
-    if (!savesDir.exists()) {
-        savesDir.mkdir();
+    /**
+     * Guarda la partida actual en un archivo .dat
+     * La partida se guarda en la carpeta "saves/" del proyecto
+     * 
+     * @param filename Nombre del archivo donde guardar (ej: "partida1.dat")
+     * @return true si se guardó exitosamente, false en caso de error
+     */
+    public boolean saveGame(String filename) {
+        // Crear directorio "saves" si no existe
+        File savesDir = new File("saves");
+        if (!savesDir.exists()) {
+            savesDir.mkdir();
+        }
+
+        // Asegurar que el filename tenga extensión .dat
+        if (!filename.endsWith(".dat")) {
+            filename = filename + ".dat";
+        }
+
+        // Ruta completa: saves/filename.dat
+        String fullPath = "saves" + File.separator + filename;
+
+        try (ObjectOutputStream out = new ObjectOutputStream(
+                new FileOutputStream(fullPath))) {
+            out.writeObject(this);
+            System.out.println("Partida guardada exitosamente en: " + fullPath);
+            return true;
+        } catch (IOException e) {
+            System.err.println("Error al guardar la partida: " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
     }
-    
-    // Asegurar que el filename tenga extensión .dat
-    if (!filename.endsWith(".dat")) {
-        filename = filename + ".dat";
+
+    /**
+     * Carga una partida desde un archivo .dat
+     * Busca el archivo en la carpeta "saves/"
+     * 
+     * @param filename Nombre del archivo a cargar (ej: "partida1.dat")
+     * @return Objeto Game cargado, o null si hubo un error
+     */
+    public static Game loadGame(String filename) {
+        // Asegurar que el filename tenga extensión .dat
+        if (!filename.endsWith(".dat")) {
+            filename = filename + ".dat";
+        }
+
+        // Ruta completa: saves/filename.dat
+        String fullPath = "saves" + File.separator + filename;
+
+        try (ObjectInputStream in = new ObjectInputStream(
+                new FileInputStream(fullPath))) {
+            Game game = (Game) in.readObject();
+
+            // Restaurar referencias transient después de la deserialización
+            game.lastUpdateTime = System.currentTimeMillis();
+            game.updateBoardReferences();
+
+            System.out.println("Partida cargada exitosamente desde: " + fullPath);
+            return game;
+        } catch (FileNotFoundException e) {
+            System.err.println("Archivo no encontrado: " + fullPath);
+            return null;
+        } catch (IOException e) {
+            System.err.println("Error al leer el archivo: " + e.getMessage());
+            e.printStackTrace();
+            return null;
+        } catch (ClassNotFoundException e) {
+            System.err.println("Error al deserializar: " + e.getMessage());
+            e.printStackTrace();
+            return null;
+        }
     }
-    
-    // Ruta completa: saves/filename.dat
-    String fullPath = "saves" + File.separator + filename;
-    
-    try (ObjectOutputStream out = new ObjectOutputStream(
-            new FileOutputStream(fullPath))) {
-        out.writeObject(this);
-        System.out.println("Partida guardada exitosamente en: " + fullPath);
-        return true;
-    } catch (IOException e) {
-        System.err.println("Error al guardar la partida: " + e.getMessage());
-        e.printStackTrace();
+
+    /**
+     * Verifica si existe un archivo de guardado .dat en la carpeta saves/
+     * 
+     * @param filename Nombre del archivo a verificar (ej: "partida1.dat")
+     * @return true si el archivo existe, false en caso contrario
+     */
+    public static boolean savedGameExists(String filename) {
+        // Asegurar que el filename tenga extensión .dat
+        if (!filename.endsWith(".dat")) {
+            filename = filename + ".dat";
+        }
+
+        File file = new File("saves" + File.separator + filename);
+        return file.exists() && file.isFile();
+    }
+
+    /**
+     * Elimina un archivo de guardado .dat de la carpeta saves/
+     * 
+     * @param filename Nombre del archivo a eliminar (ej: "partida1.dat")
+     * @return true si se eliminó exitosamente, false en caso contrario
+     */
+    public static boolean deleteSavedGame(String filename) {
+        // Asegurar que el filename tenga extensión .dat
+        if (!filename.endsWith(".dat")) {
+            filename = filename + ".dat";
+        }
+
+        File file = new File("saves" + File.separator + filename);
+        if (file.exists()) {
+            boolean deleted = file.delete();
+            if (deleted) {
+                System.out.println("Archivo eliminado: " + file.getPath());
+            }
+            return deleted;
+        }
         return false;
     }
-}
 
-/**
- * Carga una partida desde un archivo .dat
- * Busca el archivo en la carpeta "saves/"
- * 
- * @param filename Nombre del archivo a cargar (ej: "partida1.dat")
- * @return Objeto Game cargado, o null si hubo un error
- */
-public static Game loadGame(String filename) {
-    // Asegurar que el filename tenga extensión .dat
-    if (!filename.endsWith(".dat")) {
-        filename = filename + ".dat";
-    }
-    
-    // Ruta completa: saves/filename.dat
-    String fullPath = "saves" + File.separator + filename;
-    
-    try (ObjectInputStream in = new ObjectInputStream(
-            new FileInputStream(fullPath))) {
-        Game game = (Game) in.readObject();
-        
-        // Restaurar referencias transient después de la deserialización
-        game.lastUpdateTime = System.currentTimeMillis();
-        game.updateBoardReferences();
-        
-        System.out.println("Partida cargada exitosamente desde: " + fullPath);
-        return game;
-    } catch (FileNotFoundException e) {
-        System.err.println("Archivo no encontrado: " + fullPath);
-        return null;
-    } catch (IOException e) {
-        System.err.println("Error al leer el archivo: " + e.getMessage());
-        e.printStackTrace();
-        return null;
-    } catch (ClassNotFoundException e) {
-        System.err.println("Error al deserializar: " + e.getMessage());
-        e.printStackTrace();
-        return null;
-    }
-}
+    /**
+     * Lista todos los archivos .dat guardados en la carpeta saves/
+     * 
+     * @return Array de nombres de archivos encontrados (solo nombres, sin ruta)
+     */
+    public static String[] listSavedGames() {
+        File dir = new File("saves");
 
-/**
- * Verifica si existe un archivo de guardado .dat en la carpeta saves/
- * 
- * @param filename Nombre del archivo a verificar (ej: "partida1.dat")
- * @return true si el archivo existe, false en caso contrario
- */
-public static boolean savedGameExists(String filename) {
-    // Asegurar que el filename tenga extensión .dat
-    if (!filename.endsWith(".dat")) {
-        filename = filename + ".dat";
-    }
-    
-    File file = new File("saves" + File.separator + filename);
-    return file.exists() && file.isFile();
-}
-
-/**
- * Elimina un archivo de guardado .dat de la carpeta saves/
- * 
- * @param filename Nombre del archivo a eliminar (ej: "partida1.dat")
- * @return true si se eliminó exitosamente, false en caso contrario
- */
-public static boolean deleteSavedGame(String filename) {
-    // Asegurar que el filename tenga extensión .dat
-    if (!filename.endsWith(".dat")) {
-        filename = filename + ".dat";
-    }
-    
-    File file = new File("saves" + File.separator + filename);
-    if (file.exists()) {
-        boolean deleted = file.delete();
-        if (deleted) {
-            System.out.println("Archivo eliminado: " + file.getPath());
+        if (!dir.exists() || !dir.isDirectory()) {
+            return new String[0];
         }
-        return deleted;
-    }
-    return false;
-}
 
-/**
- * Lista todos los archivos .dat guardados en la carpeta saves/
- * 
- * @return Array de nombres de archivos encontrados (solo nombres, sin ruta)
- */
-public static String[] listSavedGames() {
-    File dir = new File("saves");
-    
-    if (!dir.exists() || !dir.isDirectory()) {
-        return new String[0];
-    }
-    
-    File[] files = dir.listFiles((d, name) -> name.endsWith(".dat"));
-    
-    if (files == null || files.length == 0) {
-        return new String[0];
-    }
-    
-    String[] fileNames = new String[files.length];
-    for (int i = 0; i < files.length; i++) {
-        fileNames[i] = files[i].getName();
-    }
-    
-    return fileNames;
-}
+        File[] files = dir.listFiles((d, name) -> name.endsWith(".dat"));
 
-/**
- * Guarda automáticamente la partida con un nombre basado en la fecha/hora
- * Se guarda en saves/ con formato: autosave_YYYYMMDD_HHMMSS.dat
- * 
- * @return Nombre del archivo generado, o null si hubo error
- */
-public String autoSave() {
-    String timestamp = new java.text.SimpleDateFormat("yyyyMMdd_HHmmss")
-            .format(new java.util.Date());
-    String filename = "autosave_" + timestamp + ".dat";
-    
-    if (saveGame(filename)) {
-        return filename;
+        if (files == null || files.length == 0) {
+            return new String[0];
+        }
+
+        String[] fileNames = new String[files.length];
+        for (int i = 0; i < files.length; i++) {
+            fileNames[i] = files[i].getName();
+        }
+
+        return fileNames;
     }
-    return null;
-}
+
+    /**
+     * Guarda automáticamente la partida con un nombre basado en la fecha/hora
+     * Se guarda en saves/ con formato: autosave_YYYYMMDD_HHMMSS.dat
+     * 
+     * @return Nombre del archivo generado, o null si hubo error
+     */
+    public String autoSave() {
+        String timestamp = new java.text.SimpleDateFormat("yyyyMMdd_HHmmss")
+                .format(new java.util.Date());
+        String filename = "autosave_" + timestamp + ".dat";
+
+        if (saveGame(filename)) {
+            return filename;
+        }
+        return null;
+    }
 }
