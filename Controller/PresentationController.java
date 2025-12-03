@@ -427,21 +427,38 @@ public class PresentationController {
      * Reseta el estado del juego y vuelve al menú
      */
     private void resetGameState() {
+        System.out.println("🔄 Reseteando estado del juego...");
+        
         selectedGameMode = null;
         selectedPVPMode = null;
         selectedIceCream = null;
         selectedSecondIceCream = null;
         
-        // Detener el juego y ocultar la ventana, pero no cerrarla
+        // Detener el juego
         if (gameController != null) {
-            gameController.stopGame();
+            try {
+                gameController.stopGame();
+            } catch (Exception e) {
+                System.err.println("Error deteniendo juego: " + e.getMessage());
+            }
             gameController = null;
         }
         
+        // Cerrar la ventana del juego correctamente
         if (gameFrame != null) {
-            gameFrame.setVisible(false);
-            // No hacer dispose() por ahora, solo ocultar
+            try {
+                gameFrame.setVisible(false);
+                gameFrame.getContentPane().removeAll();
+                gameFrame.dispose();
+                gameFrame = null;
+                System.out.println("✅ Ventana del juego cerrada");
+            } catch (Exception e) {
+                System.err.println("Error cerrando ventana: " + e.getMessage());
+                gameFrame = null;
+            }
         }
+        
+        System.out.println("✅ Estado reseteado exitosamente");
     }
 
     /**
@@ -474,24 +491,33 @@ public class PresentationController {
         return () -> {
             System.out.println("✅ Volviendo al menú desde juego...");
             
-            // Ocultar ventana del juego
-            if (gameFrame != null) {
-                gameFrame.setVisible(false);
+            try {
+                // Ocultar y cerrar ventana del juego inmediatamente
+                if (gameFrame != null) {
+                    gameFrame.setVisible(false);
+                    gameFrame.getContentPane().removeAll();
+                    gameFrame.dispose();
+                }
+                
+                // Detener el juego
+                if (gameController != null) {
+                    gameController.stopGame();
+                }
+                
+                // Limpiar estado
+                resetGameState();
+                
+                // Mostrar intro en primer plano
+                intro.setVisible(true);
+                intro.toFront(); // Traer ventana al frente
+                intro.requestFocus(); // Dar foco a la ventana
+                intro.mostrarSegundoGif();
+                
+                System.out.println("✅ Vuelto al menú exitosamente");
+            } catch (Exception e) {
+                System.err.println("❌ Error al volver al menú: " + e.getMessage());
+                e.printStackTrace();
             }
-            
-            // Detener el juego
-            if (gameController != null) {
-                gameController.stopGame();
-            }
-            
-            // Limpiar estado
-            resetGameState();
-            
-            // Mostrar intro
-            intro.setVisible(true);
-            intro.mostrarSegundoGif();
-            
-            System.out.println("✅ Vuelto al menú exitosamente");
         };
     }
 
