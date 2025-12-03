@@ -312,6 +312,13 @@ public class Game implements Serializable {
             }
         }
 
+        // En modo PVP COOPERATIVO (dos helados), también crear IA para enemigos
+        if (gameMode == GameMode.PVP && secondIceCreamFlavor != null) {
+            for (Enemy enemy : board.getEnemies()) {
+                enemyAIs.add(new EnemyAI(enemy, board));
+            }
+        }
+
         if (gameMode == GameMode.MVM) {
             // Crear IA para el helado
             iceCreamAI = new IceCreamAI(board.getIceCream(), board);
@@ -371,8 +378,8 @@ public class Game implements Serializable {
     private void updateEnemies() {
         List<Enemy> enemies = board.getEnemies();
 
-        // En modo PVP, solo actualizar Narval en carga automáticamente
-        if (gameMode == GameMode.PVP) {
+        // En modo PVP vs Monstruo (1 helado vs 1 monstruo), solo actualizar Narval en carga automáticamente
+        if (gameMode == GameMode.PVP && secondIceCreamFlavor == null) {
             for (Enemy enemy : enemies) {
                 if (enemy instanceof Narval) {
                     Narval narval = (Narval) enemy;
@@ -394,8 +401,9 @@ public class Game implements Serializable {
 
             Direction nextMove;
 
-            // Usar IA en modos PVM y MVM
-            if (gameMode == GameMode.PVM || gameMode == GameMode.MVM) {
+            // Usar IA en modos PVM, MVM y PVP COOPERATIVO
+            if (gameMode == GameMode.PVM || gameMode == GameMode.MVM || 
+                (gameMode == GameMode.PVP && secondIceCreamFlavor != null)) {
                 // Usar IA
                 if (i < enemyAIs.size()) {
                     nextMove = enemyAIs.get(i).getNextMove();
