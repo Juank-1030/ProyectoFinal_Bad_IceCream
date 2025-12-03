@@ -487,7 +487,7 @@ public class GamePanel extends JPanel {
             String spriteFlavor;
             switch (flavor) {
                 case "vainilla":
-                    spriteFlavor = "vainillia"; // Nota: con doble 'l'
+                    spriteFlavor = "vainillia"; // Note: Folder name has double 'l'
                     break;
                 case "fresa":
                     spriteFlavor = "strawberry";
@@ -561,7 +561,7 @@ public class GamePanel extends JPanel {
             String spriteFlavor;
             switch (flavor) {
                 case "vainilla":
-                    spriteFlavor = "vainillia"; // Nota: con doble 'l'
+                    spriteFlavor = "vainillia"; // Note: Folder name has double 'l'
                     break;
                 case "fresa":
                     spriteFlavor = "strawberry";

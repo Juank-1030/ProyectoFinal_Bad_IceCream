@@ -267,6 +267,7 @@ public class ImageLoader {
      * Obtiene un sprite de bloque de hielo
      * 
      * @param state Estado: "static", "appear", "brokenbyic", "fuitinside", "hiting", "melting", "shine"
+     *              Note: "fuitinside" and "hiting" match actual filenames (contain typos)
      * @return Imagen del sprite, o null si no se pudo cargar
      */
     public static Image getIceBlockSprite(String state) {
