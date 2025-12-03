@@ -121,7 +121,7 @@ public class ImageLoader {
      * Carga los sprites de frutas
      */
     private static void loadFruitSprites() {
-        String[] fruits = {"Cherry", "Banana", "Grapes", "Pineapple", "Cactus"};
+        String[] fruits = {"Cherry", "Banana", "Grapes", "Cactus"};
         String[] states = {"Normal", "Appear", "Collected", "Shadow"};
         
         for (String fruit : fruits) {
@@ -131,6 +131,15 @@ public class ImageLoader {
                 loadImage(key, path);
             }
         }
+        
+        // Pineapple is special - it has Movement.gif instead of Normal.gif
+        loadImage("fruit_pineapple_movement", "Resources/Frutas/Pineapple/Movement.gif");
+        loadImage("fruit_pineapple_flying", "Resources/Frutas/Pineapple/Flying.gif");
+        loadImage("fruit_pineapple_appear", "Resources/Frutas/Pineapple/Appear.gif");
+        loadImage("fruit_pineapple_collected", "Resources/Frutas/Pineapple/Collected.gif");
+        loadImage("fruit_pineapple_shadow", "Resources/Frutas/Pineapple/Shadow.gif");
+        // Also create an alias for normal -> movement
+        loadImage("fruit_pineapple_normal", "Resources/Frutas/Pineapple/Movement.gif");
     }
     
     /**
