@@ -507,11 +507,11 @@ public class PresentationController {
                 // Limpiar estado
                 resetGameState();
                 
-                // Mostrar intro en primer plano
+                // Mostrar intro en primer plano y reiniciar su estado
                 intro.setVisible(true);
                 intro.toFront(); // Traer ventana al frente
                 intro.requestFocus(); // Dar foco a la ventana
-                intro.mostrarSegundoGif();
+                intro.resetIntro(); // Reiniciar intro con Timer no-bloqueante
                 
                 System.out.println("✅ Vuelto al menú exitosamente");
             } catch (Exception e) {

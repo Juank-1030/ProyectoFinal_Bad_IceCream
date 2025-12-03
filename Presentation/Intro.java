@@ -7,6 +7,8 @@ import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.MouseEvent;
 import java.io.File;
+import java.util.Timer;
+import java.util.TimerTask;
 
 /**
  * Clase Intro - Gestiona la visualización de GIFs
@@ -19,6 +21,7 @@ public class Intro extends JFrame implements KeyListener, MouseInputListener {
     private volatile boolean menuAbierto = false;
     private String rutaRecursos = "Resources\\Marca\\";
     private Runnable onMenuOpen;
+    private Timer animationTimer;
 
     public Intro() {
         inicializarVentana();
@@ -99,7 +102,10 @@ public class Intro extends JFrame implements KeyListener, MouseInputListener {
             labelMedia.revalidate();
             labelMedia.repaint();
 
-            Thread.sleep(duracionMs);
+            // Solo hacer sleep si se especifica duracion > 0
+            if (duracionMs > 0) {
+                Thread.sleep(duracionMs);
+            }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
@@ -139,6 +145,26 @@ public class Intro extends JFrame implements KeyListener, MouseInputListener {
         }
     }
 
+    /**
+     * Reinicia la pantalla de intro después de volver desde el juego
+     */
+    public void resetIntro() {
+        continuarAnimacion = true;
+        menuAbierto = false;
+        
+        if (animationTimer != null) {
+            animationTimer.cancel();
+            animationTimer = null;
+        }
+        
+        labelMedia.setIcon(null);
+        labelMedia.setText("");
+        labelMedia.revalidate();
+        labelMedia.repaint();
+        
+        mostrarSegundoGif();
+    }
+
     @Override
     public void mousePressed(MouseEvent e) {
     }
@@ -156,10 +182,23 @@ public class Intro extends JFrame implements KeyListener, MouseInputListener {
         menuAbierto = false;
         setVisible(true);
 
-        // Bucle infinito de Marca3.gif
-        while (continuarAnimacion) {
-            mostrarGif("Marca3.gif", 3000);
+        // Detener timer anterior si existe
+        if (animationTimer != null) {
+            animationTimer.cancel();
         }
+
+        // Usar Timer en lugar de while bloqueante
+        animationTimer = new Timer();
+        animationTimer.scheduleAtFixedRate(new TimerTask() {
+            @Override
+            public void run() {
+                if (continuarAnimacion) {
+                    SwingUtilities.invokeLater(() -> mostrarGif("Marca3.gif", 0));
+                } else {
+                    this.cancel();
+                }
+            }
+        }, 0, 3000);
     }
 
     @Override
