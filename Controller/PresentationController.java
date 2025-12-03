@@ -237,6 +237,38 @@ public class PresentationController {
     }
 
     /**
+     * Limpia recursos antes de iniciar un nuevo juego
+     */
+    private void cleanupBeforeNewGame() {
+        System.out.println("🧹 Limpiando recursos antes de nuevo juego...");
+        
+        // Detener el juego anterior si existe
+        if (gameController != null) {
+            try {
+                gameController.stopGame();
+                gameController = null;
+            } catch (Exception e) {
+                System.err.println("Error deteniendo juego anterior: " + e.getMessage());
+                gameController = null;
+            }
+        }
+        
+        // Cerrar la ventana del juego anterior si existe
+        if (gameFrame != null) {
+            try {
+                gameFrame.setVisible(false);
+                gameFrame.getContentPane().removeAll();
+                gameFrame.dispose();
+                gameFrame = null;
+                System.out.println("✅ Recursos del juego anterior limpiados");
+            } catch (Exception e) {
+                System.err.println("Error limpiando ventana anterior: " + e.getMessage());
+                gameFrame = null;
+            }
+        }
+    }
+
+    /**
      * Inicia el juego con el modo, helado y monstruo seleccionados
      */
     private void iniciarJuego(GameMode gameMode, String iceCreamFlavor, String monsterType) {
@@ -244,6 +276,9 @@ public class PresentationController {
             System.err.println("Error: Modo de juego no seleccionado");
             return;
         }
+        
+        // Limpiar recursos del juego anterior
+        cleanupBeforeNewGame();
 
         // Ocultar pantallas de selección
         pvp.setVisible(false);
@@ -336,6 +371,9 @@ public class PresentationController {
         System.out.println("  Helado (J1): " + helado1);
         System.out.println("  Helado (J2): " + helado2);
 
+        // Limpiar recursos del juego anterior
+        cleanupBeforeNewGame();
+
         // Ocultar pantallas de selección
         pvp.setVisible(false);
         selectMonster.setVisible(false);
@@ -383,6 +421,9 @@ public class PresentationController {
         System.out.println("  Modo: " + selectedGameMode);
         System.out.println("  Helado: " + helado);
         System.out.println("  Monstruo: Se asignará automáticamente según el nivel");
+
+        // Limpiar recursos del juego anterior
+        cleanupBeforeNewGame();
 
         // Ocultar pantallas de selección
         pvp.setVisible(false);
