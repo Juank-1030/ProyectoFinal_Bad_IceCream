@@ -163,12 +163,23 @@ public class ImageLoader {
      */
     private static void loadImage(String key, String path) {
         try {
-            // Usar ImageIcon para soportar GIFs animados
-            ImageIcon icon = new ImageIcon(path);
-            if (icon.getImageLoadStatus() == MediaTracker.COMPLETE) {
-                imageCache.put(key, icon.getImage());
-            } else {
+            // Try to load from file system
+            java.io.File file = new java.io.File(path);
+            if (!file.exists()) {
                 System.err.println("⚠️  No se pudo cargar: " + path);
+                return;
+            }
+            
+            // Usar ImageIcon para soportar GIFs animados
+            ImageIcon icon = new ImageIcon(file.getAbsolutePath());
+            
+            // En entorno headless, no podemos verificar con MediaTracker
+            // Simplemente verificamos que el archivo existe y la imagen no es null
+            Image image = icon.getImage();
+            if (image != null) {
+                imageCache.put(key, image);
+            } else {
+                System.err.println("⚠️  Error al cargar imagen: " + path);
             }
         } catch (Exception e) {
             System.err.println("❌ Error cargando " + path + ": " + e.getMessage());
@@ -199,15 +210,22 @@ public class ImageLoader {
         direction = direction.toLowerCase();
         
         // Construir el nombre del archivo según la acción
+        // Formato real: StandDown, DownWalk, etc.
         String fileName;
         if (action.equals("die") || action.equals("win")) {
             // Die y Win no tienen dirección
             fileName = action.substring(0, 1).toUpperCase() + action.substring(1);
         } else {
-            // Otras acciones tienen dirección
+            // Para stand: StandDown, StandUp, etc.
+            // Para walk/break/shoot: DownWalk, UpBreak, etc.
             String directionCap = direction.substring(0, 1).toUpperCase() + direction.substring(1);
             String actionCap = action.substring(0, 1).toUpperCase() + action.substring(1);
-            fileName = directionCap + actionCap;
+            
+            if (action.equals("stand")) {
+                fileName = actionCap + directionCap; // StandDown
+            } else {
+                fileName = directionCap + actionCap; // DownWalk
+            }
         }
         
         String key = "icecream_" + flavor + "_" + fileName.toLowerCase();
