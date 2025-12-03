@@ -120,7 +120,11 @@ public class PresentationController {
         // Listener para el botón Back en PVP
         pvp.setOnBackClick(() -> {
             pvp.setVisible(false);
-            if (selectedPVPMode == PVPMode.ICE_CREAM_COOPERATIVE && selectedIceCream != null
+            if (selectedGameMode == GameMode.PVM) {
+                // PVM: Volver a Modos
+                modos.setVisible(true);
+                selectedIceCream = null;
+            } else if (selectedPVPMode == PVPMode.ICE_CREAM_COOPERATIVE && selectedIceCream != null
                     && selectedSecondIceCream == null) {
                 // Si es cooperativo y ya seleccionamos el primer helado, mostrar de nuevo para
                 // el segundo
@@ -137,7 +141,11 @@ public class PresentationController {
         pvp.setOnChocolateClick(() -> {
             if (selectedIceCream == null) {
                 selectedIceCream = "Chocolate";
-                if (selectedPVPMode == PVPMode.ICE_CREAM_COOPERATIVE) {
+                if (selectedGameMode == GameMode.PVM) {
+                    // PVM: Iniciar directamente sin seleccionar monstruo (se asigna según nivel)
+                    pvp.setVisible(false);
+                    iniciarJuegoPVM(selectedIceCream);
+                } else if (selectedPVPMode == PVPMode.ICE_CREAM_COOPERATIVE) {
                     // Mostrar pantalla para seleccionar segundo helado
                     pvp.setVisible(false);
                     pvp.setVisible(true); // Mostrar nuevamente para segundo helado
@@ -159,7 +167,11 @@ public class PresentationController {
         pvp.setOnVainillaClick(() -> {
             if (selectedIceCream == null) {
                 selectedIceCream = "Vainilla";
-                if (selectedPVPMode == PVPMode.ICE_CREAM_COOPERATIVE) {
+                if (selectedGameMode == GameMode.PVM) {
+                    // PVM: Iniciar directamente sin seleccionar monstruo
+                    pvp.setVisible(false);
+                    iniciarJuegoPVM(selectedIceCream);
+                } else if (selectedPVPMode == PVPMode.ICE_CREAM_COOPERATIVE) {
                     pvp.setVisible(false);
                     pvp.setVisible(true);
                 } else {
@@ -178,7 +190,11 @@ public class PresentationController {
         pvp.setOnFresaClick(() -> {
             if (selectedIceCream == null) {
                 selectedIceCream = "Fresa";
-                if (selectedPVPMode == PVPMode.ICE_CREAM_COOPERATIVE) {
+                if (selectedGameMode == GameMode.PVM) {
+                    // PVM: Iniciar directamente sin seleccionar monstruo
+                    pvp.setVisible(false);
+                    iniciarJuegoPVM(selectedIceCream);
+                } else if (selectedPVPMode == PVPMode.ICE_CREAM_COOPERATIVE) {
                     pvp.setVisible(false);
                     pvp.setVisible(true);
                 } else {
@@ -196,14 +212,21 @@ public class PresentationController {
         // Listener para el botón Back en SelectMonster
         selectMonster.setOnBackClick(() -> {
             selectMonster.setVisible(false);
-            pvp.setVisible(true);
-            selectedIceCream = null;
+            if (selectedGameMode == GameMode.PVM) {
+                // PVM: Volver a selección de helado
+                pvp.setVisible(true);
+                selectedIceCream = null;
+            } else {
+                pvp.setVisible(true);
+                selectedIceCream = null;
+            }
         });
 
         // Listener para el botón PVM en Modos
         modos.setOnPVMClick(() -> {
-            // Aquí irá la lógica para PVM cuando esté lista
-            System.out.println("PVM seleccionado");
+            selectedGameMode = GameMode.PVM; // Guardar el modo seleccionado
+            modos.setVisible(false);
+            pvp.setVisible(true); // Mostrar selector de helado
         });
 
         // Listener para el botón MVM en Modos
@@ -322,6 +345,50 @@ public class PresentationController {
         // Crear una ventana para el juego si no existe
         if (gameFrame == null) {
             gameFrame = new JFrame("Bad Ice Cream - Juego Cooperativo");
+            gameFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+            gameFrame.setResizable(true);
+        }
+
+        // Agregar el GamePanel a la ventana
+        gameFrame.getContentPane().removeAll();
+        JPanel gamePanel = gameController.getGamePanel();
+        gameFrame.getContentPane().add(gamePanel);
+
+        // Configurar y mostrar la ventana con tamaño apropiado
+        gameFrame.pack();
+        gameFrame.setExtendedState(JFrame.MAXIMIZED_BOTH);
+        gameFrame.setLocationRelativeTo(null);
+        gameFrame.setVisible(true);
+
+        // Iniciar el primer nivel
+        gameController.startLevel(1);
+    }
+
+    /**
+     * Inicia el juego en modo PVM (el monstruo se asigna automáticamente según el
+     * nivel)
+     */
+    private void iniciarJuegoPVM(String helado) {
+        System.out.println("✅ Modo PVM seleccionado:");
+        System.out.println("  Modo: " + selectedGameMode);
+        System.out.println("  Helado: " + helado);
+        System.out.println("  Monstruo: Se asignará automáticamente según el nivel");
+
+        // Ocultar pantallas de selección
+        pvp.setVisible(false);
+        selectMonster.setVisible(false);
+        selectPVPMode.setVisible(false);
+        modos.setVisible(false);
+        menuInicio.setVisible(false);
+        intro.setVisible(false);
+
+        // Crear el controlador del juego con PVM (sin monstruo específico, se asigna
+        // por nivel)
+        gameController = new GameController(selectedGameMode, helado, null);
+
+        // Crear una ventana para el juego si no existe
+        if (gameFrame == null) {
+            gameFrame = new JFrame("Bad Ice Cream - Juego PVM");
             gameFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
             gameFrame.setResizable(true);
         }
