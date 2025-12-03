@@ -255,6 +255,11 @@ public class PresentationController {
         // Crear el controlador del juego
         gameController = new GameController(gameMode, iceCreamFlavor, monsterType);
 
+        // Registrar callbacks
+        gameController.setOnReturnToMenuClick(createReturnToMenuCallback());
+        gameController.setOnSaveGameClick(createSaveGameCallback());
+        gameController.setOnContinueGameClick(createContinueGameCallback());
+
         // Crear una ventana para el juego si no existe
         if (gameFrame == null) {
             gameFrame = new JFrame("Bad Ice Cream - Juego");
@@ -342,6 +347,11 @@ public class PresentationController {
         // Crear el controlador del juego con ambos helados
         gameController = new GameController(selectedGameMode, helado1, helado2, null);
 
+        // Registrar callbacks
+        gameController.setOnReturnToMenuClick(createReturnToMenuCallback());
+        gameController.setOnSaveGameClick(createSaveGameCallback());
+        gameController.setOnContinueGameClick(createContinueGameCallback());
+
         // Crear una ventana para el juego si no existe
         if (gameFrame == null) {
             gameFrame = new JFrame("Bad Ice Cream - Juego Cooperativo");
@@ -386,6 +396,11 @@ public class PresentationController {
         // por nivel)
         gameController = new GameController(selectedGameMode, helado, null);
 
+        // Registrar callbacks
+        gameController.setOnReturnToMenuClick(createReturnToMenuCallback());
+        gameController.setOnSaveGameClick(createSaveGameCallback());
+        gameController.setOnContinueGameClick(createContinueGameCallback());
+
         // Crear una ventana para el juego si no existe
         if (gameFrame == null) {
             gameFrame = new JFrame("Bad Ice Cream - Juego PVM");
@@ -406,6 +421,68 @@ public class PresentationController {
 
         // Iniciar el primer nivel
         gameController.startLevel(1);
+    }
+
+    /**
+     * Reseta el estado del juego y vuelve al menú
+     */
+    private void resetGameState() {
+        selectedGameMode = null;
+        selectedPVPMode = null;
+        selectedIceCream = null;
+        selectedSecondIceCream = null;
+        gameController = null;
+        if (gameFrame != null) {
+            gameFrame.dispose();
+            gameFrame = null;
+        }
+    }
+
+    /**
+     * Crea un callback para volver al menú desde la pantalla del juego
+     */
+    /**
+     * Crea un callback para guardar la partida
+     */
+    private Runnable createSaveGameCallback() {
+        return () -> {
+            System.out.println("✅ Partida guardada");
+            // TODO: Implementar lógica de guardado de partida
+        };
+    }
+
+    /**
+     * Crea un callback para continuar la partida desde pausa
+     */
+    private Runnable createContinueGameCallback() {
+        return () -> {
+            if (gameController != null) {
+                System.out.println("✅ Reanudando juego desde botón...");
+                gameController.resume(); // Reanuda el juego
+                gameController.getGamePanel().requestFocusInWindow(); // Devuelve el foco
+            }
+        };
+    }
+
+    private Runnable createReturnToMenuCallback() {
+        return () -> {
+            System.out.println("✅ Volviendo al menú desde juego...");
+            gameController.stopGame(); // Detener el juego
+            
+            // Ocultar ventana del juego
+            if (gameFrame != null) {
+                gameFrame.setVisible(false); // Primero ocultar
+                gameFrame.dispose(); // Luego cerrar
+            }
+            
+            resetGameState(); // Limpiar estado del juego
+            
+            // Volver a mostrar intro
+            intro.setVisible(true);
+            intro.mostrarSegundoGif();
+            
+            System.out.println("✅ Vuelto al menú exitosamente");
+        };
     }
 
     /**

@@ -5,6 +5,7 @@ import Domain.*;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.*;
 import java.util.List;
 
 /**
@@ -23,10 +24,19 @@ import java.util.List;
 public class GamePanel extends JPanel {
 
     private GameController controller;
+    private Runnable onReturnToMenuClick; // Callback para volver al menú
+    private Runnable onSaveGameClick; // Callback para guardar partida
+    private Runnable onContinueGameClick; // Callback para continuar partida
 
     // Configuración visual
     private static final int CELL_SIZE = 40; // Tamaño de cada celda en píxeles
     private static final int UI_HEIGHT = 100; // Altura del panel de UI
+    private static final int BUTTON_WIDTH = 120;
+    private static final int BUTTON_HEIGHT = 40;
+    private static final int BUTTON_MARGIN = 10;
+    private static final int PAUSE_BUTTON_WIDTH = 150;
+    private static final int PAUSE_BUTTON_HEIGHT = 50;
+    private static final int PAUSE_BUTTON_MARGIN = 20;
 
     // Colores
     private static final Color COLOR_BACKGROUND = new Color(230, 230, 250);
@@ -63,6 +73,90 @@ public class GamePanel extends JPanel {
 
         // Calcular tamaño del panel
         updatePanelSize();
+
+        // Agregar mouse listener para el botón de volver al menú
+        addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent e) {
+                handleMouseClick(e);
+            }
+        });
+    }
+
+    /**
+     * Maneja los clics del mouse para detectar botones
+     */
+    private void handleMouseClick(java.awt.event.MouseEvent e) {
+        Game game = controller.getGame();
+
+        // En modo juego normal: botón "Volver al Menú" (esquina superior derecha)
+        if (game != null && (game.getGameState() == GameState.PLAYING)) {
+            int buttonX = getWidth() - BUTTON_WIDTH - BUTTON_MARGIN;
+            int buttonY = BUTTON_MARGIN;
+
+            // Verificar si se hizo clic en el botón
+            if (e.getX() >= buttonX && e.getX() <= buttonX + BUTTON_WIDTH &&
+                    e.getY() >= buttonY && e.getY() <= buttonY + BUTTON_HEIGHT) {
+                if (onReturnToMenuClick != null) {
+                    onReturnToMenuClick.run();
+                }
+            }
+        }
+
+        // En modo pausa: detectar botones de pausa
+        if (game != null && game.getGameState() == GameState.PAUSED) {
+            detectPauseButtonClick(e);
+        }
+    }
+
+    /**
+     * Detecta clics en los botones de pausa
+     */
+    private void detectPauseButtonClick(java.awt.event.MouseEvent e) {
+        int centerX = getWidth() / 2;
+        int centerY = getHeight() / 2;
+
+        // Posición del primer botón (Guardar Partida)
+        int button1X = centerX - PAUSE_BUTTON_WIDTH - PAUSE_BUTTON_MARGIN;
+        int button1Y = centerY + 50;
+
+        // Posición del segundo botón (Volver al Menú)
+        int button2X = centerX;
+        int button2Y = centerY + 50;
+
+        // Posición del tercer botón (Continuar)
+        int button3X = centerX + PAUSE_BUTTON_WIDTH + PAUSE_BUTTON_MARGIN;
+        int button3Y = centerY + 50;
+
+        System.out.println("Click detectado en pausa. Posición: (" + e.getX() + ", " + e.getY() + ")");
+        System.out.println("Botón 1 (Guardar): (" + button1X + ", " + button1Y + ") - (" + (button1X + PAUSE_BUTTON_WIDTH) + ", " + (button1Y + PAUSE_BUTTON_HEIGHT) + ")");
+        System.out.println("Botón 2 (Menú): (" + button2X + ", " + button2Y + ") - (" + (button2X + PAUSE_BUTTON_WIDTH) + ", " + (button2Y + PAUSE_BUTTON_HEIGHT) + ")");
+        System.out.println("Botón 3 (Continuar): (" + button3X + ", " + button3Y + ") - (" + (button3X + PAUSE_BUTTON_WIDTH) + ", " + (button3Y + PAUSE_BUTTON_HEIGHT) + ")");
+
+        // Verificar botón "Guardar Partida"
+        if (e.getX() >= button1X && e.getX() <= button1X + PAUSE_BUTTON_WIDTH &&
+                e.getY() >= button1Y && e.getY() <= button1Y + PAUSE_BUTTON_HEIGHT) {
+            System.out.println("✅ Botón Guardar Partida presionado");
+            if (onSaveGameClick != null) {
+                onSaveGameClick.run();
+            }
+        }
+        // Verificar botón "Volver al Menú"
+        else if (e.getX() >= button2X && e.getX() <= button2X + PAUSE_BUTTON_WIDTH &&
+                e.getY() >= button2Y && e.getY() <= button2Y + PAUSE_BUTTON_HEIGHT) {
+            System.out.println("✅ Botón Volver al Menú presionado");
+            if (onReturnToMenuClick != null) {
+                onReturnToMenuClick.run();
+            }
+        }
+        // Verificar botón "Continuar"
+        else if (e.getX() >= button3X && e.getX() <= button3X + PAUSE_BUTTON_WIDTH &&
+                e.getY() >= button3Y && e.getY() <= button3Y + PAUSE_BUTTON_HEIGHT) {
+            System.out.println("✅ Botón Continuar presionado");
+            if (onContinueGameClick != null) {
+                onContinueGameClick.run();
+            }
+        }
     }
 
     /**
@@ -405,6 +499,35 @@ public class GamePanel extends JPanel {
             g.setColor(new Color(255, 140, 0)); // Monstruo (naranja)
             g.drawString("P2 (Monstruo): ↑←↓→", 650, 65);
         }
+
+        // Dibujar botón "Volver al Menú" en la esquina superior derecha
+        drawReturnToMenuButton(g);
+    }
+
+    /**
+     * Dibuja el botón de volver al menú
+     */
+    private void drawReturnToMenuButton(Graphics2D g) {
+        int buttonX = getWidth() - BUTTON_WIDTH - BUTTON_MARGIN;
+        int buttonY = BUTTON_MARGIN;
+
+        // Fondo del botón
+        g.setColor(new Color(200, 0, 0)); // Rojo
+        g.fillRect(buttonX, buttonY, BUTTON_WIDTH, BUTTON_HEIGHT);
+
+        // Borde del botón
+        g.setColor(Color.BLACK);
+        g.setStroke(new BasicStroke(2));
+        g.drawRect(buttonX, buttonY, BUTTON_WIDTH, BUTTON_HEIGHT);
+
+        // Texto del botón
+        g.setColor(Color.WHITE);
+        g.setFont(new Font("Arial", Font.BOLD, 12));
+        String buttonText = "Menú";
+        FontMetrics fm = g.getFontMetrics();
+        int textX = buttonX + (BUTTON_WIDTH - fm.stringWidth(buttonText)) / 2;
+        int textY = buttonY + ((BUTTON_HEIGHT - fm.getHeight()) / 2) + fm.getAscent();
+        g.drawString(buttonText, textX, textY);
     }
 
     /**
@@ -421,15 +544,69 @@ public class GamePanel extends JPanel {
         String msg = "PAUSADO";
         FontMetrics fm = g.getFontMetrics();
         int x = (getWidth() - fm.stringWidth(msg)) / 2;
-        int y = getHeight() / 2;
+        int y = getHeight() / 2 - 100;
 
         g.drawString(msg, x, y);
 
-        g.setFont(new Font("Arial", Font.PLAIN, 20));
-        msg = "Presiona P o ESC para continuar";
+        g.setFont(new Font("Arial", Font.PLAIN, 18));
+        msg = "Presiona ESPACIO para continuar";
         fm = g.getFontMetrics();
         x = (getWidth() - fm.stringWidth(msg)) / 2;
-        g.drawString(msg, x, y + 40);
+        g.drawString(msg, x, y + 50);
+
+        // Dibujar botones de pausa
+        drawPauseButtons(g);
+    }
+
+    /**
+     * Dibuja los botones del overlay de pausa
+     */
+    private void drawPauseButtons(Graphics2D g) {
+        int centerX = getWidth() / 2;
+        int centerY = getHeight() / 2;
+
+        // Posiciones de los botones
+        int button1X = centerX - PAUSE_BUTTON_WIDTH - PAUSE_BUTTON_MARGIN;
+        int button1Y = centerY + 50;
+
+        int button2X = centerX;
+        int button2Y = centerY + 50;
+
+        int button3X = centerX + PAUSE_BUTTON_WIDTH + PAUSE_BUTTON_MARGIN;
+        int button3Y = centerY + 50;
+
+        // Dibujar botón "Guardar Partida"
+        drawButton(g, button1X, button1Y, PAUSE_BUTTON_WIDTH, PAUSE_BUTTON_HEIGHT, "Guardar Partida",
+                new Color(100, 100, 255));
+
+        // Dibujar botón "Volver al Menú"
+        drawButton(g, button2X, button2Y, PAUSE_BUTTON_WIDTH, PAUSE_BUTTON_HEIGHT, "Volver al Menú",
+                new Color(200, 0, 0));
+
+        // Dibujar botón "Continuar"
+        drawButton(g, button3X, button3Y, PAUSE_BUTTON_WIDTH, PAUSE_BUTTON_HEIGHT, "Continuar", new Color(0, 150, 0));
+    }
+
+    /**
+     * Dibuja un botón genérico
+     */
+    private void drawButton(Graphics2D g, int x, int y, int width, int height, String text, Color color) {
+        // Fondo del botón
+        g.setColor(color);
+        g.fillRect(x, y, width, height);
+
+        // Borde del botón
+        g.setColor(Color.BLACK);
+        g.setStroke(new BasicStroke(2));
+        g.drawRect(x, y, width, height);
+
+        // Texto del botón
+        g.setColor(Color.WHITE);
+        g.setFont(new Font("Arial", Font.BOLD, 14));
+        FontMetrics fm = g.getFontMetrics();
+        int textX = x + (width - fm.stringWidth(text)) / 2;
+        int textY = y + ((height - fm.getHeight()) / 2) + fm.getAscent();
+        g.drawString(text, textX, textY);
     }
 
     /**
@@ -492,5 +669,26 @@ public class GamePanel extends JPanel {
         int y = getHeight() / 2;
 
         g.drawString(message, x, y);
+    }
+
+    /**
+     * Establece el callback para volver al menú
+     */
+    public void setOnReturnToMenuClick(Runnable callback) {
+        this.onReturnToMenuClick = callback;
+    }
+
+    /**
+     * Establece el callback para guardar la partida
+     */
+    public void setOnSaveGameClick(Runnable callback) {
+        this.onSaveGameClick = callback;
+    }
+
+    /**
+     * Establece el callback para continuar la partida
+     */
+    public void setOnContinueGameClick(Runnable callback) {
+        this.onContinueGameClick = callback;
     }
 }

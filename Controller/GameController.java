@@ -371,6 +371,13 @@ public class GameController implements KeyListener {
     }
 
     /**
+     * Reanuda el juego (método público para llamarse desde listeners)
+     */
+    public void resume() {
+        resumeGame();
+    }
+
+    /**
      * Regresa al menú principal
      */
     private void returnToMenu() {
@@ -742,5 +749,26 @@ public class GameController implements KeyListener {
         if (gameTimer != null) {
             gameTimer.stop();
         }
+    }
+
+    /**
+     * Establece el callback para volver al menú
+     */
+    public void setOnReturnToMenuClick(Runnable callback) {
+        gamePanel.setOnReturnToMenuClick(callback);
+    }
+
+    /**
+     * Establece el callback para guardar la partida desde el overlay de pausa
+     */
+    public void setOnSaveGameClick(Runnable callback) {
+        gamePanel.setOnSaveGameClick(callback);
+    }
+
+    /**
+     * Establece el callback para continuar la partida desde el overlay de pausa
+     */
+    public void setOnContinueGameClick(Runnable callback) {
+        gamePanel.setOnContinueGameClick(callback);
     }
 }
