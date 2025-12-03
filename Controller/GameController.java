@@ -45,6 +45,10 @@ public class GameController implements KeyListener {
     private long lastDirectionChangeTime = 0; // Momento del último cambio de dirección
     private static final long DIRECTION_TIMEOUT = 200; // 200ms para cambiar de dirección sin mover
 
+    // Sistema de timing para orientación vs movimiento
+    private java.util.Map<Integer, Long> keyPressTime = new java.util.HashMap<>(); // Tiempo que se presionó cada tecla
+    private static final long ORIENTATION_THRESHOLD = 100; // 0.10 segundos: si se suelta antes, solo orienta
+
     /**
      * Constructor del GameController
      * 
@@ -105,33 +109,23 @@ public class GameController implements KeyListener {
 
     /**
      * Procesa todas las teclas presionadas actualmente
-     * Esto permite movimiento en tiempo real sin esperar a keyPressed/keyReleased
+     * NUEVO SISTEMA: Si una tecla se presiona menos de 1 segundo, solo orienta
+     * Si se presiona más de 1 segundo, se mueve
      */
     private void processInputs() {
-        // Procesar movimientos de WASD (Helado 1)
-        if (keysPressed.contains(KeyEvent.VK_W)) {
-            game.moveIceCream(Direction.UP);
-        } else if (keysPressed.contains(KeyEvent.VK_S)) {
-            game.moveIceCream(Direction.DOWN);
-        } else if (keysPressed.contains(KeyEvent.VK_A)) {
-            game.moveIceCream(Direction.LEFT);
-        } else if (keysPressed.contains(KeyEvent.VK_D)) {
-            game.moveIceCream(Direction.RIGHT);
-        }
+        long currentTime = System.currentTimeMillis();
 
-        // Procesar movimientos de FLECHAS (Helado 2 - Modo Cooperativo O Monstruo -
-        // PVP)
+        // ===== HELADO 1 (WASD) =====
+        processIceCreamInput(currentTime, Direction.UP, Direction.DOWN, Direction.LEFT, Direction.RIGHT,
+                KeyEvent.VK_W, KeyEvent.VK_S, KeyEvent.VK_A, KeyEvent.VK_D,
+                game.getBoard().getIceCream(), true);
+
+        // ===== HELADO 2 O MONSTRUO (FLECHAS) =====
         if (secondIceCreamFlavor != null) {
             // Modo Cooperativo: Flechas controlan Helado 2
-            if (keysPressed.contains(KeyEvent.VK_UP)) {
-                game.moveSecondIceCream(Direction.UP);
-            } else if (keysPressed.contains(KeyEvent.VK_DOWN)) {
-                game.moveSecondIceCream(Direction.DOWN);
-            } else if (keysPressed.contains(KeyEvent.VK_LEFT)) {
-                game.moveSecondIceCream(Direction.LEFT);
-            } else if (keysPressed.contains(KeyEvent.VK_RIGHT)) {
-                game.moveSecondIceCream(Direction.RIGHT);
-            }
+            processIceCreamInput(currentTime, Direction.UP, Direction.DOWN, Direction.LEFT, Direction.RIGHT,
+                    KeyEvent.VK_UP, KeyEvent.VK_DOWN, KeyEvent.VK_LEFT, KeyEvent.VK_RIGHT,
+                    game.getBoard().getSecondIceCream(), false);
         } else if (game.getGameMode() == GameMode.PVP) {
             // Modo PVP: Flechas controlan Monstruo
             List<Enemy> enemies = game.getBoard().getEnemies();
@@ -160,6 +154,54 @@ public class GameController implements KeyListener {
                     game.moveEnemy(0, Direction.RIGHT);
                 }
             }
+        }
+    }
+
+    /**
+     * Procesa la entrada para un helado específico
+     * Determina si debe orientar (presión corta) o moverse (presión larga)
+     * LÓGICA:
+     * - Presión < 0.10 segundos: Solo orienta (cuando se suelta)
+     * - Presión >= 0.10 segundos: Se mueve continuamente mientras esté presionada
+     */
+    private void processIceCreamInput(long currentTime, Direction upDir, Direction downDir, Direction leftDir,
+            Direction rightDir, int upKey, int downKey, int leftKey, int rightKey, IceCream iceCream,
+            boolean isFirstIceCream) {
+        Direction directionToProcess = null;
+        int keyPressed = -1;
+
+        // Determinar qué tecla está presionada (por orden de prioridad)
+        if (keysPressed.contains(upKey)) {
+            directionToProcess = upDir;
+            keyPressed = upKey;
+        } else if (keysPressed.contains(downKey)) {
+            directionToProcess = downDir;
+            keyPressed = downKey;
+        } else if (keysPressed.contains(leftKey)) {
+            directionToProcess = leftDir;
+            keyPressed = leftKey;
+        } else if (keysPressed.contains(rightKey)) {
+            directionToProcess = rightDir;
+            keyPressed = rightKey;
+        }
+
+        if (directionToProcess != null && keyPressed != -1 && iceCream != null) {
+            // Obtener el tiempo que se ha presionado esta tecla
+            long pressTime = keyPressTime.getOrDefault(keyPressed, currentTime);
+            long elapsedTime = currentTime - pressTime;
+
+            // SIEMPRE actualizar la dirección
+            iceCream.setCurrentDirection(directionToProcess);
+
+            // Si se presionó >= 0.10 segundos, entonces MOVER
+            if (elapsedTime >= ORIENTATION_THRESHOLD) {
+                if (isFirstIceCream) {
+                    game.moveIceCream(directionToProcess);
+                } else {
+                    game.moveSecondIceCream(directionToProcess);
+                }
+            }
+            // Si es < 0.10 segundos, solo se orientó (ya lo hizo con setCurrentDirection)
         }
     }
 
@@ -306,6 +348,13 @@ public class GameController implements KeyListener {
     @Override
     public void keyPressed(KeyEvent e) {
         int keyCode = e.getKeyCode();
+
+        // Registrar el tiempo cuando se presiona la tecla (para sistema de
+        // orientación/movimiento)
+        if (!keyPressTime.containsKey(keyCode)) {
+            keyPressTime.put(keyCode, System.currentTimeMillis());
+        }
+
         keysPressed.add(keyCode); // Agregar tecla al Set para input buffering
 
         // Pausar/Reanudar con P o ESC
@@ -340,244 +389,147 @@ public class GameController implements KeyListener {
         }
     }
 
-/**
- * Muestra mensaje de pausa con opciones de Guardar/Cargar
- */
-private void showPauseMessage() {
-    String[] opciones = {
-        "Continuar jugando",
-        "Guardar Partida",
-        "Cargar Partida",
-        "Salir al menú"
-    };
+    /**
+     * Muestra mensaje de pausa con opciones de Guardar/Cargar
+     */
+    private void showPauseMessage() {
+        String[] opciones = {
+                "Continuar jugando",
+                "Guardar Partida",
+                "Cargar Partida",
+                "Salir al menú"
+        };
 
-    int opcion = JOptionPane.showOptionDialog(
-            gamePanel,
-            "JUEGO PAUSADO\n\n¿Qué deseas hacer?",
-            "Pausa",
-            JOptionPane.DEFAULT_OPTION,
-            JOptionPane.QUESTION_MESSAGE,
-            null,
-            opciones,
-            opciones[0]);
+        int opcion = JOptionPane.showOptionDialog(
+                gamePanel,
+                "JUEGO PAUSADO\n\n¿Qué deseas hacer?",
+                "Pausa",
+                JOptionPane.DEFAULT_OPTION,
+                JOptionPane.QUESTION_MESSAGE,
+                null,
+                opciones,
+                opciones[0]);
 
-    switch (opcion) {
-        case 0: // Continuar jugando
-            game.togglePause();
-            resumeGame();
-            break;
+        switch (opcion) {
+            case 0: // Continuar jugando
+                game.togglePause();
+                resumeGame();
+                break;
 
-        case 1: // Guardar Partida
-            handleSaveGame();
-            break;
+            case 1: // Guardar Partida
+                handleSaveGame();
+                break;
 
-        case 2: // Cargar Partida
-            handleLoadGame();
-            break;
+            case 2: // Cargar Partida
+                handleLoadGame();
+                break;
 
-        case 3: // Salir al menú
-            returnToMenu();
-            break;
+            case 3: // Salir al menú
+                returnToMenu();
+                break;
 
-        default: // Si cierra el diálogo (X)
-            game.togglePause();
-            resumeGame();
-            break;
-    }
-}
-
-/**
- * Maneja el guardado de partida
- */
-private void handleSaveGame() {
-    String nombreArchivo = JOptionPane.showInputDialog(
-            gamePanel,
-            "Ingresa un nombre para la partida:",
-            "Guardar Partida",
-            JOptionPane.QUESTION_MESSAGE);
-
-    if (nombreArchivo != null && !nombreArchivo.trim().isEmpty()) {
-        boolean guardado = game.saveGame(nombreArchivo.trim());
-
-        if (guardado) {
-            JOptionPane.showMessageDialog(
-                    gamePanel,
-                    "¡Partida guardada exitosamente!\n" +
-                            "Archivo: saves/" + nombreArchivo.trim() + ".dat",
-                    "Guardado exitoso",
-                    JOptionPane.INFORMATION_MESSAGE);
-        } else {
-            JOptionPane.showMessageDialog(
-                    gamePanel,
-                    "Error al guardar la partida.\nIntenta con otro nombre.",
-                    "Error",
-                    JOptionPane.ERROR_MESSAGE);
+            default: // Si cierra el diálogo (X)
+                game.togglePause();
+                resumeGame();
+                break;
         }
     }
-
-    // Volver a mostrar el menú de pausa
-    showPauseMessage();
-}
-
-/**
- * Maneja la carga de partida
- */
-private void handleLoadGame() {
-    String[] partidasGuardadas = Game.listSavedGames();
-
-    if (partidasGuardadas == null || partidasGuardadas.length == 0) {
-        JOptionPane.showMessageDialog(
-                gamePanel,
-                "No hay partidas guardadas.\n¡Guarda una partida primero!",
-                "Sin partidas",
-                JOptionPane.INFORMATION_MESSAGE);
-        showPauseMessage();
-        return;
-    }
-
-    String seleccion = (String) JOptionPane.showInputDialog(
-            gamePanel,
-            "Selecciona la partida a cargar:",
-            "Cargar Partida",
-            JOptionPane.QUESTION_MESSAGE,
-            null,
-            partidasGuardadas,
-            partidasGuardadas[0]);
-
-    if (seleccion == null) {
-        // Usuario canceló
-        showPauseMessage();
-        return;
-    }
-
-    Game partidaCargada = Game.loadGame(seleccion);
-
-    if (partidaCargada != null) {
-        // Detener el juego actual
-        stopGame();
-
-        // Reemplazar el juego con el cargado
-        this.game = partidaCargada;
-
-        // Reiniciar el timer y actualizar vista
-        setupGameTimer();
-        gamePanel.repaint();
-
-        JOptionPane.showMessageDialog(
-                gamePanel,
-                "¡Partida cargada exitosamente!\n" +
-                        "Nivel: " + partidaCargada.getCurrentLevel().getLevelNumber() + "\n" +
-                        "Puntos: " + partidaCargada.getScore(),
-                "Carga exitosa",
-                JOptionPane.INFORMATION_MESSAGE);
-
-        // Reanudar el juego cargado
-        game.setGameState(GameState.PLAYING);
-        resumeGame();
-    } else {
-        JOptionPane.showMessageDialog(
-                gamePanel,
-                "Error al cargar la partida.\nEl archivo puede estar corrupto.",
-                "Error",
-                JOptionPane.ERROR_MESSAGE);
-        showPauseMessage();
-    }
-}
 
     /**
-     * Maneja el movimiento del helado y monstruos con sistema de orientación
-     * SISTEMA DE CONTROLES:
-     * - Primer click en dirección: establece orientación del personaje
-     * - Clicks subsecuentes en MISMA dirección: mueve el personaje
-     * - Click en DIFERENTE dirección: cambia orientación (sin mover)
-     * 
-     * En PVP: WASD para helado (jugador 1), Flechas para monstruos (jugador 2)
-     * En PVM: WASD para helado, Flechas para IA del monstruo (ignoradas)
+     * Maneja el guardado de partida
      */
-    private void handleMovement(int keyCode) {
-        Direction direction = null;
-        boolean isWASD = false;
-        boolean isArrow = false;
+    private void handleSaveGame() {
+        String nombreArchivo = JOptionPane.showInputDialog(
+                gamePanel,
+                "Ingresa un nombre para la partida:",
+                "Guardar Partida",
+                JOptionPane.QUESTION_MESSAGE);
 
-        // Detectar si es WASD (helado - Jugador 1)
-        switch (keyCode) {
-            case KeyEvent.VK_W:
-                direction = Direction.UP;
-                isWASD = true;
-                break;
-            case KeyEvent.VK_S:
-                direction = Direction.DOWN;
-                isWASD = true;
-                break;
-            case KeyEvent.VK_A:
-                direction = Direction.LEFT;
-                isWASD = true;
-                break;
-            case KeyEvent.VK_D:
-                direction = Direction.RIGHT;
-                isWASD = true;
-                break;
+        if (nombreArchivo != null && !nombreArchivo.trim().isEmpty()) {
+            boolean guardado = game.saveGame(nombreArchivo.trim());
+
+            if (guardado) {
+                JOptionPane.showMessageDialog(
+                        gamePanel,
+                        "¡Partida guardada exitosamente!\n" +
+                                "Archivo: saves/" + nombreArchivo.trim() + ".dat",
+                        "Guardado exitoso",
+                        JOptionPane.INFORMATION_MESSAGE);
+            } else {
+                JOptionPane.showMessageDialog(
+                        gamePanel,
+                        "Error al guardar la partida.\nIntenta con otro nombre.",
+                        "Error",
+                        JOptionPane.ERROR_MESSAGE);
+            }
         }
 
-        // Procesar WASD (Helado/Jugador 1)
-        if (direction != null && isWASD) {
-            // Verificar si es la misma dirección
-            if (direction == lastIceCreamDirection) {
-                // MISMA dirección → MOVER el helado
-                boolean moved = game.moveIceCream(direction);
-                if (!moved) {
-                    System.out.println("→ Helado no puede avanzar: " + direction);
-                }
-            } else {
-                // DIFERENTE dirección → ORIENTAR el helado (sin mover)
-                lastIceCreamDirection = direction;
-                game.getBoard().getIceCream().setCurrentDirection(direction);
-                lastDirectionChangeTime = System.currentTimeMillis();
-                System.out.println("→ Helado orientado a: " + direction);
-            }
+        // Volver a mostrar el menú de pausa
+        showPauseMessage();
+    }
+
+    /**
+     * Maneja la carga de partida
+     */
+    private void handleLoadGame() {
+        String[] partidasGuardadas = Game.listSavedGames();
+
+        if (partidasGuardadas == null || partidasGuardadas.length == 0) {
+            JOptionPane.showMessageDialog(
+                    gamePanel,
+                    "No hay partidas guardadas.\n¡Guarda una partida primero!",
+                    "Sin partidas",
+                    JOptionPane.INFORMATION_MESSAGE);
+            showPauseMessage();
             return;
         }
 
-        // Detectar si es flecha (monstruos/Jugador 2 - solo en PVP)
-        direction = null;
-        switch (keyCode) {
-            case KeyEvent.VK_UP:
-                direction = Direction.UP;
-                isArrow = true;
-                break;
-            case KeyEvent.VK_DOWN:
-                direction = Direction.DOWN;
-                isArrow = true;
-                break;
-            case KeyEvent.VK_LEFT:
-                direction = Direction.LEFT;
-                isArrow = true;
-                break;
-            case KeyEvent.VK_RIGHT:
-                direction = Direction.RIGHT;
-                isArrow = true;
-                break;
+        String seleccion = (String) JOptionPane.showInputDialog(
+                gamePanel,
+                "Selecciona la partida a cargar:",
+                "Cargar Partida",
+                JOptionPane.QUESTION_MESSAGE,
+                null,
+                partidasGuardadas,
+                partidasGuardadas[0]);
+
+        if (seleccion == null) {
+            // Usuario canceló
+            showPauseMessage();
+            return;
         }
 
-        // Procesar Flechas (Monstruo/Jugador 2 - solo en PVP)
-        if (direction != null && isArrow && game.getGameMode() == GameMode.PVP) {
-            // Verificar si es la misma dirección
-            if (direction == lastEnemyDirection) {
-                // MISMA dirección → MOVER el monstruo
-                boolean moved = game.moveEnemy(0, direction);
-                if (!moved) {
-                    System.out.println("→ Monstruo no puede avanzar: " + direction);
-                }
-            } else {
-                // DIFERENTE dirección → ORIENTAR el monstruo (sin mover)
-                lastEnemyDirection = direction;
-                List<Enemy> enemies = game.getBoard().getEnemies();
-                if (!enemies.isEmpty()) {
-                    enemies.get(0).setCurrentDirection(direction);
-                    lastDirectionChangeTime = System.currentTimeMillis();
-                    System.out.println("→ Monstruo orientado a: " + direction);
-                }
-            }
+        Game partidaCargada = Game.loadGame(seleccion);
+
+        if (partidaCargada != null) {
+            // Detener el juego actual
+            stopGame();
+
+            // Reemplazar el juego con el cargado
+            this.game = partidaCargada;
+
+            // Reiniciar el timer y actualizar vista
+            setupGameTimer();
+            gamePanel.repaint();
+
+            JOptionPane.showMessageDialog(
+                    gamePanel,
+                    "¡Partida cargada exitosamente!\n" +
+                            "Nivel: " + partidaCargada.getCurrentLevel().getLevelNumber() + "\n" +
+                            "Puntos: " + partidaCargada.getScore(),
+                    "Carga exitosa",
+                    JOptionPane.INFORMATION_MESSAGE);
+
+            // Reanudar el juego cargado
+            game.setGameState(GameState.PLAYING);
+            resumeGame();
+        } else {
+            JOptionPane.showMessageDialog(
+                    gamePanel,
+                    "Error al cargar la partida.\nEl archivo puede estar corrupto.",
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE);
+            showPauseMessage();
         }
     }
 
@@ -598,6 +550,17 @@ private void handleLoadGame() {
     private void handleIceBlockActions(int keyCode, KeyEvent e) {
         // Tecla Q: Para P1 (Helado 1) en todos los modos
         if (keyCode == KeyEvent.VK_Q) {
+            // Actualizar la dirección del helado según la última tecla presionada
+            if (keysPressed.contains(KeyEvent.VK_W)) {
+                game.getBoard().getIceCream().setCurrentDirection(Direction.UP);
+            } else if (keysPressed.contains(KeyEvent.VK_S)) {
+                game.getBoard().getIceCream().setCurrentDirection(Direction.DOWN);
+            } else if (keysPressed.contains(KeyEvent.VK_A)) {
+                game.getBoard().getIceCream().setCurrentDirection(Direction.LEFT);
+            } else if (keysPressed.contains(KeyEvent.VK_D)) {
+                game.getBoard().getIceCream().setCurrentDirection(Direction.RIGHT);
+            }
+
             int result = game.toggleIceBlocks();
             if (result > 0) {
                 if (secondIceCreamFlavor != null) {
@@ -619,6 +582,18 @@ private void handleLoadGame() {
         if (keyCode == KeyEvent.VK_SPACE) {
             // En modo Cooperativo: ESPACIO controla helado 2 (P2)
             if (secondIceCreamFlavor != null) {
+                // Actualizar la dirección del helado 2 según la última tecla de flecha
+                // presionada
+                if (keysPressed.contains(KeyEvent.VK_UP)) {
+                    game.getBoard().getSecondIceCream().setCurrentDirection(Direction.UP);
+                } else if (keysPressed.contains(KeyEvent.VK_DOWN)) {
+                    game.getBoard().getSecondIceCream().setCurrentDirection(Direction.DOWN);
+                } else if (keysPressed.contains(KeyEvent.VK_LEFT)) {
+                    game.getBoard().getSecondIceCream().setCurrentDirection(Direction.LEFT);
+                } else if (keysPressed.contains(KeyEvent.VK_RIGHT)) {
+                    game.getBoard().getSecondIceCream().setCurrentDirection(Direction.RIGHT);
+                }
+
                 int result = game.toggleIceBlocksSecond();
                 if (result > 0) {
                     System.out.println("✓ (P2) Hilera de " + result + " bloque(s) de hielo creada");
@@ -687,6 +662,7 @@ private void handleLoadGame() {
     public void keyReleased(KeyEvent e) {
         int keyCode = e.getKeyCode();
         keysPressed.remove(keyCode); // Remover tecla del Set cuando se suelta
+        keyPressTime.remove(keyCode); // Limpiar el registro de tiempo de presión
     }
 
     @Override

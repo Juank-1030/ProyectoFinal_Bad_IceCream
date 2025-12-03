@@ -128,10 +128,17 @@ public class Board implements BoardStateProvider {
 
     /**
      * Verifica si hay una fruta en la posición
+     * CAMBIO: Retorna null si hay un bloque de hielo en la misma posición
+     * (la fruta no puede ser recolectada si está bajo un bloque de hielo)
      */
     public Fruit getFruitAt(Position pos) {
         for (Fruit fruit : fruits) {
             if (fruit.getPosition().equals(pos) && !fruit.isCollected()) {
+                // Verificar si hay bloque de hielo en la misma posición
+                if (hasIceBlock(pos)) {
+                    // Hay hielo, no devolver la fruta (protegida)
+                    return null;
+                }
                 return fruit;
             }
         }
@@ -145,6 +152,21 @@ public class Board implements BoardStateProvider {
         for (Enemy enemy : enemies) {
             if (enemy.getPosition().equals(pos) && enemy.isAlive()) {
                 return enemy;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Obtiene una fruta en la posición sin verificar si hay bloque de hielo
+     * Utilizado para renderizar frutas que estén bajo bloques de hielo
+     * 
+     * @return La fruta en la posición, incluso si está bajo hielo
+     */
+    public Fruit getFruitAtForRendering(Position pos) {
+        for (Fruit fruit : fruits) {
+            if (fruit.getPosition().equals(pos) && !fruit.isCollected()) {
+                return fruit;
             }
         }
         return null;
@@ -411,27 +433,39 @@ public class Board implements BoardStateProvider {
         int blocksCreated = 0;
 
         // Crear bloques en línea recta hasta encontrar obstáculo
-        while (isInBounds(currentPos) && isValidPosition(currentPos)) {
+        while (isInBounds(currentPos)) {
             // Verificar si hay enemigo (no crear bloque ahí)
             if (getEnemyAt(currentPos) != null) {
                 break;
             }
 
-            // Verificar si hay fruta (no crear bloque ahí)
-            if (getFruitAt(currentPos) != null) {
+            // Verificar si ya hay bloque de hielo (detener)
+            if (hasIceBlock(currentPos)) {
                 break;
             }
 
-            // Crear bloque si no hay ninguno
-            if (!hasIceBlock(currentPos)) {
-                IceBlock newBlock = new IceBlock(currentPos, true, iceCream);
-                iceBlocks.add(newBlock);
-                blocksCreated++;
-                currentPos = currentPos.move(direction);
-            } else {
-                // Ya hay un bloque, detener
-                break;
+            // Verificar si es posición válida (sin hielo, sin pared)
+            if (!isValidPosition(currentPos)) {
+                // Si hay una fruta, crear bloque de hielo SOBRE la fruta
+                Fruit fruitAtPos = getFruitAt(currentPos);
+                if (fruitAtPos != null) {
+                    // Crear bloque de hielo en la misma posición que la fruta
+                    IceBlock newBlock = new IceBlock(currentPos, true, iceCream);
+                    iceBlocks.add(newBlock);
+                    blocksCreated++;
+                    currentPos = currentPos.move(direction);
+                    continue; // Seguir creando bloques
+                } else {
+                    // Hay pared o algo más, detener
+                    break;
+                }
             }
+
+            // Crear bloque en posición válida
+            IceBlock newBlock = new IceBlock(currentPos, true, iceCream);
+            iceBlocks.add(newBlock);
+            blocksCreated++;
+            currentPos = currentPos.move(direction);
         }
 
         return blocksCreated;
@@ -450,27 +484,39 @@ public class Board implements BoardStateProvider {
         int blocksCreated = 0;
 
         // Crear bloques en línea recta hasta encontrar obstáculo
-        while (isInBounds(currentPos) && isValidPosition(currentPos)) {
+        while (isInBounds(currentPos)) {
             // Verificar si hay enemigo (no crear bloque ahí)
             if (getEnemyAt(currentPos) != null) {
                 break;
             }
 
-            // Verificar si hay fruta (no crear bloque ahí)
-            if (getFruitAt(currentPos) != null) {
+            // Verificar si ya hay bloque de hielo (detener)
+            if (hasIceBlock(currentPos)) {
                 break;
             }
 
-            // Crear bloque si no hay ninguno
-            if (!hasIceBlock(currentPos)) {
-                IceBlock newBlock = new IceBlock(currentPos, true, secondIceCream);
-                iceBlocks.add(newBlock);
-                blocksCreated++;
-                currentPos = currentPos.move(direction);
-            } else {
-                // Ya hay un bloque, detener
-                break;
+            // Verificar si es posición válida (sin hielo, sin pared)
+            if (!isValidPosition(currentPos)) {
+                // Si hay una fruta, crear bloque de hielo SOBRE la fruta
+                Fruit fruitAtPos = getFruitAt(currentPos);
+                if (fruitAtPos != null) {
+                    // Crear bloque de hielo en la misma posición que la fruta
+                    IceBlock newBlock = new IceBlock(currentPos, true, secondIceCream);
+                    iceBlocks.add(newBlock);
+                    blocksCreated++;
+                    currentPos = currentPos.move(direction);
+                    continue; // Seguir creando bloques
+                } else {
+                    // Hay pared o algo más, detener
+                    break;
+                }
             }
+
+            // Crear bloque en posición válida
+            IceBlock newBlock = new IceBlock(currentPos, true, secondIceCream);
+            iceBlocks.add(newBlock);
+            blocksCreated++;
+            currentPos = currentPos.move(direction);
         }
 
         return blocksCreated;

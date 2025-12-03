@@ -127,11 +127,12 @@ public class GamePanel extends JPanel {
         // Dibujar paredes
         drawWalls(g, board);
 
-        // Dibujar bloques de hielo
-        drawIceBlocks(g, board);
-
-        // Dibujar frutas
+        // CAMBIO: Dibujar frutas ANTES que bloques de hielo
+        // Así las frutas aparecen debajo y el hielo encima
         drawFruits(g, board);
+
+        // Dibujar bloques de hielo (encima de frutas)
+        drawIceBlocks(g, board);
 
         // Dibujar enemigos
         drawEnemies(g, board);
