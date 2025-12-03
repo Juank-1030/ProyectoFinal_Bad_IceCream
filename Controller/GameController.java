@@ -127,7 +127,8 @@ public class GameController implements KeyListener {
                     KeyEvent.VK_UP, KeyEvent.VK_DOWN, KeyEvent.VK_LEFT, KeyEvent.VK_RIGHT,
                     game.getBoard().getSecondIceCream(), false);
         } else if (game.getGameMode() == GameMode.PVP) {
-            // Modo PVP: Flechas controlan Monstruo
+            // Modo PVP: Flechas controlan Monstruo con mismo sistema de
+            // orientación/movimiento
             List<Enemy> enemies = game.getBoard().getEnemies();
             boolean narvalCharging = false;
 
@@ -143,16 +144,8 @@ public class GameController implements KeyListener {
             }
 
             // Solo procesar entrada de flechas si el Narval NO está cargando
-            if (!narvalCharging) {
-                if (keysPressed.contains(KeyEvent.VK_UP)) {
-                    game.moveEnemy(0, Direction.UP);
-                } else if (keysPressed.contains(KeyEvent.VK_DOWN)) {
-                    game.moveEnemy(0, Direction.DOWN);
-                } else if (keysPressed.contains(KeyEvent.VK_LEFT)) {
-                    game.moveEnemy(0, Direction.LEFT);
-                } else if (keysPressed.contains(KeyEvent.VK_RIGHT)) {
-                    game.moveEnemy(0, Direction.RIGHT);
-                }
+            if (!narvalCharging && !enemies.isEmpty()) {
+                processEnemyInput(currentTime, enemies.get(0));
             }
         }
     }
@@ -200,6 +193,52 @@ public class GameController implements KeyListener {
                 } else {
                     game.moveSecondIceCream(directionToProcess);
                 }
+            }
+            // Si es < 0.10 segundos, solo se orientó (ya lo hizo con setCurrentDirection)
+        }
+    }
+
+    /**
+     * Procesa la entrada para un monstruo específico (PVP)
+     * Determina si debe orientar (presión corta) o moverse (presión larga)
+     * LÓGICA:
+     * - Presión < 0.10 segundos: Solo orienta el ataque (cuando se suelta)
+     * - Presión >= 0.10 segundos: Se mueve continuamente mientras esté presionada
+     */
+    private void processEnemyInput(long currentTime, Enemy enemy) {
+        if (enemy == null) {
+            return;
+        }
+
+        Direction directionToProcess = null;
+        int keyPressed = -1;
+
+        // Determinar qué tecla está presionada (por orden de prioridad)
+        if (keysPressed.contains(KeyEvent.VK_UP)) {
+            directionToProcess = Direction.UP;
+            keyPressed = KeyEvent.VK_UP;
+        } else if (keysPressed.contains(KeyEvent.VK_DOWN)) {
+            directionToProcess = Direction.DOWN;
+            keyPressed = KeyEvent.VK_DOWN;
+        } else if (keysPressed.contains(KeyEvent.VK_LEFT)) {
+            directionToProcess = Direction.LEFT;
+            keyPressed = KeyEvent.VK_LEFT;
+        } else if (keysPressed.contains(KeyEvent.VK_RIGHT)) {
+            directionToProcess = Direction.RIGHT;
+            keyPressed = KeyEvent.VK_RIGHT;
+        }
+
+        if (directionToProcess != null && keyPressed != -1) {
+            // Obtener el tiempo que se ha presionado esta tecla
+            long pressTime = keyPressTime.getOrDefault(keyPressed, currentTime);
+            long elapsedTime = currentTime - pressTime;
+
+            // SIEMPRE actualizar la dirección del monstruo
+            enemy.setCurrentDirection(directionToProcess);
+
+            // Si se presionó >= 0.10 segundos, entonces MOVER
+            if (elapsedTime >= ORIENTATION_THRESHOLD) {
+                game.moveEnemy(0, directionToProcess);
             }
             // Si es < 0.10 segundos, solo se orientó (ya lo hizo con setCurrentDirection)
         }

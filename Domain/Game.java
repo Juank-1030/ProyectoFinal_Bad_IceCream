@@ -229,6 +229,7 @@ public class Game implements Serializable {
 
         switch (config.enemyType.toLowerCase()) {
             case "troll":
+            case "trol":
                 if (config.pattern != null) {
                     enemy = new Troll(config.startPosition, config.pattern, config.stepsPerDirection);
                 } else {
