@@ -18,6 +18,7 @@ public class SelectPVPMode extends JFrame {
     private Runnable onIceCreamCooperativeClick;
 
     public SelectPVPMode() {
+        ImageLoader.loadAllImages();
         inicializarVentana();
     }
 
@@ -68,11 +69,11 @@ public class SelectPVPMode extends JFrame {
 
         panelFondo.setLayout(new BorderLayout());
 
-        // Panel central con GridBagLayout
+        // Panel central con GridBagLayout para organizar elementos verticalmente
         JPanel panelCentral = new JPanel(new GridBagLayout());
         panelCentral.setOpaque(false);
 
-        // Letrero "Modo PVP"
+        // Letrero "Modo PVP" en la parte superior
         JLabel letreromodos = crearLetrero("Modo PVP");
         GridBagConstraints gbcLetrero = new GridBagConstraints();
         gbcLetrero.gridx = 0;
@@ -81,7 +82,7 @@ public class SelectPVPMode extends JFrame {
         gbcLetrero.fill = GridBagConstraints.NONE;
         gbcLetrero.weightx = 0.0;
         gbcLetrero.weighty = 0.0;
-        gbcLetrero.insets = new Insets(30, 0, 0, 0);
+        gbcLetrero.insets = new Insets(10, 0, 0, 0);
         panelCentral.add(letreromodos, gbcLetrero);
 
         // Panel con dos botones
@@ -89,14 +90,14 @@ public class SelectPVPMode extends JFrame {
         GridBagConstraints gbcBotones = new GridBagConstraints();
         gbcBotones.gridx = 0;
         gbcBotones.gridy = 1;
-        gbcBotones.anchor = GridBagConstraints.CENTER;
+        gbcBotones.anchor = GridBagConstraints.NORTH;
         gbcBotones.fill = GridBagConstraints.NONE;
         gbcBotones.weightx = 0.0;
-        gbcBotones.weighty = 1.0;
-        gbcBotones.insets = new Insets(0, 0, 0, 0);
+        gbcBotones.weighty = 0.0;
+        gbcBotones.insets = new Insets(30, 0, 0, 0);
         panelCentral.add(panelBotones, gbcBotones);
 
-        // Botón Back
+        // Botón Back en la parte inferior
         JButton botonBack = crearBotonBack();
         GridBagConstraints gbcBack = new GridBagConstraints();
         gbcBack.gridx = 0;
@@ -104,91 +105,100 @@ public class SelectPVPMode extends JFrame {
         gbcBack.anchor = GridBagConstraints.SOUTH;
         gbcBack.fill = GridBagConstraints.NONE;
         gbcBack.weightx = 0.0;
-        gbcBack.weighty = 0.0;
-        gbcBack.insets = new Insets(0, 0, 30, 0);
+        gbcBack.weighty = 1.0;
+        gbcBack.insets = new Insets(0, 0, 50, 0);
         panelCentral.add(botonBack, gbcBack);
 
         panelFondo.add(panelCentral, BorderLayout.CENTER);
         add(panelFondo);
-
         setVisible(false);
     }
 
     private JPanel crearPanelBotones() {
-        JPanel panel = new JPanel(new FlowLayout(FlowLayout.CENTER, 80, 0));
+        JPanel panel = new JPanel();
+        panel.setLayout(null);
         panel.setOpaque(false);
+        panel.setPreferredSize(new Dimension(600, 220));
 
-        // Botón Helado vs Monstruo
-        panel.add(crearBoton("Helado vs Monstruo", PVPMode.ICE_CREAM_VS_MONSTER));
+        // Botón Helado vs Monstruo (IZQUIERDA)
+        JPanel botonVsMonstruo = crearBotonConImagen("vs_monster", PVPMode.ICE_CREAM_VS_MONSTER);
+        botonVsMonstruo.setBounds(20, 6, 280, 200);
+        panel.add(botonVsMonstruo);
 
-        // Botón Helado Cooperativo
-        panel.add(crearBoton("Helado Cooperativo", PVPMode.ICE_CREAM_COOPERATIVE));
+        // Botón Helado Cooperativo (DERECHA)
+        JPanel botonCoop = crearBotonConImagen("coop", PVPMode.ICE_CREAM_COOPERATIVE);
+        botonCoop.setBounds(320, 25, 280, 200);
+        panel.add(botonCoop);
 
         return panel;
     }
 
-    private JPanel crearBoton(String textoBoton, PVPMode modo) {
-        // Panel para el botón
+    private JPanel crearBotonConImagen(String imagenKey, PVPMode modo) {
         JPanel panelBoton = new JPanel();
-        panelBoton.setLayout(new BoxLayout(panelBoton, BoxLayout.Y_AXIS));
+        panelBoton.setLayout(new BorderLayout());
         panelBoton.setOpaque(false);
 
-        // Crear etiqueta de texto
-        JLabel labelTexto = new JLabel(textoBoton);
-        labelTexto.setForeground(Color.WHITE);
-        labelTexto.setFont(new Font("Arial", Font.BOLD, 16));
-        labelTexto.setAlignmentX(JLabel.CENTER_ALIGNMENT);
+        // Determinar la ruta de la imagen según el botón
+        String rutaImagen = "";
+        if (imagenKey.equals("vs_monster")) {
+            rutaImagen = "Resources/HELADO VS MOUNSTRUO/Helado vs mousntruo.png";
+        } else if (imagenKey.equals("coop")) {
+            rutaImagen = "Resources/HELADOVSHELADO/Cooperativo.png";
+        }
 
-        // Crear panel con borde para simular botón
-        JPanel botonVisual = new JPanel() {
-            @Override
-            protected void paintComponent(Graphics g) {
-                super.paintComponent(g);
-                Graphics2D g2 = (Graphics2D) g;
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        // Cargar la imagen desde el archivo
+        File archivoImagen = new File(rutaImagen);
 
-                // Borde
-                g2.setColor(Color.WHITE);
-                g2.setStroke(new BasicStroke(2));
-                g2.drawRoundRect(5, 5, this.getWidth() - 10, this.getHeight() - 10, 15, 15);
+        if (archivoImagen.exists()) {
+            ImageIcon icono = new ImageIcon(archivoImagen.getAbsolutePath());
 
-                // Fondo semitransparente
-                g2.setColor(new Color(100, 100, 150, 80));
-                g2.fillRoundRect(5, 5, this.getWidth() - 10, this.getHeight() - 10, 15, 15);
-            }
-        };
-        botonVisual.setPreferredSize(new Dimension(200, 100));
-        botonVisual.setOpaque(false);
-        botonVisual.setLayout(new BorderLayout());
-        botonVisual.add(labelTexto, BorderLayout.CENTER);
+            // Calcular escala manteniendo proporción
+            int imgWidth = icono.getIconWidth();
+            int imgHeight = icono.getIconHeight();
 
-        // Efecto hover
-        botonVisual.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseEntered(MouseEvent e) {
-                botonVisual.setBackground(new Color(150, 150, 200));
-                botonVisual.repaint();
-            }
+            // Tamaño objetivo
+            int targetWidth = 400;
+            int targetHeight = 250;
 
-            @Override
-            public void mouseExited(MouseEvent e) {
-                botonVisual.setBackground(new Color(100, 100, 150));
-                botonVisual.repaint();
-            }
+            // Calcular escala para que quepa en el contenedor
+            double scaleX = (double) targetWidth / imgWidth;
+            double scaleY = (double) targetHeight / imgHeight;
+            double scale = Math.min(scaleX, scaleY);
 
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                if (modo == PVPMode.ICE_CREAM_VS_MONSTER && onIceCreamVsMonsterClick != null) {
-                    onIceCreamVsMonsterClick.run();
-                } else if (modo == PVPMode.ICE_CREAM_COOPERATIVE && onIceCreamCooperativeClick != null) {
-                    onIceCreamCooperativeClick.run();
+            int anchoFinal = (int) (imgWidth * scale);
+            int altoFinal = (int) (imgHeight * scale);
+
+            Image imagenEscalada = icono.getImage().getScaledInstance(anchoFinal, altoFinal, Image.SCALE_SMOOTH);
+            ImageIcon iconoEscalado = new ImageIcon(imagenEscalada);
+
+            JLabel labelImagen = new JLabel(iconoEscalado);
+            labelImagen.setHorizontalAlignment(SwingConstants.CENTER);
+            labelImagen.setVerticalAlignment(SwingConstants.CENTER);
+            labelImagen.setCursor(new Cursor(Cursor.HAND_CURSOR));
+
+            // Listener para clicks
+            labelImagen.addMouseListener(new MouseAdapter() {
+                @Override
+                public void mouseClicked(MouseEvent e) {
+                    if (modo == PVPMode.ICE_CREAM_VS_MONSTER && onIceCreamVsMonsterClick != null) {
+                        onIceCreamVsMonsterClick.run();
+                    } else if (modo == PVPMode.ICE_CREAM_COOPERATIVE && onIceCreamCooperativeClick != null) {
+                        onIceCreamCooperativeClick.run();
+                    }
                 }
-            }
-        });
+            });
 
-        botonVisual.setCursor(new Cursor(Cursor.HAND_CURSOR));
+            panelBoton.add(labelImagen, BorderLayout.CENTER);
+        } else {
+            // Fallback: mostrar texto si no encuentra la imagen
+            JLabel labelTexto = new JLabel(
+                    modo == PVPMode.ICE_CREAM_VS_MONSTER ? "Helado vs Monstruo" : "Helado Cooperativo");
+            labelTexto.setForeground(Color.WHITE);
+            labelTexto.setFont(new Font("Arial", Font.BOLD, 16));
+            labelTexto.setHorizontalAlignment(SwingConstants.CENTER);
+            panelBoton.add(labelTexto, BorderLayout.CENTER);
+        }
 
-        panelBoton.add(botonVisual);
         return panelBoton;
     }
 
@@ -210,8 +220,7 @@ public class SelectPVPMode extends JFrame {
             int altoInteraccion = (int) (nuevoAlto * 0.60);
             boton.setPreferredSize(new Dimension(anchoInteraccion, altoInteraccion));
 
-            Image imagenNormal = iconoNormal.getImage().getScaledInstance(nuevoAncho, nuevoAlto,
-                    Image.SCALE_SMOOTH);
+            Image imagenNormal = iconoNormal.getImage().getScaledInstance(nuevoAncho, nuevoAlto, Image.SCALE_SMOOTH);
             ImageIcon iconoEscalado = new ImageIcon(imagenNormal);
             boton.setIcon(iconoEscalado);
 
@@ -231,7 +240,7 @@ public class SelectPVPMode extends JFrame {
     private JLabel crearLetrero(String texto) {
         JLabel label = new JLabel(texto);
         label.setForeground(Color.WHITE);
-        label.setFont(new Font("Arial", Font.BOLD, 28));
+        label.setFont(new Font("Arial", Font.BOLD, 36));
         return label;
     }
 

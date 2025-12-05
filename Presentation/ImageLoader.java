@@ -2,6 +2,7 @@ package Presentation;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.image.BufferedImage;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -48,6 +49,12 @@ public class ImageLoader {
         // Cargar sprites de bloques de hielo
         loadIceBlockSprites();
 
+        // Cargar imágenes del menú de pausa
+        loadPauseMenuImages();
+
+        // ✅ NUEVO: Cargar imágenes del menú PVP
+        loadPVPMenuImages();
+
         imagesLoaded = true;
         System.out.println("✅ Recursos gráficos cargados: " + imageCache.size() + " imágenes");
     }
@@ -88,7 +95,7 @@ public class ImageLoader {
                 "DownBreak", "UpBreak", "LeftBreak", "RightBreak" };
         for (String action : narvalActions) {
             String key = "monster_narval_" + action.toLowerCase();
-            String path = "Resources/Monstruos/Narval/" + action + ". gif";
+            String path = "Resources/Monstruos/Narval/" + action + ".gif";
             loadImage(key, path);
         }
 
@@ -113,7 +120,7 @@ public class ImageLoader {
         String[] potActions = { "DownWalk1", "UpWalk1", "LeftWalk1", "RightWalk1" };
         for (String action : potActions) {
             String key = "monster_pot_" + action.toLowerCase();
-            String path = "Resources/Monstruos/Pot/" + action + ". gif";
+            String path = "Resources/Monstruos/Pot/" + action + ".gif";
             loadImage(key, path);
         }
     }
@@ -133,12 +140,12 @@ public class ImageLoader {
             }
         }
 
-        // Pineapple is special - it has Movement. gif instead of Normal.gif
+        // Pineapple is special - it has Movement.gif instead of Normal.gif
         loadImage("fruit_pineapple_movement", "Resources/Frutas/Pineapple/Movement.gif");
-        loadImage("fruit_pineapple_flying", "Resources/Frutas/Pineapple/Flying. gif");
+        loadImage("fruit_pineapple_flying", "Resources/Frutas/Pineapple/Flying.gif");
         loadImage("fruit_pineapple_appear", "Resources/Frutas/Pineapple/Appear.gif");
         loadImage("fruit_pineapple_collected", "Resources/Frutas/Pineapple/Collected.gif");
-        loadImage("fruit_pineapple_shadow", "Resources/Frutas/Pineapple/Shadow. gif");
+        loadImage("fruit_pineapple_shadow", "Resources/Frutas/Pineapple/Shadow.gif");
         // Also create an alias for normal -> movement
         loadImage("fruit_pineapple_normal", "Resources/Frutas/Pineapple/Movement.gif");
     }
@@ -154,6 +161,40 @@ public class ImageLoader {
             String path = "Resources/Obstaculos/Hielo/" + state + ".gif";
             loadImage(key, path);
         }
+    }
+
+    /**
+     * Carga las imágenes del menú de pausa con transparencia
+     */
+    private static void loadPauseMenuImages() {
+        // Panel de fondo
+        loadImagePNG("pause_panel", "Resources/Pausa/Panel de madera.png");
+
+        // Botón Continuar
+        loadImagePNG("pause_continue_normal", "Resources/Pausa/CONTINUAR.png");
+        loadImagePNG("pause_continue_hover", "Resources/Pausa/continuar hover.png");
+        loadImagePNG("pause_continue_pressed", "Resources/Pausa/continuar pressed.png");
+
+        // Botón Guardar Juego
+        loadImagePNG("pause_save_normal", "Resources/Pausa/GUARDAR JUEGO.png");
+        loadImagePNG("pause_save_hover", "Resources/Pausa/Guardar juego hover.png");
+        loadImagePNG("pause_save_pressed", "Resources/Pausa/Guardar juego pressed.png");
+
+        // Botón Menú Principal
+        loadImagePNG("pause_menu_normal", "Resources/Pausa/MENU PRINCIPAL.png");
+        loadImagePNG("pause_menu_hover", "Resources/Pausa/Menu principal hover.png");
+        loadImagePNG("pause_menu_pressed", "Resources/Pausa/menu principal pressed.png");
+    }
+
+    /**
+     * ✅ NUEVO: Carga las imágenes del menú PVP
+     */
+    private static void loadPVPMenuImages() {
+        // Botón Helado vs Monstruo
+        loadImagePNG("pvp_icecream_vs_monster", "Resources/HELADO VS MOUNSTRUO/Helado vs mousntruo.png");
+
+        // Botón Helado vs Helado (Cooperativo)
+        loadImagePNG("pvp_coop", "Resources/HELADOVSHELADO/Cooperativo.png");
     }
 
     /**
@@ -184,6 +225,50 @@ public class ImageLoader {
             }
         } catch (Exception e) {
             System.err.println("❌ Error cargando " + path + ": " + e.getMessage());
+        }
+    }
+
+    /**
+     * Carga imágenes PNG con transparencia (solo para menú de pausa y PVP)
+     * 
+     * @param key  Clave para identificar la imagen en el cache
+     * @param path Ruta del archivo PNG
+     */
+    private static void loadImagePNG(String key, String path) {
+        try {
+            java.io.File file = new java.io.File(path);
+            if (!file.exists()) {
+                System.err.println("⚠️  No se pudo cargar PNG: " + path);
+                return;
+            }
+
+            // Usar ImageIO para preservar transparencia
+            BufferedImage bufferedImage = javax.imageio.ImageIO.read(file);
+
+            if (bufferedImage != null) {
+                boolean hasAlpha = bufferedImage.getColorModel().hasAlpha();
+
+                if (hasAlpha) {
+                    // Crear imagen compatible con transparencia ARGB
+                    BufferedImage compatibleImage = new BufferedImage(
+                            bufferedImage.getWidth(),
+                            bufferedImage.getHeight(),
+                            BufferedImage.TYPE_INT_ARGB);
+
+                    Graphics2D g2d = compatibleImage.createGraphics();
+                    g2d.setComposite(AlphaComposite.Src);
+                    g2d.drawImage(bufferedImage, 0, 0, null);
+                    g2d.dispose();
+
+                    imageCache.put(key, compatibleImage);
+                } else {
+                    imageCache.put(key, bufferedImage);
+                }
+            } else {
+                System.err.println("⚠️  Error al cargar PNG: " + path);
+            }
+        } catch (Exception e) {
+            System.err.println("❌ Error cargando PNG " + path + ": " + e.getMessage());
         }
     }
 
@@ -299,5 +384,43 @@ public class ImageLoader {
 
         String key = "ice_" + state;
         return imageCache.get(key);
+    }
+
+    /**
+     * Obtiene una imagen del menú de pausa
+     * 
+     * @param element Elemento: "panel", "continue", "save", "menu"
+     * @param state   Estado: "normal", "hover", "pressed" (no aplica para panel)
+     * @return Imagen del elemento, o null si no se pudo cargar
+     */
+    public static Image getPauseMenuImage(String element, String state) {
+        element = element.toLowerCase();
+        state = state.toLowerCase();
+
+        if (element.equals("panel")) {
+            return imageCache.get("pause_panel");
+        }
+
+        String key = "pause_" + element + "_" + state;
+        return imageCache.get(key);
+    }
+
+    /**
+     * ✅ NUEVO: Obtiene una imagen del menú PVP
+     * 
+     * @param buttonType Tipo de botón: "icecream_vs_monster", "vs_monster", "coop",
+     *                   "cooperativo"
+     * @return Imagen del botón, o null si no se pudo cargar
+     */
+    public static Image getPVPMenuImage(String buttonType) {
+        buttonType = buttonType.toLowerCase();
+
+        if (buttonType.equals("icecream_vs_monster") || buttonType.equals("vs_monster")) {
+            return imageCache.get("pvp_icecream_vs_monster");
+        } else if (buttonType.equals("coop") || buttonType.equals("cooperativo")) {
+            return imageCache.get("pvp_coop");
+        }
+
+        return null;
     }
 }

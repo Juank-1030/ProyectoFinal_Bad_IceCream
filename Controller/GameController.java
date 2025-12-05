@@ -468,7 +468,9 @@ public class GameController implements KeyListener {
 
         if (game.getGameState() == GameState.PAUSED) {
             pauseGame();
-            showPauseMessage();
+            // NO mostrar el diálogo de pausa, usar el overlay visual
+            // showPauseMessage(); // ← COMENTADO
+            gamePanel.repaint(); // Forzar redibujado del overlay
         } else if (game.getGameState() == GameState.PLAYING) {
             resumeGame();
         }

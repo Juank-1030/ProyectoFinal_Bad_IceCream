@@ -28,6 +28,10 @@ public class GamePanel extends JPanel {
     private Runnable onSaveGameClick;
     private Runnable onContinueGameClick;
 
+    // Variables para tracking del mouse
+    private Point mousePosition = new Point(0, 0);
+    private boolean mousePressed = false;
+
     // Configuración visual
     private static final int CELL_SIZE = 40;
     private static final int UI_HEIGHT = 100;
@@ -85,6 +89,26 @@ public class GamePanel extends JPanel {
             public void mouseClicked(java.awt.event.MouseEvent e) {
                 handleMouseClick(e);
             }
+
+            @Override
+            public void mousePressed(java.awt.event.MouseEvent e) {
+                mousePressed = true;
+                repaint();
+            }
+
+            @Override
+            public void mouseReleased(java.awt.event.MouseEvent e) {
+                mousePressed = false;
+                repaint();
+            }
+        });
+
+        addMouseMotionListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseMoved(java.awt.event.MouseEvent e) {
+                mousePosition = e.getPoint();
+                repaint();
+            }
         });
     }
 
@@ -115,6 +139,41 @@ public class GamePanel extends JPanel {
      * Detecta clics en los botones de pausa
      */
     private void detectPauseButtonClick(java.awt.event.MouseEvent e) {
+        Image panelImage = ImageLoader.getPauseMenuImage("panel", "normal");
+        if (panelImage == null) {
+            detectPauseButtonClickOld(e);
+            return;
+        }
+
+        int panelSize = 650;
+        int panelX = (getWidth() - panelSize) / 2;
+        int panelY = (getHeight() - panelSize) / 2;
+        int spacing = 18;
+        int startY = panelY + 245;
+
+        int continueW = 360, continueH = 75;
+        Rectangle continueBtn = new Rectangle(panelX + (panelSize - continueW) / 2, startY, continueW, continueH);
+
+        int saveW = 520, saveH = 85;
+        Rectangle saveBtn = new Rectangle(panelX + (panelSize - saveW) / 2, startY + continueH + spacing, saveW, saveH);
+
+        int menuW = 450, menuH = 80;
+        Rectangle menuBtn = new Rectangle(panelX + (panelSize - menuW) / 2, startY + continueH + saveH + spacing * 2,
+                menuW, menuH);
+
+        Point p = e.getPoint();
+        if (continueBtn.contains(p) && onContinueGameClick != null)
+            onContinueGameClick.run();
+        else if (saveBtn.contains(p) && onSaveGameClick != null)
+            onSaveGameClick.run();
+        else if (menuBtn.contains(p) && onReturnToMenuClick != null)
+            onReturnToMenuClick.run();
+    }
+
+    /**
+     * Método anterior de detección de clics (fallback)
+     */
+    private void detectPauseButtonClickOld(java.awt.event.MouseEvent e) {
         int centerX = getWidth() / 2;
         int centerY = getHeight() / 2;
 
@@ -127,29 +186,18 @@ public class GamePanel extends JPanel {
         int button3X = centerX + PAUSE_BUTTON_WIDTH + PAUSE_BUTTON_MARGIN;
         int button3Y = centerY + 50;
 
-        System.out.println("Click detectado en pausa.  Posición: (" + e.getX() + ", " + e.getY() + ")");
-        System.out.println("Botón 1 (Guardar): (" + button1X + ", " + button1Y + ") - ("
-                + (button1X + PAUSE_BUTTON_WIDTH) + ", " + (button1Y + PAUSE_BUTTON_HEIGHT) + ")");
-        System.out.println("Botón 2 (Menú): (" + button2X + ", " + button2Y + ") - (" + (button2X + PAUSE_BUTTON_WIDTH)
-                + ", " + (button2Y + PAUSE_BUTTON_HEIGHT) + ")");
-        System.out.println("Botón 3 (Continuar): (" + button3X + ", " + button3Y + ") - ("
-                + (button3X + PAUSE_BUTTON_WIDTH) + ", " + (button3Y + PAUSE_BUTTON_HEIGHT) + ")");
-
         if (e.getX() >= button1X && e.getX() <= button1X + PAUSE_BUTTON_WIDTH &&
                 e.getY() >= button1Y && e.getY() <= button1Y + PAUSE_BUTTON_HEIGHT) {
-            System.out.println("✅ Botón Guardar Partida presionado");
             if (onSaveGameClick != null) {
                 onSaveGameClick.run();
             }
         } else if (e.getX() >= button2X && e.getX() <= button2X + PAUSE_BUTTON_WIDTH &&
                 e.getY() >= button2Y && e.getY() <= button2Y + PAUSE_BUTTON_HEIGHT) {
-            System.out.println("✅ Botón Volver al Menú presionado");
             if (onReturnToMenuClick != null) {
                 onReturnToMenuClick.run();
             }
         } else if (e.getX() >= button3X && e.getX() <= button3X + PAUSE_BUTTON_WIDTH &&
                 e.getY() >= button3Y && e.getY() <= button3Y + PAUSE_BUTTON_HEIGHT) {
-            System.out.println("✅ Botón Continuar presionado");
             if (onContinueGameClick != null) {
                 onContinueGameClick.run();
             }
@@ -777,12 +825,104 @@ public class GamePanel extends JPanel {
     }
 
     /**
-     * Dibuja overlay de pausa
+     * Dibuja overlay de pausa con imágenes
      */
     private void drawPauseOverlay(Graphics2D g) {
-        g.setColor(new Color(0, 0, 0, 150));
+        g.setColor(new Color(0, 0, 0, 180));
         g.fillRect(0, 0, getWidth(), getHeight());
 
+        Image panelImage = ImageLoader.getPauseMenuImage("panel", "normal");
+        if (panelImage == null) {
+            drawPauseOverlayFallback(g);
+            return;
+        }
+
+        int panelSize = 650;
+        int panelX = (getWidth() - panelSize) / 2;
+        int panelY = (getHeight() - panelSize) / 2;
+        g.drawImage(panelImage, panelX, panelY, panelSize, panelSize, null);
+
+        // ✅ CADA BOTÓN CON SU PROPIO TAMAÑO
+        int spacing = 18;
+        int startY = panelY + 245;
+
+        // CONTINUAR (más pequeño - 70% del ancho)
+        int continueW = 360;
+        int continueH = 75;
+        Rectangle continueBtn = new Rectangle(
+                panelX + (panelSize - continueW) / 2,
+                startY,
+                continueW,
+                continueH);
+
+        // GUARDAR JUEGO (ancho completo - 100%)
+        int saveW = 520;
+        int saveH = 85;
+        Rectangle saveBtn = new Rectangle(
+                panelX + (panelSize - saveW) / 2,
+                startY + continueH + spacing,
+                saveW,
+                saveH);
+
+        // MENÚ PRINCIPAL (mediano - 85%)
+        int menuW = 450;
+        int menuH = 80;
+        Rectangle menuBtn = new Rectangle(
+                panelX + (panelSize - menuW) / 2,
+                startY + continueH + saveH + spacing * 2,
+                menuW,
+                menuH);
+
+        drawPauseButton(g, continueBtn, "continue");
+        drawPauseButton(g, saveBtn, "save");
+        drawPauseButton(g, menuBtn, "menu");
+    }
+
+    /**
+     * Dibuja un botón del menú de pausa con estados hover/pressed
+     */
+    /**
+     * Dibuja un botón del menú de pausa con estados hover/pressed
+     */
+    private void drawPauseButton(Graphics2D g, Rectangle bounds, String buttonType) {
+        boolean isHover = bounds.contains(mousePosition);
+        boolean isPressed = isHover && mousePressed;
+
+        String state;
+        if (isPressed) {
+            state = "pressed";
+        } else if (isHover) {
+            state = "hover";
+        } else {
+            state = "normal";
+        }
+
+        Image buttonImage = ImageLoader.getPauseMenuImage(buttonType, state);
+
+        if (buttonImage != null) {
+            // ✅ Configurar renderizado de alta calidad con transparencia
+            g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+            g.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+            g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+            // ✅ Dibujar con transparencia preservada
+            g.drawImage(buttonImage, bounds.x, bounds.y, bounds.width, bounds.height, null);
+        } else {
+            System.err.println("⚠️ No se pudo cargar: pause_" + buttonType + "_" + state);
+            // Fallback: dibujar botón simple
+            Color color = buttonType.equals("continue") ? new Color(0, 150, 0)
+                    : buttonType.equals("save") ? new Color(200, 200, 0) : new Color(200, 0, 0);
+            g.setColor(color);
+            g.fillRect(bounds.x, bounds.y, bounds.width, bounds.height);
+            g.setColor(Color.WHITE);
+            g.drawRect(bounds.x, bounds.y, bounds.width, bounds.height);
+        }
+    }
+
+    /**
+     * Fallback al menú de pausa original (sin imágenes)
+     */
+    private void drawPauseOverlayFallback(Graphics2D g) {
         g.setColor(Color.WHITE);
         g.setFont(new Font("Arial", Font.BOLD, 48));
 
@@ -799,17 +939,11 @@ public class GamePanel extends JPanel {
         x = (getWidth() - fm.stringWidth(msg)) / 2;
         g.drawString(msg, x, y + 50);
 
-        g.setFont(new Font("Arial", Font.PLAIN, 16));
-        msg = "Presiona M para volver al menú";
-        fm = g.getFontMetrics();
-        x = (getWidth() - fm.stringWidth(msg)) / 2;
-        g.drawString(msg, x, y + 85);
-
         drawPauseButtons(g);
     }
 
     /**
-     * Dibuja los botones del overlay de pausa
+     * Dibuja los botones del overlay de pausa (método anterior)
      */
     private void drawPauseButtons(Graphics2D g) {
         int centerX = getWidth() / 2;
@@ -913,6 +1047,31 @@ public class GamePanel extends JPanel {
 
         g.drawString(message, x, y);
     }
+
+    /**
+     * Convierte una imagen a formato compatible con transparencia
+     */
+    private Image makeTransparent(Image img) {
+        if (img == null)
+            return null;
+
+        // Crear BufferedImage con soporte de transparencia
+        java.awt.image.BufferedImage buffered = new java.awt.image.BufferedImage(
+                img.getWidth(null),
+                img.getHeight(null),
+                java.awt.image.BufferedImage.TYPE_INT_ARGB // ← ARGB = Alpha + RGB
+        );
+
+        Graphics2D g2d = buffered.createGraphics();
+        g2d.drawImage(img, 0, 0, null);
+        g2d.dispose();
+
+        return buffered;
+    }
+
+    // ========================================
+    // CALLBACKS
+    // ========================================
 
     public void setOnReturnToMenuClick(Runnable callback) {
         this.onReturnToMenuClick = callback;
