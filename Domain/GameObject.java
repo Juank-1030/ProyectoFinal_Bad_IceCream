@@ -115,7 +115,7 @@ public abstract class GameObject implements Serializable {
     }
 
     /**
-     * Actualiza la posición visual (interpolación)
+     * Actualiza la posición visual con interpolación rápida y fluida
      */
     public void updateVisualPosition() {
         float targetPosX = (float) position.getX();
@@ -126,7 +126,8 @@ public abstract class GameObject implements Serializable {
 
         float distance = (float) Math.sqrt(deltaX * deltaX + deltaY * deltaY);
 
-        if (distance < 0.05F) {
+        if (distance < 0.01F) {
+            // Snap directo a la posición final
             visualX = targetPosX;
             visualY = targetPosY;
 
@@ -134,8 +135,12 @@ public abstract class GameObject implements Serializable {
                 currentAction = "stand";
             }
         } else {
-            visualX += deltaX * INTERPOLATION_SPEED;
-            visualY += deltaY * INTERPOLATION_SPEED;
+            // ✅ MOVIMIENTO RÁPIDO Y FLUIDO
+            // Velocidad adaptativa: más rápido cuando está lejos, más lento cerca
+            float speed = Math.min(0.8F, distance * 0.6F); // Entre 0 y 0.8
+
+            visualX += deltaX * speed;
+            visualY += deltaY * speed;
 
             if (!currentAction.equals("shoot") && !currentAction.equals("break")) {
                 currentAction = "walk";

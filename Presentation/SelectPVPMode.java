@@ -127,7 +127,7 @@ public class SelectPVPMode extends JFrame {
 
         // Botón Helado Cooperativo (DERECHA)
         JPanel botonCoop = crearBotonConImagen("coop", PVPMode.ICE_CREAM_COOPERATIVE);
-        botonCoop.setBounds(320, 25, 280, 200);
+        botonCoop.setBounds(280, 25, 280, 200);
         panel.add(botonCoop);
 
         return panel;
