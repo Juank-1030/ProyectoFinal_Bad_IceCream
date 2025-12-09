@@ -20,7 +20,8 @@ public class Level implements Serializable {
     // Configuración de entidades
     private List<EnemyConfig> enemyConfigs;
     private List<FruitConfig> fruitConfigs;
-    private List<Position> wallPositions;
+    private List<Position> wallPositions;         // Bordes indestructibles
+    private List<Position> iceBlockPositions;    // Bloques rompibles interiores
     private Position iceCreamStartPosition;
 
     /**
@@ -35,6 +36,7 @@ public class Level implements Serializable {
         this.enemyConfigs = new ArrayList<>();
         this.fruitConfigs = new ArrayList<>();
         this.wallPositions = new ArrayList<>();
+        this.iceBlockPositions = new ArrayList<>();
     }
 
     /**
@@ -154,7 +156,7 @@ public class Level implements Serializable {
      * Crea las paredes del nivel 1
      */
     private void createLevel1Walls() {
-        // Bordes del tablero
+        // Bordes del tablero (muros indestructibles)
         for (int x = 0; x < boardWidth; x++) {
             addWallPosition(new Position(x, 0)); // Borde superior
             addWallPosition(new Position(x, boardHeight - 1)); // Borde inferior
@@ -164,27 +166,27 @@ public class Level implements Serializable {
             addWallPosition(new Position(boardWidth - 1, y)); // Borde derecho
         }
 
-        // Obstáculos internos (laberinto simple)
+        // Obstáculos internos (laberinto simple - bloques rompibles)
         // Paredes horizontales
         for (int x = 2; x < 6; x++) {
-            addWallPosition(new Position(x, 3));
+            addIceBlockPosition(new Position(x, 3));
         }
         for (int x = 9; x < 13; x++) {
-            addWallPosition(new Position(x, 3));
+            addIceBlockPosition(new Position(x, 3));
         }
         for (int x = 2; x < 6; x++) {
-            addWallPosition(new Position(x, 7));
+            addIceBlockPosition(new Position(x, 7));
         }
         for (int x = 9; x < 13; x++) {
-            addWallPosition(new Position(x, 7));
+            addIceBlockPosition(new Position(x, 7));
         }
 
         // Paredes verticales
         for (int y = 2; y < 5; y++) {
-            addWallPosition(new Position(4, y));
+            addIceBlockPosition(new Position(4, y));
         }
         for (int y = 6; y < 9; y++) {
-            addWallPosition(new Position(10, y));
+            addIceBlockPosition(new Position(10, y));
         }
     }
 
@@ -192,7 +194,7 @@ public class Level implements Serializable {
      * Crea las paredes del nivel 2
      */
     private void createLevel2Walls() {
-        // Bordes
+        // Bordes (muros indestructibles)
         for (int x = 0; x < boardWidth; x++) {
             addWallPosition(new Position(x, 0));
             addWallPosition(new Position(x, boardHeight - 1));
@@ -202,14 +204,14 @@ public class Level implements Serializable {
             addWallPosition(new Position(boardWidth - 1, y));
         }
 
-        // Laberinto más complejo
+        // Laberinto más complejo (bloques rompibles)
         for (int x = 3; x < 7; x++) {
-            addWallPosition(new Position(x, 2));
-            addWallPosition(new Position(x, 8));
+            addIceBlockPosition(new Position(x, 2));
+            addIceBlockPosition(new Position(x, 8));
         }
         for (int x = 8; x < 12; x++) {
-            addWallPosition(new Position(x, 2));
-            addWallPosition(new Position(x, 8));
+            addIceBlockPosition(new Position(x, 2));
+            addIceBlockPosition(new Position(x, 8));
         }
     }
 
@@ -218,6 +220,7 @@ public class Level implements Serializable {
      */
     private void createLevel3Walls() {
         // Similar al nivel 2 pero con más espacios abiertos
+        // Bordes (muros indestructibles)
         for (int x = 0; x < boardWidth; x++) {
             addWallPosition(new Position(x, 0));
             addWallPosition(new Position(x, boardHeight - 1));
@@ -227,10 +230,10 @@ public class Level implements Serializable {
             addWallPosition(new Position(boardWidth - 1, y));
         }
 
-        // Pocas paredes internas
+        // Pocas paredes internas (bloques rompibles)
         for (int y = 3; y < 8; y++) {
-            addWallPosition(new Position(5, y));
-            addWallPosition(new Position(9, y));
+            addIceBlockPosition(new Position(5, y));
+            addIceBlockPosition(new Position(9, y));
         }
     }
 
@@ -241,6 +244,17 @@ public class Level implements Serializable {
 
     public void addFruitConfig(FruitConfig config) {
         fruitConfigs.add(config);
+    }
+
+    public void addIceBlockPosition(Position pos) {
+        // No agregar si está en un borde (donde hay muros)
+        if (pos.getX() <= 0 || pos.getX() >= boardWidth - 1 || 
+            pos.getY() <= 0 || pos.getY() >= boardHeight - 1) {
+            return; // Ignorar posiciones de borde
+        }
+        if (!iceBlockPositions.contains(pos)) {
+            iceBlockPositions.add(pos);
+        }
     }
 
     public void addWallPosition(Position pos) {
@@ -280,6 +294,10 @@ public class Level implements Serializable {
 
     public List<FruitConfig> getFruitConfigs() {
         return new ArrayList<>(fruitConfigs);
+    }
+
+    public List<Position> getIceBlockPositions() {
+        return new ArrayList<>(iceBlockPositions);
     }
 
     public List<Position> getWallPositions() {

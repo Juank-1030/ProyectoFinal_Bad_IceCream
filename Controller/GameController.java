@@ -7,6 +7,7 @@ import javax.swing.*;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.util.List;
+import java.util.Map;
 import Domain.GameState;
 
 /**
@@ -32,11 +33,18 @@ public class GameController implements KeyListener {
 
     // Callbacks
     private Runnable onReturnToMenuClick; // Callback para volver al menú
+    private java.util.function.Consumer<Integer> onLevelComplete; // Callback cuando se completa un nivel (recibe número
+                                                                  // de siguiente nivel)
+    private java.util.function.Consumer<Integer> onLevelFailed; // Callback cuando se falla un nivel (recibe número del
+                                                                // nivel anterior)
 
     // Control del juego
     private boolean running;
     private static final int FPS = 60;
     private static final int FRAME_TIME = 1000 / FPS; // 16ms por frame
+    
+    // Estrategia de IA para el helado
+    private String iceCreamAIStrategy; // Nombre de la estrategia de IA
 
     // Sistema de teclas presionadas actualmente (Input Buffering Pattern)
     private java.util.Set<Integer> keysPressed = new java.util.HashSet<>();
@@ -62,12 +70,26 @@ public class GameController implements KeyListener {
      */
     private String monsterType; // Tipo de monstruo seleccionado
     private String secondIceCreamFlavor; // Segundo sabor para modo cooperativo
+    private Map<String, Integer> enemyConfig; // Configuración personalizada de enemigos
+    private Map<String, Integer> fruitConfig; // Configuración personalizada de frutas
 
     public GameController(GameMode gameMode, String iceCreamFlavor, String secondIceCreamFlavor, String monsterType) {
+        this(gameMode, iceCreamFlavor, secondIceCreamFlavor, monsterType, null, null);
+    }
+
+    public GameController(GameMode gameMode, String iceCreamFlavor, String secondIceCreamFlavor, String monsterType,
+            Map<String, Integer> enemyConfig) {
+        this(gameMode, iceCreamFlavor, secondIceCreamFlavor, monsterType, enemyConfig, null);
+    }
+
+    public GameController(GameMode gameMode, String iceCreamFlavor, String secondIceCreamFlavor, String monsterType,
+            Map<String, Integer> enemyConfig, Map<String, Integer> fruitConfig) {
         // 1. Crear el Model (Game)
         this.monsterType = monsterType;
         this.secondIceCreamFlavor = secondIceCreamFlavor;
-        this.game = new Game(gameMode, iceCreamFlavor, secondIceCreamFlavor, monsterType);
+        this.enemyConfig = enemyConfig;
+        this.fruitConfig = fruitConfig;
+        this.game = new Game(gameMode, iceCreamFlavor, secondIceCreamFlavor, monsterType, enemyConfig, fruitConfig);
 
         // 2. Crear la View (GamePanel)
         this.gamePanel = new GamePanel(this);
@@ -85,7 +107,7 @@ public class GameController implements KeyListener {
     // Constructor sin secondIceCreamFlavor (retrocompatibilidad para Helado vs
     // Monstruo)
     public GameController(GameMode gameMode, String iceCreamFlavor, String monsterType) {
-        this(gameMode, iceCreamFlavor, null, monsterType);
+        this(gameMode, iceCreamFlavor, null, monsterType, null);
     }
 
     /**
@@ -333,7 +355,13 @@ public class GameController implements KeyListener {
             // Cargar siguiente nivel
             int nextLevel = game.getCurrentLevel().getLevelNumber() + 1;
             if (nextLevel <= 3) {
-                startLevel(nextLevel);
+                // Llamar al callback si está configurado
+                if (onLevelComplete != null) {
+                    onLevelComplete.accept(nextLevel);
+                } else {
+                    // Fallback: iniciar directamente el nivel
+                    startLevel(nextLevel);
+                }
             } else {
                 showGameCompleteMessage();
             }
@@ -360,7 +388,14 @@ public class GameController implements KeyListener {
             int currentLevel = game.getCurrentLevel().getLevelNumber();
             startLevel(currentLevel);
         } else {
-            returnToMenu();
+            // Volver al nivel 1 siempre que se pierda en cualquier nivel
+            if (onLevelFailed != null) {
+                // Volver siempre al nivel 1
+                onLevelFailed.accept(1);
+            } else {
+                // Volver al menú si no hay callback
+                returnToMenu();
+            }
         }
     }
 
@@ -847,5 +882,30 @@ public class GameController implements KeyListener {
      */
     public void setOnContinueGameClick(Runnable callback) {
         gamePanel.setOnContinueGameClick(callback);
+    }
+
+    /**
+     * Establece el callback para cuando se completa un nivel
+     */
+    public void setOnLevelComplete(java.util.function.Consumer<Integer> callback) {
+        this.onLevelComplete = callback;
+    }
+
+    /**
+     * Establece el callback para cuando se falla un nivel
+     */
+    public void setOnLevelFailed(java.util.function.Consumer<Integer> callback) {
+        this.onLevelFailed = callback;
+    }
+
+    /**
+     * Establece la estrategia de IA para el helado
+     */
+    public void setIceCreamAIStrategy(String strategyName) {
+        this.iceCreamAIStrategy = strategyName;
+        // Pasar también a Game para que la aplique cuando inicie el nivel
+        if (game != null) {
+            game.setIceCreamAIStrategy(strategyName);
+        }
     }
 }

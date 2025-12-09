@@ -1,12 +1,11 @@
 package Domain;
 
-
 /**
  * Cherry (Cereza) - Fruta que se teletransporta aleatoriamente
  */
 public class Cherry extends Fruit {
     private static final long serialVersionUID = 1L;
-    private static final int POINTS = 50;
+    private static final int POINTS = 150;
 
     public Cherry(Position position, Board board) {
         super(position, "Cereza");

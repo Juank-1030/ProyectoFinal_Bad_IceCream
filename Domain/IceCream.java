@@ -11,6 +11,7 @@ public abstract class IceCream extends GameObject {
     protected int fruitsCollected; // Frutas recolectadas
     protected boolean canCreateIce; // Si puede crear hielo en este momento
     protected boolean canBreakIce; // Si puede romper hielo en este momento
+    protected IceCreamAIStrategy aiStrategy; // Estrategia de IA (null si es jugador humano)
 
     /**
      * Constructor de IceCream
@@ -24,6 +25,7 @@ public abstract class IceCream extends GameObject {
         this.fruitsCollected = 0;
         this.canCreateIce = true;
         this.canBreakIce = true;
+        this.aiStrategy = null; // Sin IA por defecto
     }
 
     /**
@@ -113,6 +115,27 @@ public abstract class IceCream extends GameObject {
 
     public void setCanBreakIce(boolean canBreakIce) {
         this.canBreakIce = canBreakIce;
+    }
+
+    /**
+     * Establece la estrategia de IA para este helado
+     */
+    public void setAIStrategy(IceCreamAIStrategy strategy) {
+        this.aiStrategy = strategy;
+    }
+
+    /**
+     * Obtiene la estrategia de IA actual
+     */
+    public IceCreamAIStrategy getAIStrategy() {
+        return aiStrategy;
+    }
+
+    /**
+     * Verifica si este helado es controlado por IA
+     */
+    public boolean isAIControlled() {
+        return aiStrategy != null;
     }
 
     /**

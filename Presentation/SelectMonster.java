@@ -21,6 +21,14 @@ public class SelectMonster extends JFrame {
     private Runnable onBackClick;
     private Map<String, Runnable> monstruoCallbacks = new HashMap<>(); // Callbacks por monstruo
 
+    // Mapeo de nombres amigables a nombres de archivo
+    private static final Map<String, String> NOMBRE_ARCHIVO_MAP = new HashMap<>();
+    static {
+        NOMBRE_ARCHIVO_MAP.put("Calamar Naranja", "YellowSquid");
+        NOMBRE_ARCHIVO_MAP.put("Olla", "Pot");
+        NOMBRE_ARCHIVO_MAP.put("Troll", "Trol");
+    }
+
     public SelectMonster() {
         inicializarVentana();
     }
@@ -263,6 +271,9 @@ public class SelectMonster extends JFrame {
      * Busca el archivo en Resources/Letreros/Monstruos/[NombreMonstruo].png
      */
     private JLabel crearLetrero(String nombreMonstruo) {
+        // Normalizar nombre (ej: "Calamar Naranja" → "YellowSquid")
+        String nombreNormalizado = normalizarNombreMonstruo(nombreMonstruo);
+
         // Mapear nombres de monstruos a nombres de archivos
         Map<String, String> mapeoArchivos = new HashMap<>();
         mapeoArchivos.put("Narval", "Narval.png");
@@ -270,10 +281,10 @@ public class SelectMonster extends JFrame {
         mapeoArchivos.put("Trol", "Troll.png");
         mapeoArchivos.put("YellowSquid", "Squid.png");
 
-        String nombreArchivo = mapeoArchivos.get(nombreMonstruo);
+        String nombreArchivo = mapeoArchivos.get(nombreNormalizado);
         if (nombreArchivo == null) {
             // Fallback: usar el nombre del monstruo + .png
-            nombreArchivo = nombreMonstruo + ".png";
+            nombreArchivo = nombreNormalizado + ".png";
         }
 
         String rutaLetrero = "Resources/Letreros/Monstruos/" + nombreArchivo;
@@ -496,6 +507,21 @@ public class SelectMonster extends JFrame {
      */
     public void setOnMonstruoClick(String nombreMonstruo, Runnable callback) {
         monstruoCallbacks.put(nombreMonstruo, callback);
+    }
+
+    /**
+     * Limpia todos los callbacks registrados para los monstruos
+     */
+    public void limpiarCallbacks() {
+        monstruoCallbacks.clear();
+    }
+
+    /**
+     * Normaliza nombres amigables a nombres de archivo
+     */
+    private String normalizarNombreMonstruo(String nombre) {
+        String normalizado = NOMBRE_ARCHIVO_MAP.get(nombre);
+        return normalizado != null ? normalizado : nombre;
     }
 
     public static void main(String[] args) {

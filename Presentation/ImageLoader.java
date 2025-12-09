@@ -182,7 +182,7 @@ public class ImageLoader {
 
         // Botón Menú Principal
         loadImagePNG("pause_menu_normal", "Resources/Pausa/MENU PRINCIPAL.png");
-        loadImagePNG("pause_menu_hover", "Resources/Pausa/Menu principal hover.png");
+        loadImagePNG("pause_menu_hover", "Resources/Pausa/menu principal hover.png");
         loadImagePNG("pause_menu_pressed", "Resources/Pausa/menu principal pressed.png");
     }
 

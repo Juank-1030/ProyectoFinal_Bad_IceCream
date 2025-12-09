@@ -10,6 +10,7 @@ import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 
 /**
@@ -33,11 +34,14 @@ public class Game implements Serializable {
     // Para modos con IA
     private AI iceCreamAI; // Para modo MVM
     private List<AI> enemyAIs; // Para modos PVM y MVM
+    
+    // Estrategia de IA para el helado controlado por IA
+    private String iceCreamAIStrategyName; // Nombre de la estrategia
 
     // Control de tiempo
     private transient long lastUpdateTime;
     private static final int FPS = 60;
-    private static final long FRAME_TIME = 1000 / FPS;
+    // FRAME_TIME no se usa actualmente pero se mantiene para futura optimización
 
     /**
      * Constructor del juego
@@ -48,12 +52,26 @@ public class Game implements Serializable {
      *                             null)
      */
     private String monsterType; // Tipo de monstruo seleccionado en PVP
+    private Map<String, Integer> enemyConfig; // Configuración personalizada de enemigos
+    private Map<String, Integer> fruitConfig; // Configuración personalizada de frutas
 
     public Game(GameMode gameMode, String iceCreamFlavor, String secondIceCreamFlavor, String monsterType) {
+        this(gameMode, iceCreamFlavor, secondIceCreamFlavor, monsterType, null, null);
+    }
+
+    public Game(GameMode gameMode, String iceCreamFlavor, String secondIceCreamFlavor, String monsterType,
+            Map<String, Integer> enemyConfig) {
+        this(gameMode, iceCreamFlavor, secondIceCreamFlavor, monsterType, enemyConfig, null);
+    }
+
+    public Game(GameMode gameMode, String iceCreamFlavor, String secondIceCreamFlavor, String monsterType,
+            Map<String, Integer> enemyConfig, Map<String, Integer> fruitConfig) {
         this.gameMode = gameMode;
         this.iceCreamFlavor = iceCreamFlavor;
         this.secondIceCreamFlavor = secondIceCreamFlavor; // null para modo vs Monstruo
         this.monsterType = monsterType; // PVP: Tipo de monstruo controlado
+        this.enemyConfig = enemyConfig; // Configuración personalizada de enemigos
+        this.fruitConfig = fruitConfig; // Configuración personalizada de frutas
         this.gameState = GameState.MENU;
         this.score = 0;
         // Sin sistema de vidas (como el juego original)
@@ -111,13 +129,29 @@ public class Game implements Serializable {
      * Configura el tablero con las entidades del nivel
      */
     private void setupBoard() {
-        // Agregar paredes
+        // Agregar muros indestructibles (bordes del nivel)
         for (Position wallPos : currentLevel.getWallPositions()) {
             board.addWall(wallPos);
         }
 
+        // Agregar bloques de hielo rompibles (interior del nivel)
+        for (Position icePos : currentLevel.getIceBlockPositions()) {
+            IceBlock iceBlock = new IceBlock(icePos, true);
+            board.addIceBlock(iceBlock);
+        }
+
         // Crear el helado
         IceCream iceCream = createIceCream(currentLevel.getIceCreamStartPosition());
+        
+        // Aplicar la estrategia de IA si fue especificada
+        if (iceCreamAIStrategyName != null && !iceCreamAIStrategyName.isEmpty()) {
+            IceCreamAIStrategy aiStrategy = IceCreamAIStrategyManager.getStrategy(iceCreamAIStrategyName);
+            if (aiStrategy != null) {
+                iceCream.setAIStrategy(aiStrategy);
+                System.out.println("✓ IA aplicada al helado: " + iceCreamAIStrategyName);
+            }
+        }
+        
         board.setIceCream(iceCream);
 
         // Crear segundo helado si es modo cooperativo
@@ -142,10 +176,11 @@ public class Game implements Serializable {
         }
 
         // Crear enemigos
-        // En PVP: usar solo el monstruo seleccionado
-        // En PVM/MVM: usar todos los enemigos del nivel
+        // En PVP Vs Monstruo: crear el monstruo seleccionado + enemigos adicionales
+        // En PVM/MVM: usar configuración personalizada si existe, sino usar la del
+        // nivel
         if (gameMode == GameMode.PVP && monsterType != null) {
-            // Crear solo el monstruo seleccionado en posición aleatoria del nivel
+            // Crear el monstruo seleccionado en posición aleatoria del nivel
             List<Position> emptyPositions = new ArrayList<>();
             for (int x = 1; x < currentLevel.getBoardWidth() - 1; x++) {
                 for (int y = 1; y < currentLevel.getBoardHeight() - 1; y++) {
@@ -165,8 +200,16 @@ public class Game implements Serializable {
                     board.addEnemy(enemy);
                 }
             }
+
+            // ADEMÁS: agregar enemigos adicionales si existen
+            if (enemyConfig != null && !enemyConfig.isEmpty()) {
+                createEnemiesFromCustomConfig();
+            }
+        } else if (enemyConfig != null && !enemyConfig.isEmpty()) {
+            // PVM/MVM: usar configuración personalizada de enemigos
+            createEnemiesFromCustomConfig();
         } else {
-            // PVM/MVM: crear todos los enemigos del nivel
+            // PVM/MVM: crear todos los enemigos del nivel predeterminado
             for (Level.EnemyConfig config : currentLevel.getEnemyConfigs()) {
                 Enemy enemy = createEnemy(config);
                 if (enemy != null) {
@@ -176,8 +219,58 @@ public class Game implements Serializable {
         }
 
         // Crear frutas
+        // Siempre crear frutas del nivel predeterminado
+        // Además: si hay configuración personalizada, agregar esas también
+        System.out.println("🍎 setupBoard() - Creando frutas...");
+        System.out.println("   fruitConfig: " + (fruitConfig != null ? "no nulo" : "nulo"));
+        if (fruitConfig != null) {
+            System.out.println("   tamaño: " + fruitConfig.size());
+        }
+
+        // Si hay configuración personalizada, usar SOLO esa (reemplaza la del nivel)
+        if (fruitConfig != null && !fruitConfig.isEmpty()) {
+            createFruitsFromCustomConfig();
+        } else {
+            // Si no hay configuración personalizada, usar frutas del nivel predeterminado
+            createFruitsFromLevelConfig();
+        }
+    }
+
+    /**
+     * Crea frutas desde la configuración personalizada del usuario
+     */
+    private void createFruitsFromCustomConfig() {
+        if (fruitConfig == null || fruitConfig.isEmpty()) {
+            System.out.println("⚠️ Configuración de frutas vacía o nula, usando predeterminada");
+            createFruitsFromLevelConfig();
+            return;
+        }
+
+        System.out.println("🍎 Creando frutas desde configuración personalizada:");
+        for (String fruitType : fruitConfig.keySet()) {
+            int quantity = fruitConfig.get(fruitType);
+            System.out.println("  - " + fruitType + ": " + quantity);
+
+            // Crear la cantidad especificada de cada tipo de fruta
+            for (int i = 0; i < quantity; i++) {
+                Position fruitPos = getRandomEmptyPosition();
+                Fruit fruit = createFruit(fruitType, fruitPos);
+                if (fruit != null) {
+                    board.addFruit(fruit);
+                }
+            }
+        }
+    }
+
+    /**
+     * Crea frutas desde la configuración predeterminada del nivel
+     */
+    private void createFruitsFromLevelConfig() {
+        System.out.println("🍎 Usando frutas predeterminadas del nivel");
+        int totalFruits = 0;
         Random random = new Random();
         for (Level.FruitConfig config : currentLevel.getFruitConfigs()) {
+            System.out.println("   Tipo: " + config.fruitType + ", Cantidad: " + config.quantity);
             for (int i = 0; i < config.quantity; i++) {
                 Position fruitPos;
                 if (config.startPosition != null) {
@@ -190,9 +283,11 @@ public class Game implements Serializable {
                 Fruit fruit = createFruit(config.fruitType, fruitPos);
                 if (fruit != null) {
                     board.addFruit(fruit);
+                    totalFruits++;
                 }
             }
         }
+        System.out.println("✅ Total frutas agregadas: " + totalFruits);
     }
 
     /**
@@ -226,8 +321,9 @@ public class Game implements Serializable {
      */
     private Enemy createEnemy(Level.EnemyConfig config) {
         Enemy enemy = null;
+        String normalized = config.enemyType.toLowerCase();
 
-        switch (config.enemyType.toLowerCase()) {
+        switch (normalized) {
             case "troll":
             case "trol":
                 if (config.pattern != null) {
@@ -240,12 +336,14 @@ public class Game implements Serializable {
 
             case "maceta":
             case "pot":
+            case "olla":
                 enemy = new Pot(config.startPosition, board);
                 enemy.setColor(new java.awt.Color(255, 165, 0)); // Naranja
                 break;
 
             case "calamar":
             case "yellowsquid":
+            case "calamar naranja":
                 enemy = new YellowSquid(config.startPosition, board);
                 enemy.setColor(new java.awt.Color(255, 255, 0)); // Amarillo
                 break;
@@ -263,26 +361,43 @@ public class Game implements Serializable {
      * Crea una fruta según el tipo
      */
     private Fruit createFruit(String fruitType, Position position) {
-        switch (fruitType.toLowerCase()) {
+        String normalized = fruitType.toLowerCase().trim();
+
+        switch (normalized) {
+            // Uvas
             case "uvas":
+            case "uva":
             case "grape":
+            case "grapes":
                 return new Grape(position);
 
+            // Plátanos
             case "plátano":
+            case "plátanos":
             case "platano":
+            case "platanos":
             case "banana":
+            case "bananas":
                 return new Banana(position);
 
+            // Piñas
             case "piña":
+            case "piñas":
             case "pina":
+            case "pinas":
             case "pineapple":
+            case "pineapples":
                 return new Pineapple(position, board);
 
+            // Cerezas
             case "cereza":
+            case "cerezas":
             case "cherry":
+            case "cherries":
                 return new Cherry(position, board);
 
             default:
+                System.err.println("⚠️ Tipo de fruta desconocido: " + fruitType);
                 return null;
         }
     }
@@ -297,6 +412,31 @@ public class Game implements Serializable {
         }
         Random random = new Random();
         return emptyPositions.get(random.nextInt(emptyPositions.size()));
+    }
+
+    /**
+     * Crea enemigos según la configuración personalizada
+     * Mapea nombres de enemigos a sus tipos y los crea con la cantidad especificada
+     */
+    private void createEnemiesFromCustomConfig() {
+        if (enemyConfig == null || enemyConfig.isEmpty()) {
+            return;
+        }
+
+        Random random = new Random();
+        for (String enemyType : enemyConfig.keySet()) {
+            int quantity = enemyConfig.get(enemyType);
+
+            // Crear la cantidad especificada de cada tipo de enemigo
+            for (int i = 0; i < quantity; i++) {
+                Position enemyPos = getRandomEmptyPosition();
+                Level.EnemyConfig config = new Level.EnemyConfig(enemyType, enemyPos, null, 0);
+                Enemy enemy = createEnemy(config);
+                if (enemy != null) {
+                    board.addEnemy(enemy);
+                }
+            }
+        }
     }
 
     /**
@@ -316,6 +456,18 @@ public class Game implements Serializable {
         if (gameMode == GameMode.PVP && secondIceCreamFlavor != null) {
             for (Enemy enemy : board.getEnemies()) {
                 enemyAIs.add(new EnemyAI(enemy, board));
+            }
+        }
+
+        // En modo PVP Vs Monstruo (sin segundo helado), crear IA para enemigos
+        // adicionales ÚNICAMENTE (el primer enemigo es el monstruo principal controlado
+        // por Jugador 2)
+        if (gameMode == GameMode.PVP && secondIceCreamFlavor == null && enemyConfig != null && !enemyConfig.isEmpty()) {
+            List<Enemy> enemies = board.getEnemies();
+            // Saltar el primer enemigo (monstruo principal) y crear IA para el resto
+            // (enemigos adicionales)
+            for (int i = 1; i < enemies.size(); i++) {
+                enemyAIs.add(new EnemyAI(enemies.get(i), board));
             }
         }
 
@@ -341,8 +493,25 @@ public class Game implements Serializable {
 
         // Actualizar frutas (movimiento, teletransporte)
         updateFruits();
+        
+        // Actualizar IA del helado si aplica
+        IceCream iceCream = board.getIceCream();
+        if (iceCream != null && iceCream.isAIControlled()) {
+            Direction move = iceCream.getAIStrategy().getNextMove(board, iceCream);
+            if (move != null) {
+                boolean moved = board.moveIceCream(move);
 
-        // Actualizar IA si aplica
+                // Sumar puntos si recolectó fruta
+                if (moved) {
+                    Fruit fruit = board.getAndClearLastCollectedFruit();
+                    if (fruit != null) {
+                        score += 50;
+                    }
+                }
+            }
+        }
+
+        // Actualizar IA si aplica (modo MVM)
         if (gameMode == GameMode.MVM && iceCreamAI != null) {
             Direction move = iceCreamAI.getNextMove();
             if (move != null) {
@@ -378,19 +547,37 @@ public class Game implements Serializable {
     private void updateEnemies() {
         List<Enemy> enemies = board.getEnemies();
 
-        // En modo PVP vs Monstruo (1 helado vs 1 monstruo), solo actualizar Narval en carga automáticamente
+        // En modo PVP vs Monstruo (1 helado vs 1 monstruo, con enemigos adicionales
+        // opcionales)
         if (gameMode == GameMode.PVP && secondIceCreamFlavor == null) {
-            for (Enemy enemy : enemies) {
-                if (enemy instanceof Narval) {
-                    Narval narval = (Narval) enemy;
-                    if (narval.isCharging()) {
-                        // El Narval está en modo carga: moverse automáticamente
-                        board.moveEnemy(narval, narval.getChargeDirection());
+            int aiIndex = 0; // Índice para acceder a enemyAIs
+
+            for (int i = 0; i < enemies.size(); i++) {
+                Enemy enemy = enemies.get(i);
+
+                // El primer enemigo es el monstruo principal (controlado por Jugador 2)
+                if (i == 0) {
+                    // Monstruo principal: sin IA, controlado manualmente
+                    if (enemy instanceof Narval) {
+                        Narval narval = (Narval) enemy;
+                        if (narval.isCharging()) {
+                            // El Narval está en modo carga: moverse automáticamente
+                            board.moveEnemy(narval, narval.getChargeDirection());
+                        }
+                    }
+                } else {
+                    // Enemigos adicionales: controlar con IA
+                    if (aiIndex < enemyAIs.size()) {
+                        Direction nextMove = enemyAIs.get(aiIndex).getNextMove();
+                        if (nextMove != null) {
+                            board.moveEnemy(enemy, nextMove);
+                        }
+                        aiIndex++;
                     }
                 }
                 enemy.update();
             }
-            return; // Salir sin mover otros enemigos
+            return; // Salir del método después de procesar PVP vs Monstruo
         }
 
         for (int i = 0; i < enemies.size(); i++) {
@@ -402,8 +589,8 @@ public class Game implements Serializable {
             Direction nextMove;
 
             // Usar IA en modos PVM, MVM y PVP COOPERATIVO
-            if (gameMode == GameMode.PVM || gameMode == GameMode.MVM || 
-                (gameMode == GameMode.PVP && secondIceCreamFlavor != null)) {
+            if (gameMode == GameMode.PVM || gameMode == GameMode.MVM ||
+                    (gameMode == GameMode.PVP && secondIceCreamFlavor != null)) {
                 // Usar IA
                 if (i < enemyAIs.size()) {
                     nextMove = enemyAIs.get(i).getNextMove();
@@ -611,6 +798,13 @@ public class Game implements Serializable {
 
     public void setGameState(GameState state) {
         this.gameState = state;
+    }
+
+    /**
+     * Establece la estrategia de IA para el helado
+     */
+    public void setIceCreamAIStrategy(String strategyName) {
+        this.iceCreamAIStrategyName = strategyName;
     }
 
     /**

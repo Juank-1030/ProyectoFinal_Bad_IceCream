@@ -20,8 +20,8 @@ public class Board implements BoardStateProvider {
     private IceCream secondIceCream; // Segundo helado para modo cooperativo
     private List<Enemy> enemies;
     private List<Fruit> fruits;
-    private List<IceBlock> iceBlocks;
-    private List<Position> walls; // Paredes permanentes
+    private List<Position> walls;        // Muros indestructibles (bordes)
+    private List<IceBlock> iceBlocks;   // Bloques de hielo rompibles
 
     // Matriz de celdas (para búsqueda rápida)
     private CellType[][] cells;
@@ -37,8 +37,8 @@ public class Board implements BoardStateProvider {
         this.height = height;
         this.enemies = new ArrayList<>();
         this.fruits = new ArrayList<>();
-        this.iceBlocks = new ArrayList<>();
         this.walls = new ArrayList<>();
+        this.iceBlocks = new ArrayList<>();
         this.cells = new CellType[height][width];
         initializeCells();
     }
@@ -82,7 +82,7 @@ public class Board implements BoardStateProvider {
             return false;
         }
 
-        // Verificar si hay pared
+        // Verificar si hay muro (indestructible)
         if (isWall(pos)) {
             return false;
         }
@@ -96,10 +96,15 @@ public class Board implements BoardStateProvider {
     }
 
     /**
-     * Verifica si hay una pared en la posición
+     * Verifica si hay un muro en la posición
      */
     public boolean isWall(Position pos) {
-        return walls.contains(pos);
+        for (Position wall : walls) {
+            if (wall.equals(pos)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
@@ -318,14 +323,6 @@ public class Board implements BoardStateProvider {
                     narval.deactivateCharge();
                     narval.setCurrentAction("stand"); // NUEVO
                     return true;
-                }
-
-                // Verificar colisión con pared o muro
-                if (isWall(newPos)) {
-                    narval.deactivateCharge();
-                    narval.setCurrentAction("stand"); // NUEVO
-                    System.out.println("💥 Narval chocó contra una pared");
-                    return false;
                 }
 
                 // Si es posición válida y vacía, moverse
@@ -799,13 +796,13 @@ public class Board implements BoardStateProvider {
         this.iceBlocks.add(block);
     }
 
+    public List<Position> getWalls() {
+        return new ArrayList<>(walls);
+    }
+
     public void addWall(Position pos) {
         if (!walls.contains(pos)) {
             walls.add(pos);
         }
-    }
-
-    public List<Position> getWalls() {
-        return new ArrayList<>(walls);
     }
 }

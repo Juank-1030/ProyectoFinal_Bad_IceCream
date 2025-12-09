@@ -137,7 +137,7 @@ public abstract class GameObject implements Serializable {
         } else {
             // ✅ MOVIMIENTO RÁPIDO Y FLUIDO
             // Velocidad adaptativa: más rápido cuando está lejos, más lento cerca
-            float speed = Math.min(0.8F, distance * 0.6F); // Entre 0 y 0.8
+            float speed = Math.min(0.3F, distance * 0.2F); // Entre 0 y 0.3 (reducido de 0.8 a 0.3)
 
             visualX += deltaX * speed;
             visualY += deltaY * speed;

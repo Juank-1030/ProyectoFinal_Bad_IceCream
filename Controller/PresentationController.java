@@ -2,14 +2,22 @@ package Controller;
 
 import Domain.GameMode;
 import Domain.PVPMode;
+import Domain.LevelManager;
+import Domain.IceCreamAIStrategyManager;
 import Presentation.Intro;
 import Presentation.StartMenu;
 import Presentation.Modes;
 import Presentation.SelectIceCream;
+import Presentation.SelectIceCreamAI;
 import Presentation.SelectMonster;
 import Presentation.SelectPVPMode;
-import java.awt.event.ActionListener;
+import Presentation.SelectLevel;
+import Presentation.LevelConfigurationMenu;
+import Presentation.LevelCompletionMenu;
+import Presentation.EnemyConfigurationMenu;
+import Presentation.FruitConfigurationMenu;
 import java.io.File;
+import java.util.Map;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 
@@ -24,13 +32,27 @@ public class PresentationController {
     private Modes modos;
     private SelectPVPMode selectPVPMode;
     private SelectIceCream pvp;
+    private SelectIceCreamAI selectIceCreamAI;
     private SelectMonster selectMonster;
+    private SelectLevel selectLevel;
+    private LevelConfigurationMenu levelConfigMenu;
+    private LevelCompletionMenu levelCompletionMenu;
+    private EnemyConfigurationMenu enemyConfigMenu;
+    private FruitConfigurationMenu fruitConfigMenu;
     private GameMode selectedGameMode; // Almacena el modo de juego seleccionado
     private PVPMode selectedPVPMode; // Almacena el tipo de PVP seleccionado
     private String selectedIceCream; // Almacena el helado seleccionado
+    private String selectedIceCreamAIStrategy; // Almacena la estrategia de IA del helado
     private String selectedSecondIceCream; // Almacena el segundo helado seleccionado (para PVP cooperativo)
+    private String selectedMonster; // Almacena el monstruo seleccionado (para PVP Vs Monstruo)
+    private int selectedLevelNumber; // Almacena el número del nivel seleccionado (1, 2 o 3)
+    private Map<String, Integer> selectedEnemyConfig; // Configuración de enemigos seleccionada
+    private Map<String, Integer> selectedFruitConfig; // Configuración de frutas seleccionada
+    private LevelManager levelManager; // Gestor de niveles
     private GameController gameController; // Controlador del juego
     private JFrame gameFrame; // Ventana para mostrar el GamePanel
+    private int nextLevelAfterCompletion; // Siguiente nivel cuando se completa uno (para configuración)
+    private boolean inAutoProgressionMode; // Indica si estamos en modo de progresión automática de niveles
 
     /**
      * Constructor del controlador
@@ -41,7 +63,14 @@ public class PresentationController {
         this.modos = new Modes();
         this.selectPVPMode = new SelectPVPMode();
         this.pvp = new SelectIceCream();
+        this.selectIceCreamAI = new SelectIceCreamAI();
         this.selectMonster = new SelectMonster();
+        this.selectLevel = new SelectLevel();
+        this.levelConfigMenu = new LevelConfigurationMenu();
+        this.enemyConfigMenu = new EnemyConfigurationMenu();
+        this.fruitConfigMenu = new FruitConfigurationMenu();
+        this.levelManager = new LevelManager();
+        this.selectedLevelNumber = 1; // Nivel por defecto
 
         prepareElements();
         prepareActions();
@@ -58,6 +87,7 @@ public class PresentationController {
         this.selectPVPMode.setVisible(false);
         this.pvp.setVisible(false);
         this.selectMonster.setVisible(false);
+        this.selectLevel.setVisible(false);
     }
 
     /**
@@ -124,6 +154,10 @@ public class PresentationController {
                 // PVM: Volver a Modos
                 modos.setVisible(true);
                 selectedIceCream = null;
+            } else if (selectedGameMode == GameMode.MVM) {
+                // MVM: Volver a Modos
+                modos.setVisible(true);
+                selectedIceCream = null;
             } else if (selectedPVPMode == PVPMode.ICE_CREAM_COOPERATIVE && selectedIceCream != null
                     && selectedSecondIceCream == null) {
                 // Si es cooperativo y ya seleccionamos el primer helado, mostrar de nuevo para
@@ -141,25 +175,23 @@ public class PresentationController {
         pvp.setOnChocolateClick(() -> {
             if (selectedIceCream == null) {
                 selectedIceCream = "Chocolate";
-                if (selectedGameMode == GameMode.PVM) {
-                    // PVM: Iniciar directamente sin seleccionar monstruo (se asigna según nivel)
-                    pvp.setVisible(false);
-                    iniciarJuegoPVM(selectedIceCream);
+                pvp.setVisible(false);
+
+                // Si es Helado vs Monstruo, mostrar selección de IA del helado
+                if (selectedPVPMode == PVPMode.ICE_CREAM_VS_MONSTER) {
+                    mostrarSeleccionIAHelado();
                 } else if (selectedPVPMode == PVPMode.ICE_CREAM_COOPERATIVE) {
-                    // Mostrar pantalla para seleccionar segundo helado
-                    pvp.setVisible(false);
-                    pvp.setVisible(true); // Mostrar nuevamente para segundo helado
+                    // Si es Cooperativo, mostrar selección del segundo helado
+                    pvp.setVisible(true);
                 } else {
-                    // Helado vs Monstruo
-                    pvp.setVisible(false);
-                    registrarCallbacksMonstruos();
-                    selectMonster.setVisible(true);
+                    // PVM: mostrar selección de nivel
+                    mostrarSeleccionNivel();
                 }
             } else {
                 // Segundo helado en modo cooperativo
                 selectedSecondIceCream = "Chocolate";
                 pvp.setVisible(false);
-                iniciarJuegoCooperativo(selectedIceCream, selectedSecondIceCream);
+                mostrarSeleccionNivel();
             }
         });
 
@@ -167,22 +199,23 @@ public class PresentationController {
         pvp.setOnVainillaClick(() -> {
             if (selectedIceCream == null) {
                 selectedIceCream = "Vainilla";
-                if (selectedGameMode == GameMode.PVM) {
-                    // PVM: Iniciar directamente sin seleccionar monstruo
-                    pvp.setVisible(false);
-                    iniciarJuegoPVM(selectedIceCream);
+                pvp.setVisible(false);
+
+                // Si es Helado vs Monstruo, mostrar selección de IA del helado
+                if (selectedPVPMode == PVPMode.ICE_CREAM_VS_MONSTER) {
+                    mostrarSeleccionIAHelado();
                 } else if (selectedPVPMode == PVPMode.ICE_CREAM_COOPERATIVE) {
-                    pvp.setVisible(false);
+                    // Si es Cooperativo, mostrar selección del segundo helado
                     pvp.setVisible(true);
                 } else {
-                    pvp.setVisible(false);
-                    registrarCallbacksMonstruos();
-                    selectMonster.setVisible(true);
+                    // PVM: mostrar selección de nivel
+                    mostrarSeleccionNivel();
                 }
             } else {
+                // Segundo helado en modo cooperativo
                 selectedSecondIceCream = "Vainilla";
                 pvp.setVisible(false);
-                iniciarJuegoCooperativo(selectedIceCream, selectedSecondIceCream);
+                mostrarSeleccionNivel();
             }
         });
 
@@ -190,22 +223,23 @@ public class PresentationController {
         pvp.setOnFresaClick(() -> {
             if (selectedIceCream == null) {
                 selectedIceCream = "Fresa";
-                if (selectedGameMode == GameMode.PVM) {
-                    // PVM: Iniciar directamente sin seleccionar monstruo
-                    pvp.setVisible(false);
-                    iniciarJuegoPVM(selectedIceCream);
+                pvp.setVisible(false);
+
+                // Si es Helado vs Monstruo, mostrar selección de IA del helado
+                if (selectedPVPMode == PVPMode.ICE_CREAM_VS_MONSTER) {
+                    mostrarSeleccionIAHelado();
                 } else if (selectedPVPMode == PVPMode.ICE_CREAM_COOPERATIVE) {
-                    pvp.setVisible(false);
+                    // Si es Cooperativo, mostrar selección del segundo helado
                     pvp.setVisible(true);
                 } else {
-                    pvp.setVisible(false);
-                    registrarCallbacksMonstruos();
-                    selectMonster.setVisible(true);
+                    // PVM: mostrar selección de nivel
+                    mostrarSeleccionNivel();
                 }
             } else {
+                // Segundo helado en modo cooperativo
                 selectedSecondIceCream = "Fresa";
                 pvp.setVisible(false);
-                iniciarJuegoCooperativo(selectedIceCream, selectedSecondIceCream);
+                mostrarSeleccionNivel();
             }
         });
 
@@ -231,8 +265,12 @@ public class PresentationController {
 
         // Listener para el botón MVM en Modos
         modos.setOnMVMClick(() -> {
-            // Aquí irá la lógica para MVM cuando esté lista
-            System.out.println("MVM seleccionado");
+            selectedGameMode = GameMode.MVM;
+            System.out.println("✅ Modo MVM seleccionado");
+            System.out.println("   Selecciona el helado que será controlado por IA");
+
+            modos.setVisible(false);
+            pvp.setVisible(true); // Mostrar pantalla de selección de helado
         });
     }
 
@@ -241,7 +279,7 @@ public class PresentationController {
      */
     private void cleanupBeforeNewGame() {
         System.out.println("🧹 Limpiando recursos antes de nuevo juego...");
-        
+
         // Detener el juego anterior si existe
         if (gameController != null) {
             try {
@@ -252,7 +290,7 @@ public class PresentationController {
                 gameController = null;
             }
         }
-        
+
         // Cerrar la ventana del juego anterior si existe
         if (gameFrame != null) {
             try {
@@ -276,7 +314,7 @@ public class PresentationController {
             System.err.println("Error: Modo de juego no seleccionado");
             return;
         }
-        
+
         // Limpiar recursos del juego anterior
         cleanupBeforeNewGame();
 
@@ -294,6 +332,7 @@ public class PresentationController {
         gameController.setOnReturnToMenuClick(createReturnToMenuCallback());
         gameController.setOnSaveGameClick(createSaveGameCallback());
         gameController.setOnContinueGameClick(createContinueGameCallback());
+        gameController.setOnLevelComplete(createLevelCompleteCallback());
 
         // Crear una ventana para el juego si no existe
         if (gameFrame == null) {
@@ -323,6 +362,9 @@ public class PresentationController {
      * Registra callbacks dinámicamente para todos los monstruos disponibles
      */
     private void registrarCallbacksMonstruos() {
+        // Limpiar callbacks anteriores para evitar duplicados
+        selectMonster.limpiarCallbacks();
+
         // Buscar todos los monstruos disponibles
         File carpetaBotones = new File("Resources/Botones/Monstruos/");
         if (!carpetaBotones.exists()) {
@@ -351,13 +393,15 @@ public class PresentationController {
                 continue;
             }
 
+            // Crear variable final para capturar el valor actual en el lambda
+            final String monstruoActual = nombreMonstruo;
+
             // Registrar callback para este monstruo
-            selectMonster.setOnMonstruoClick(nombreMonstruo, () -> {
-                System.out.println("✅ Configuración seleccionada:");
-                System.out.println("  Modo: " + selectedGameMode);
-                System.out.println("  Helado (J1): " + selectedIceCream);
-                System.out.println("  Monstruo (J2): " + nombreMonstruo);
-                iniciarJuego(selectedGameMode, selectedIceCream, nombreMonstruo);
+            selectMonster.setOnMonstruoClick(monstruoActual, () -> {
+                System.out.println("✅ Monstruo seleccionado: " + monstruoActual);
+                selectMonster.setVisible(false);
+                // Guardar el monstruo y luego mostrar selección de nivel
+                mostrarSeleccionNivelConMonstruo(monstruoActual);
             });
         }
     }
@@ -370,6 +414,9 @@ public class PresentationController {
         System.out.println("  Modo: " + selectedGameMode);
         System.out.println("  Helado (J1): " + helado1);
         System.out.println("  Helado (J2): " + helado2);
+        if (inAutoProgressionMode) {
+            System.out.println("  📊 Modo progresión automática: iniciando nivel " + selectedLevelNumber);
+        }
 
         // Limpiar recursos del juego anterior
         cleanupBeforeNewGame();
@@ -383,12 +430,15 @@ public class PresentationController {
         intro.setVisible(false);
 
         // Crear el controlador del juego con ambos helados
-        gameController = new GameController(selectedGameMode, helado1, helado2, null);
+        gameController = new GameController(selectedGameMode, helado1, helado2, null, selectedEnemyConfig,
+                selectedFruitConfig);
 
         // Registrar callbacks
         gameController.setOnReturnToMenuClick(createReturnToMenuCallback());
         gameController.setOnSaveGameClick(createSaveGameCallback());
         gameController.setOnContinueGameClick(createContinueGameCallback());
+        gameController.setOnLevelComplete(createLevelCompleteCallback());
+        gameController.setOnLevelFailed(createLevelFailedCallback());
 
         // Crear una ventana para el juego si no existe
         if (gameFrame == null) {
@@ -408,8 +458,20 @@ public class PresentationController {
         gameFrame.setLocationRelativeTo(null);
         gameFrame.setVisible(true);
 
-        // Iniciar el primer nivel
-        gameController.startLevel(1);
+        // Iniciar el nivel (si estamos en progresión automática, usar
+        // selectedLevelNumber; si no, nivel 1)
+        int levelToStart = inAutoProgressionMode ? selectedLevelNumber : 1;
+        gameController.startLevel(levelToStart);
+    }
+
+    /**
+     * Muestra la selección de nivel cuando ya se ha seleccionado un monstruo para
+     * PVP Vs Monstruo
+     */
+    private void mostrarSeleccionNivelConMonstruo(String monsterType) {
+        System.out.println("✅ Guardando monstruo seleccionado: " + monsterType);
+        selectedMonster = monsterType;
+        mostrarSeleccionNivel();
     }
 
     /**
@@ -421,6 +483,9 @@ public class PresentationController {
         System.out.println("  Modo: " + selectedGameMode);
         System.out.println("  Helado: " + helado);
         System.out.println("  Monstruo: Se asignará automáticamente según el nivel");
+        if (inAutoProgressionMode) {
+            System.out.println("  📊 Modo progresión automática: iniciando nivel " + selectedLevelNumber);
+        }
 
         // Limpiar recursos del juego anterior
         cleanupBeforeNewGame();
@@ -435,12 +500,15 @@ public class PresentationController {
 
         // Crear el controlador del juego con PVM (sin monstruo específico, se asigna
         // por nivel)
-        gameController = new GameController(selectedGameMode, helado, null);
+        gameController = new GameController(selectedGameMode, helado, null, null, selectedEnemyConfig,
+                selectedFruitConfig);
 
         // Registrar callbacks
         gameController.setOnReturnToMenuClick(createReturnToMenuCallback());
         gameController.setOnSaveGameClick(createSaveGameCallback());
         gameController.setOnContinueGameClick(createContinueGameCallback());
+        gameController.setOnLevelComplete(createLevelCompleteCallback());
+        gameController.setOnLevelFailed(createLevelFailedCallback());
 
         // Crear una ventana para el juego si no existe
         if (gameFrame == null) {
@@ -460,8 +528,137 @@ public class PresentationController {
         gameFrame.setLocationRelativeTo(null);
         gameFrame.setVisible(true);
 
-        // Iniciar el primer nivel
-        gameController.startLevel(1);
+        // Iniciar el nivel (si estamos en progresión automática, usar
+        // selectedLevelNumber; si no, nivel 1)
+        int levelToStart = inAutoProgressionMode ? selectedLevelNumber : 1;
+        gameController.startLevel(levelToStart);
+    }
+
+    /**
+     * Inicia el juego en modo PVP Vs Monstruo (helado vs monstruo específico)
+     */
+    private void iniciarJuegoVSMonstruo(String helado, String monstruo, String aiStrategy) {
+        System.out.println("✅ Modo PVP Vs Monstruo seleccionado:");
+        System.out.println("  Modo: " + selectedGameMode);
+        System.out.println("  Helado: " + helado);
+        System.out.println("  Monstruo: " + monstruo);
+        System.out.println("  IA Helado: " + aiStrategy);
+        if (inAutoProgressionMode) {
+            System.out.println("  📊 Modo progresión automática: iniciando nivel " + selectedLevelNumber);
+        }
+
+        // Limpiar recursos del juego anterior
+        cleanupBeforeNewGame();
+
+        // Ocultar pantallas de selección
+        pvp.setVisible(false);
+        selectIceCreamAI.setVisible(false);
+        selectMonster.setVisible(false);
+        selectPVPMode.setVisible(false);
+        modos.setVisible(false);
+        menuInicio.setVisible(false);
+        intro.setVisible(false);
+
+        // Crear el controlador del juego con el helado y monstruo específico
+        gameController = new GameController(selectedGameMode, helado, null, monstruo, selectedEnemyConfig,
+                selectedFruitConfig);
+        
+        // Establecer la estrategia de IA del helado si es especificada
+        if (aiStrategy != null && !aiStrategy.isEmpty()) {
+            gameController.setIceCreamAIStrategy(aiStrategy);
+        }
+
+        // Registrar callbacks
+        gameController.setOnReturnToMenuClick(createReturnToMenuCallback());
+        gameController.setOnSaveGameClick(createSaveGameCallback());
+        gameController.setOnContinueGameClick(createContinueGameCallback());
+        gameController.setOnLevelComplete(createLevelCompleteCallback());
+        gameController.setOnLevelFailed(createLevelFailedCallback());
+
+        // Crear una ventana para el juego si no existe
+        if (gameFrame == null) {
+            gameFrame = new JFrame("Bad Ice Cream - PVP vs " + monstruo);
+            gameFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+            gameFrame.setResizable(true);
+        }
+
+        // Agregar el GamePanel a la ventana
+        gameFrame.getContentPane().removeAll();
+        JPanel gamePanel = gameController.getGamePanel();
+        gameFrame.getContentPane().add(gamePanel);
+
+        // Configurar y mostrar la ventana con tamaño apropiado
+        gameFrame.pack();
+        gameFrame.setExtendedState(JFrame.MAXIMIZED_BOTH);
+        gameFrame.setLocationRelativeTo(null);
+        gameFrame.setVisible(true);
+
+        // Iniciar el nivel (si estamos en progresión automática, usar
+        // selectedLevelNumber; si no, nivel 1)
+        int levelToStart = inAutoProgressionMode ? selectedLevelNumber : 1;
+        gameController.startLevel(levelToStart);
+    }
+
+    /**
+     * Inicia el juego en modo MVM (Machine vs Machine)
+     * El helado es controlado por IA intentando recoger frutas y evitar monstruos
+     */
+    private void iniciarJuegoMVM() {
+        System.out.println("✅ Modo MVM iniciando:");
+        System.out.println("  Helado controlado por IA: " + selectedIceCream);
+        System.out.println("  Nivel seleccionado: " + selectedLevelNumber);
+        System.out.println("  Los monstruos se asignarán según el nivel");
+        System.out.println("  🤖 La IA controla el helado automáticamente");
+        if (inAutoProgressionMode) {
+            System.out.println("  📊 Modo progresión automática: iniciando nivel " + selectedLevelNumber);
+        }
+
+        // Limpiar recursos del juego anterior
+        cleanupBeforeNewGame();
+
+        // Ocultar pantallas de selección
+        pvp.setVisible(false);
+        selectMonster.setVisible(false);
+        selectPVPMode.setVisible(false);
+        modos.setVisible(false);
+        menuInicio.setVisible(false);
+        intro.setVisible(false);
+        selectLevel.setVisible(false);
+
+        // Crear el controlador del juego con MVM (sin monstruo específico, se asigna
+        // por nivel)
+        gameController = new GameController(selectedGameMode, selectedIceCream, null, null, selectedEnemyConfig,
+                selectedFruitConfig);
+
+        // Registrar callbacks
+        gameController.setOnReturnToMenuClick(createReturnToMenuCallback());
+        gameController.setOnSaveGameClick(createSaveGameCallback());
+        gameController.setOnContinueGameClick(createContinueGameCallback());
+        gameController.setOnLevelComplete(createLevelCompleteCallback());
+        gameController.setOnLevelFailed(createLevelFailedCallback());
+
+        // Crear una ventana para el juego si no existe
+        if (gameFrame == null) {
+            gameFrame = new JFrame("Bad Ice Cream - Modo MVM (IA Activa)");
+            gameFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+            gameFrame.setResizable(true);
+        }
+
+        // Agregar el GamePanel a la ventana
+        gameFrame.getContentPane().removeAll();
+        JPanel gamePanel = gameController.getGamePanel();
+        gameFrame.getContentPane().add(gamePanel);
+
+        // Configurar y mostrar la ventana con tamaño apropiado
+        gameFrame.pack();
+        gameFrame.setExtendedState(JFrame.MAXIMIZED_BOTH);
+        gameFrame.setLocationRelativeTo(null);
+        gameFrame.setVisible(true);
+
+        // Iniciar el nivel (si estamos en progresión automática, usar
+        // selectedLevelNumber; si no, usar el seleccionado)
+        int levelToStart = inAutoProgressionMode ? selectedLevelNumber : selectedLevelNumber;
+        gameController.startLevel(levelToStart);
     }
 
     /**
@@ -469,12 +666,14 @@ public class PresentationController {
      */
     private void resetGameState() {
         System.out.println("🔄 Reseteando estado del juego...");
-        
+
         selectedGameMode = null;
         selectedPVPMode = null;
         selectedIceCream = null;
         selectedSecondIceCream = null;
-        
+        selectedMonster = null;
+        inAutoProgressionMode = false; // Resetear modo de progresión automática
+
         // Detener el juego
         if (gameController != null) {
             try {
@@ -484,7 +683,7 @@ public class PresentationController {
             }
             gameController = null;
         }
-        
+
         // Cerrar la ventana del juego correctamente
         if (gameFrame != null) {
             try {
@@ -498,7 +697,7 @@ public class PresentationController {
                 gameFrame = null;
             }
         }
-        
+
         System.out.println("✅ Estado reseteado exitosamente");
     }
 
@@ -528,10 +727,65 @@ public class PresentationController {
         };
     }
 
+    private java.util.function.Consumer<Integer> createLevelCompleteCallback() {
+        return (nextLevel) -> {
+            System.out.println("✅ Nivel completado, preparando siguiente nivel automáticamente: " + nextLevel);
+
+            // Guardar el número del siguiente nivel
+            nextLevelAfterCompletion = nextLevel;
+            selectedLevelNumber = nextLevel;
+
+            // Resetear configuraciones para permitir nueva selección
+            selectedEnemyConfig = null;
+            selectedFruitConfig = null;
+
+            // Indicar que estamos en modo de progresión automática
+            inAutoProgressionMode = true;
+
+            // Ocultar todas las pantallas
+            selectLevel.setVisible(false);
+            selectMonster.setVisible(false);
+            selectPVPMode.setVisible(false);
+            pvp.setVisible(false);
+            menuInicio.setVisible(false);
+            intro.setVisible(false);
+
+            // Mostrar directamente la configuración de enemigos para el siguiente nivel
+            mostrarConfiguracionEnemigos();
+        };
+    }
+
+    private java.util.function.Consumer<Integer> createLevelFailedCallback() {
+        return (previousLevel) -> {
+            System.out.println("❌ Nivel fallido, volviendo al inicio desde nivel 1...");
+
+            // Volver al nivel 1
+            selectedLevelNumber = 1;
+
+            // Resetear configuraciones
+            selectedEnemyConfig = null;
+            selectedFruitConfig = null;
+
+            // Indicar que estamos en modo de progresión automática
+            inAutoProgressionMode = true;
+
+            // Ocultar todas las pantallas
+            selectLevel.setVisible(false);
+            selectMonster.setVisible(false);
+            selectPVPMode.setVisible(false);
+            pvp.setVisible(false);
+            menuInicio.setVisible(false);
+            intro.setVisible(false);
+
+            // Mostrar directamente la configuración de enemigos para el nivel 1
+            mostrarConfiguracionEnemigos();
+        };
+    }
+
     private Runnable createReturnToMenuCallback() {
         return () -> {
             System.out.println("✅ Volviendo al menú desde juego...");
-            
+
             try {
                 // Ocultar y cerrar ventana del juego inmediatamente
                 if (gameFrame != null) {
@@ -539,27 +793,187 @@ public class PresentationController {
                     gameFrame.getContentPane().removeAll();
                     gameFrame.dispose();
                 }
-                
+
                 // Detener el juego
                 if (gameController != null) {
                     gameController.stopGame();
                 }
-                
+
                 // Limpiar estado
                 resetGameState();
-                
+
                 // Mostrar intro en primer plano y reiniciar su estado
                 intro.setVisible(true);
                 intro.toFront(); // Traer ventana al frente
                 intro.requestFocus(); // Dar foco a la ventana
                 intro.resetIntro(); // Reiniciar intro con Timer no-bloqueante
-                
+
                 System.out.println("✅ Vuelto al menú exitosamente");
             } catch (Exception e) {
                 System.err.println("❌ Error al volver al menú: " + e.getMessage());
                 e.printStackTrace();
             }
         };
+    }
+
+    /**
+     * Muestra la pantalla de selección de nivel
+     * Se llama después de seleccionar el helado en modo PVM
+     */
+    /**
+     * Muestra el menú para seleccionar la IA del helado en modo PVP Vs Monstruo
+     */
+    private void mostrarSeleccionIAHelado() {
+        selectIceCreamAI.setVisible(true);
+
+        // Registrar callbacks para cada estrategia
+        String[] strategies = Domain.IceCreamAIStrategyManager.getAvailableStrategies();
+        for (String strategy : strategies) {
+            selectIceCreamAI.setOnStrategyClick(strategy, () -> {
+                selectedIceCreamAIStrategy = strategy;
+                selectIceCreamAI.setVisible(false);
+                // Mostrar selección de monstruo
+                registrarCallbacksMonstruos();
+                selectMonster.setVisible(true);
+            });
+        }
+
+        // Callback para atrás
+        selectIceCreamAI.setOnBackClick(() -> {
+            selectIceCreamAI.setVisible(false);
+            pvp.setVisible(true);
+            selectedIceCream = null;
+            selectedIceCreamAIStrategy = null;
+        });
+    }
+
+    private void mostrarSeleccionNivel() {
+        selectLevel.setVisible(true);
+
+        // Callback para nivel 1
+        selectLevel.setOnLevel1Click(() -> {
+            selectedLevelNumber = 1;
+            selectLevel.setVisible(false);
+            mostrarConfiguracionEnemigos();
+        });
+
+        // Callback para nivel 2
+        selectLevel.setOnLevel2Click(() -> {
+            selectedLevelNumber = 2;
+            selectLevel.setVisible(false);
+            mostrarConfiguracionEnemigos();
+        });
+
+        // Callback para nivel 3
+        selectLevel.setOnLevel3Click(() -> {
+            selectedLevelNumber = 3;
+            selectLevel.setVisible(false);
+            mostrarConfiguracionEnemigos();
+        });
+
+        // Callback para atrás
+        selectLevel.setOnBackClick(() -> {
+            selectLevel.setVisible(false);
+            enemyConfigMenu.setVisible(false);
+            fruitConfigMenu.setVisible(false);
+            selectPVPMode.setVisible(false);
+            selectMonster.setVisible(false);
+            pvp.setVisible(true);
+            selectedIceCream = null;
+        });
+    }
+
+    /**
+     * Muestra el menú de configuración de enemigos
+     */
+    private void mostrarConfiguracionEnemigos() {
+        // Si es PVP Vs Monstruo, recrear el menú excluyendo el monstruo principal
+        if (selectedGameMode == GameMode.PVP && selectedPVPMode == PVPMode.ICE_CREAM_VS_MONSTER) {
+            enemyConfigMenu = new EnemyConfigurationMenu(selectedMonster);
+        } else {
+            // Para otros modos, usar el menú sin exclusiones
+            enemyConfigMenu = new EnemyConfigurationMenu();
+        }
+
+        enemyConfigMenu.setVisible(true);
+
+        // Callback para confirmar configuración de enemigos
+        enemyConfigMenu.setOnConfirmClick(() -> {
+            selectedEnemyConfig = enemyConfigMenu.getEnemyConfiguration();
+            enemyConfigMenu.setVisible(false);
+
+            // Si no hay configuración personalizada, usar la del nivel predeterminado
+            if (selectedEnemyConfig.isEmpty()) {
+                selectedEnemyConfig = null; // null indica usar configuración predeterminada
+            }
+
+            // Mostrar menú de configuración de frutas
+            mostrarConfiguracionFrutas();
+        });
+
+        // Callback para atrás (solo si no estamos en modo de progresión automática)
+        enemyConfigMenu.setOnBackClick(() -> {
+            if (!inAutoProgressionMode) {
+                enemyConfigMenu.setVisible(false);
+                selectLevel.setVisible(true);
+            }
+            // Si estamos en modo de progresión automática, no permitir ir atrás
+        });
+    }
+
+    /**
+     * Muestra el menú de configuración de frutas
+     */
+    private void mostrarConfiguracionFrutas() {
+        fruitConfigMenu.setVisible(true);
+
+        // Callback para confirmar configuración de frutas
+        fruitConfigMenu.setOnConfirmClick(() -> {
+            selectedFruitConfig = fruitConfigMenu.getFruitConfiguration();
+            System.out.println("📋 Configuración de frutas recibida:");
+            if (selectedFruitConfig != null) {
+                for (String fruit : selectedFruitConfig.keySet()) {
+                    System.out.println("  - " + fruit + ": " + selectedFruitConfig.get(fruit));
+                }
+            }
+            fruitConfigMenu.setVisible(false);
+
+            // Si no hay configuración personalizada, usar la del nivel predeterminado
+            if (selectedFruitConfig.isEmpty()) {
+                System.out.println("⚠️ Configuración de frutas vacía, usaremos frutas predeterminadas");
+                selectedFruitConfig = null; // null indica usar configuración predeterminada
+            }
+
+            iniciarJuegoSegunModo(selectedIceCream);
+        });
+
+        // Callback para atrás
+        fruitConfigMenu.setOnBackClick(() -> {
+            fruitConfigMenu.setVisible(false);
+            enemyConfigMenu.setVisible(true);
+        });
+    }
+
+    /**
+     * Inicia el juego según el modo seleccionado
+     */
+    private void iniciarJuegoSegunModo(String helado) {
+        if (selectedGameMode == GameMode.PVM) {
+            iniciarJuegoPVM(helado);
+        } else if (selectedGameMode == GameMode.PVP) {
+            if (selectedPVPMode == PVPMode.ICE_CREAM_COOPERATIVE) {
+                iniciarJuegoCooperativo(helado, selectedSecondIceCream);
+            } else if (selectedPVPMode == PVPMode.ICE_CREAM_VS_MONSTER) {
+                // PVP Vs Monstruo: ya tenemos el monstruo seleccionado en selectedMonster
+                if (selectedMonster != null) {
+                    iniciarJuegoVSMonstruo(helado, selectedMonster, selectedIceCreamAIStrategy);
+                } else {
+                    System.err.println("❌ Error: No se ha seleccionado monstruo para modo PVP Vs Monstruo");
+                }
+            }
+        } else if (selectedGameMode == GameMode.MVM) {
+            iniciarJuegoMVM();
+        }
     }
 
     /**

@@ -32,6 +32,11 @@ public class GamePanel extends JPanel {
     private Point mousePosition = new Point(0, 0);
     private boolean mousePressed = false;
 
+    // ✅ Hitboxes para botones de pausa (zonas de interacción)
+    private Rectangle pauseContinueBtnHitbox;
+    private Rectangle pauseSaveBtnHitbox;
+    private Rectangle pauseMenuBtnHitbox;
+
     // Configuración visual
     private static final int CELL_SIZE = 40;
     private static final int UI_HEIGHT = 100;
@@ -51,8 +56,8 @@ public class GamePanel extends JPanel {
 
     // Colores
     private static final Color COLOR_BACKGROUND = new Color(230, 230, 250);
-    private static final Color COLOR_WALL = new Color(80, 80, 80);
-    private static final Color COLOR_ICE_BLOCK = new Color(173, 216, 230);
+    private static final Color COLOR_WALL = new Color(128, 128, 128);        // Gris para muros
+    private static final Color COLOR_ICE_BLOCK = new Color(173, 216, 230);   // Azul claro para hielo
     private static final Color COLOR_GRID = new Color(200, 200, 200);
 
     // Colores de helados
@@ -139,35 +144,16 @@ public class GamePanel extends JPanel {
      * Detecta clics en los botones de pausa
      */
     private void detectPauseButtonClick(java.awt.event.MouseEvent e) {
-        Image panelImage = ImageLoader.getPauseMenuImage("panel", "normal");
-        if (panelImage == null) {
-            detectPauseButtonClickOld(e);
-            return;
-        }
-
-        int panelSize = 650;
-        int panelX = (getWidth() - panelSize) / 2;
-        int panelY = (getHeight() - panelSize) / 2;
-        int spacing = 18;
-        int startY = panelY + 245;
-
-        int continueW = 360, continueH = 75;
-        Rectangle continueBtn = new Rectangle(panelX + (panelSize - continueW) / 2, startY, continueW, continueH);
-
-        int saveW = 520, saveH = 85;
-        Rectangle saveBtn = new Rectangle(panelX + (panelSize - saveW) / 2, startY + continueH + spacing, saveW, saveH);
-
-        int menuW = 450, menuH = 80;
-        Rectangle menuBtn = new Rectangle(panelX + (panelSize - menuW) / 2, startY + continueH + saveH + spacing * 2,
-                menuW, menuH);
-
         Point p = e.getPoint();
-        if (continueBtn.contains(p) && onContinueGameClick != null)
+
+        // ✅ Usar las hitboxes guardadas en el último dibujo
+        if (pauseContinueBtnHitbox != null && pauseContinueBtnHitbox.contains(p) && onContinueGameClick != null) {
             onContinueGameClick.run();
-        else if (saveBtn.contains(p) && onSaveGameClick != null)
+        } else if (pauseSaveBtnHitbox != null && pauseSaveBtnHitbox.contains(p) && onSaveGameClick != null) {
             onSaveGameClick.run();
-        else if (menuBtn.contains(p) && onReturnToMenuClick != null)
+        } else if (pauseMenuBtnHitbox != null && pauseMenuBtnHitbox.contains(p) && onReturnToMenuClick != null) {
             onReturnToMenuClick.run();
+        }
     }
 
     /**
@@ -285,8 +271,8 @@ public class GamePanel extends JPanel {
         Board board = game.getBoard();
 
         drawGrid(g, board);
-        drawWalls(g, board);
         drawFruits(g, board);
+        drawWalls(g, board);
         drawIceBlocks(g, board);
         drawEnemies(g, board);
         drawIceCream(g, board);
@@ -303,20 +289,6 @@ public class GamePanel extends JPanel {
             int width = board.getWidth() * CELL_SIZE;
             int height = board.getHeight() * CELL_SIZE;
             g.drawImage(mapBackground, 0, UI_HEIGHT, width, height, null);
-        }
-    }
-
-    /**
-     * Dibuja las paredes
-     */
-    private void drawWalls(Graphics2D g, Board board) {
-        g.setColor(COLOR_WALL);
-
-        List<Position> walls = board.getWalls();
-        for (Position wall : walls) {
-            int x = wall.getX() * CELL_SIZE;
-            int y = wall.getY() * CELL_SIZE + UI_HEIGHT;
-            g.fillRect(x, y, CELL_SIZE, CELL_SIZE);
         }
     }
 
@@ -347,6 +319,25 @@ public class GamePanel extends JPanel {
     }
 
     /**
+     * Dibuja los muros indestructibles (bordes del nivel)
+     */
+    private void drawWalls(Graphics2D g, Board board) {
+        List<Position> walls = board.getWalls();
+
+        for (Position pos : walls) {
+            int x = pos.getX() * CELL_SIZE;
+            int y = pos.getY() * CELL_SIZE + UI_HEIGHT;
+
+            // Dibujar muro gris
+            g.setColor(COLOR_WALL);
+            g.fillRect(x, y, CELL_SIZE, CELL_SIZE);
+            g.setColor(COLOR_WALL.darker());
+            g.setStroke(new BasicStroke(2));
+            g.drawRect(x, y, CELL_SIZE, CELL_SIZE);
+        }
+    }
+
+    /**
      * Dibuja las frutas
      */
     private void drawFruits(Graphics2D g, Board board) {
@@ -362,15 +353,21 @@ public class GamePanel extends JPanel {
                 String spriteType;
                 switch (fruitType) {
                     case "uvas":
+                    case "grape":
                         spriteType = "grapes";
                         break;
                     case "plátano":
+                    case "platano":
+                    case "banana":
                         spriteType = "banana";
                         break;
                     case "piña":
+                    case "pina":
+                    case "pineapple":
                         spriteType = "pineapple";
                         break;
                     case "cereza":
+                    case "cherry":
                         spriteType = "cherry";
                         break;
                     default:
@@ -846,21 +843,30 @@ public class GamePanel extends JPanel {
         int spacing = 18;
         int startY = panelY + 245;
 
-        // CONTINUAR (más pequeño - 70% del ancho)
-        int continueW = 360;
-        int continueH = 75;
+        // CONTINUAR (más grande - 80% del ancho, más alto, bajado y a la derecha)
+        int continueW = 430;
+        int continueH = 95;
+        int continueOffset = 60; // Desplazamiento a la derecha
+        int continueOffsetY = 30; // Desplazamiento hacia abajo
         Rectangle continueBtn = new Rectangle(
-                panelX + (panelSize - continueW) / 2,
-                startY,
+                panelX + (panelSize - continueW) / 2 + continueOffset,
+                startY + continueOffsetY,
                 continueW,
                 continueH);
+
+        // ✅ Zona de interacción reducida para el botón continuar
+        Rectangle continueBtnHitbox = new Rectangle(
+                panelX + (panelSize - continueW) / 2 + continueOffset,
+                startY + continueOffsetY,
+                continueW - 60, // Reducir ancho
+                continueH - 20); // Reducir alto
 
         // GUARDAR JUEGO (ancho completo - 100%)
         int saveW = 520;
         int saveH = 85;
         Rectangle saveBtn = new Rectangle(
                 panelX + (panelSize - saveW) / 2,
-                startY + continueH + spacing,
+                startY + continueH + spacing - 20,
                 saveW,
                 saveH);
 
@@ -869,13 +875,18 @@ public class GamePanel extends JPanel {
         int menuH = 80;
         Rectangle menuBtn = new Rectangle(
                 panelX + (panelSize - menuW) / 2,
-                startY + continueH + saveH + spacing * 2,
+                startY + continueH + saveH + spacing * 2 - 20,
                 menuW,
                 menuH);
 
         drawPauseButton(g, continueBtn, "continue");
         drawPauseButton(g, saveBtn, "save");
         drawPauseButton(g, menuBtn, "menu");
+
+        // ✅ Guardar hitboxes para detección de clics
+        this.pauseContinueBtnHitbox = continueBtnHitbox;
+        this.pauseSaveBtnHitbox = saveBtn;
+        this.pauseMenuBtnHitbox = menuBtn;
     }
 
     /**
