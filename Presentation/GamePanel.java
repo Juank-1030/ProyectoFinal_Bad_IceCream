@@ -17,9 +17,15 @@ import java.util.Map;
  * - Mostrar UI (puntos, tiempo, vidas)
  * - Mostrar mensajes (pausa, victoria, derrota)
  * 
- * NO TIENE:
- * - Lógica del juego (eso está en Game)
- * - Captura de eventos (eso está en GameController)
+ * RESTRICCIONES MVC:
+ * - ✅ Puede LEER de Domain (Game, Board, etc.) para renderizar
+ * - ❌ NUNCA puede MODIFICAR Domain
+ * - ❌ NO tiene lógica de juego (eso está en GameController)
+ * - ❌ NO captura eventos de teclado (eso está en GameController)
+ * 
+ * PATRÓN: View Read-Only
+ * GamePanel importa Domain solo para lectura de datos necesarios
+ * para el renderizado. Toda modificación de estado pasa por Controller.
  */
 public class GamePanel extends JPanel {
 

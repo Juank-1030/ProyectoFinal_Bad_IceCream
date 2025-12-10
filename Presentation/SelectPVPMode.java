@@ -8,8 +8,13 @@ import java.awt.event.MouseEvent;
 import java.io.File;
 
 /**
- * Clase SelectPVPMode - Muestra la pantalla de selección de tipo de PVP
+ * SelectPVPMode - Pantalla de selección de tipo de PVP
  * Opciones: Helado vs Monstruo o Helado Cooperativo
+ * 
+ * RESTRICCIONES MVC:
+ * - ✅ Puede LEER de Domain (PVPMode enum) solo para valores de opciones
+ * - ❌ NUNCA puede MODIFICAR Domain
+ * - Solo notifica selección a través de callbacks
  */
 public class SelectPVPMode extends JFrame {
     private String rutaFondo = "Resources/Opciones_Menu/Fondo.png";

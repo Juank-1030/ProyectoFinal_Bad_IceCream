@@ -196,12 +196,38 @@ GameController ejecuta: game.moveIceCream(Direction.UP)
 | Renderizado | ❌ | ❌ | ✅ |
 | Capturar eventos | ❌ | ✅ | ❌ |
 | Coordinar capas | ❌ | ✅ | ❌ |
+| **Modificar Estado** | ❌ | ✅ | ❌ |
+| **Leer Estado (READ-ONLY)** | ✅ | ✅ | ✅ |
 
 ### Direcciones de importación permitidas:
 ```
 Domain  → ❌ No importa nada de otras capas
+
 Controller → ✅ Importa Domain y Presentation
-Presentation → ✅ Importa Controller (✅ Puede importar Domain para lectura)
+            ✅ Puede MODIFICAR Domain
+            ✅ Puede llamar métodos en Presentation
+
+Presentation → ✅ Importa Controller (para todo tipo de datos)
+             ✅ Puede importar Domain (SOLO para lectura)
+             ❌ NUNCA puede modificar Domain
+             ❌ NUNCA accede a Domain sin pasar por Controller cuando es posible
+```
+
+### Patrón "View Read-Only":
+```
+Presentation puede LEER de Domain para renderizar, pero NUNCA modificar.
+
+Ejemplo válido ✅:
+public void render(Graphics g) {
+    IceCream iceCream = board.getIceCream();  // LEER - OK
+    g.drawImage(getIceCreamSprite(iceCream.getFlavor()), ...);
+}
+
+Ejemplo INVÁLIDO ❌:
+public void handleClickOnIceCream() {
+    iceCream.setPosition(newPos);  // MODIFICAR - NO PERMITIDO
+    iceCream.move();               // MODIFICAR - NO PERMITIDO
+}
 ```
 
 ---
@@ -235,9 +261,69 @@ String state = controller.getGameStateAsString();
 GameState state = game.getGameState();
 ```
 
+## 7. Patrón "View Read-Only" (Presentación de solo lectura)
+
+### ¿Por qué Presentation puede importar Domain?
+
+En una aplicación Swing/AWT real con MVC, la View (Presentation) necesita acceso de **lectura** a objetos del Model para renderizarlos. Es prácticamente imposible hacer esto sin imports. 
+
+**Lo importante es que:**
+- ✅ Presentation **SOLO LEE** datos de Domain
+- ❌ Presentation **NUNCA MODIFICA** la lógica del juego
+- ❌ Presentation **NO TIENE** lógica de negocio
+- ✅ Presentation accede a datos a través de GameController cuando es posible
+
+### Clases Presentation que importan Domain y por qué:
+
+1. **GamePanel** - Importa Domain para:
+   - Leer posición, dirección y estado de helados
+   - Leer posición de enemigos y frutas
+   - Leer estado del juego (PLAYING, PAUSED, WON, LOST)
+   - Leer datos de bloques de hielo y muros
+   - **NUNCA modifica** ningún objeto del Domain
+
+2. **SelectIceCreamAI** - Importa `IceCreamAIStrategyManager` para:
+   - Obtener lista de estrategias de IA disponibles (solo lectura)
+   - Mostrar opciones al usuario
+   - **NUNCA modifica** datos
+
+3. **SelectPVPMode** - Importa `PVPMode` enum para:
+   - Obtener valores de modos PVP disponibles (solo lectura)
+   - **NUNCA modifica** nada
+
+### Ejemplo de restricción View Read-Only:
+
+```java
+// ✅ PERMITIDO - Lectura de datos para renderizar
+public void drawIceCream(Graphics2D g) {
+    IceCream ice = board.getIceCream();           // Lectura OK
+    float x = ice.getVisualX();                   // Lectura OK
+    String flavor = ice.getFlavor();              // Lectura OK
+    Direction dir = ice.getCurrentDirection();    // Lectura OK
+    
+    Image sprite = getSprite(flavor, dir);
+    g.drawImage(sprite, x, y, size, size, null);
+}
+
+// ❌ NO PERMITIDO - Modificación de lógica
+public void handleUserClick() {
+    iceCream.setPosition(newX, newY);     // PROHIBIDO - modificación
+    iceCream.setDirection(Direction.UP);  // PROHIBIDO - modificación
+    iceCream.createIce();                 // PROHIBIDO - modificación
+}
+```
+
 ---
 
-## 8. Conclusión
+## 8. Notas Importantes (Actualizado)
+
+### ¿Por qué Presentation puede importar Domain?
+
+En una aplicación Swing/AWT real con MVC, la View (Presentation) necesita acceso de **lectura** a objetos del Model para renderizarlos. Es prácticamente imposible hacer esto sin imports. Lo importante es que:
+- ✅ Presentation **NUNCA modifica** la lógica del Model
+- ✅ Presentation solo **consulta** datos para dibujar
+- ✅ Domain **NUNCA conoce** sobre Presentation
+- ✅ Controller es el único que puede **modificar** Domain
 
 La arquitectura MVC del proyecto **Bad Ice Cream** mantiene una separación clara entre:
 - **Model:** Lógica pura del juego

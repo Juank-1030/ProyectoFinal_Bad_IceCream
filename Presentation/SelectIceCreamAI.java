@@ -7,7 +7,14 @@ import java.awt.*;
 import java.io.File;
 
 /**
- * Menú para seleccionar la estrategia de IA del helado en modo PVP
+ * Menú para seleccionar la estrategia de IA del helado en modo MVM
+ * 
+ * RESTRICCIONES MVC:
+ * - ✅ Puede LEER de Domain (IceCreamAIStrategyManager) para obtener estrategias
+ * disponibles
+ * - ❌ NUNCA puede MODIFICAR Domain
+ * - Solo obtiene lista de estrategias y notifica selección a través de
+ * callbacks
  */
 public class SelectIceCreamAI extends JFrame {
     private Runnable onBackClick;
