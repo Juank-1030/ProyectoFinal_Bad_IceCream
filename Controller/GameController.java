@@ -42,12 +42,13 @@ public class GameController implements KeyListener {
     private boolean running;
     private static final int FPS = 60;
     private static final int FRAME_TIME = 1000 / FPS; // 16ms por frame
-    
+
     // Estrategia de IA para el helado
     private String iceCreamAIStrategy; // Nombre de la estrategia de IA
 
-    // Sistema de teclas presionadas actualmente (Input Buffering Pattern)
-    private java.util.Set<Integer> keysPressed = new java.util.HashSet<>();
+    // InputHandler - Maneja captura de teclas (NEW - Separación de
+    // responsabilidades)
+    private InputHandler inputHandler;
 
     // Control de orientación/movimiento: primer click = orientación, clicks
     // subsecuentes = movimiento
@@ -94,8 +95,12 @@ public class GameController implements KeyListener {
         // 2. Crear la View (GamePanel)
         this.gamePanel = new GamePanel(this);
 
-        // 3. Configurar listeners
-        gamePanel.addKeyListener(this);
+        // 3. Crear InputHandler (NEW - Manejo de eventos separado)
+        this.inputHandler = new InputHandler();
+
+        // 4. Configurar listeners
+        gamePanel.addKeyListener(inputHandler);
+        gamePanel.addKeyListener(this); // GameController aún implementa KeyListener para retrocompatibilidad
         gamePanel.setFocusable(true);
         gamePanel.requestFocusInWindow();
 
@@ -141,9 +146,13 @@ public class GameController implements KeyListener {
         long currentTime = System.currentTimeMillis();
 
         // ===== HELADO 1 (WASD) =====
-        processIceCreamInput(currentTime, Direction.UP, Direction.DOWN, Direction.LEFT, Direction.RIGHT,
-                KeyEvent.VK_W, KeyEvent.VK_S, KeyEvent.VK_A, KeyEvent.VK_D,
-                game.getBoard().getIceCream(), true);
+        // Solo procesar entrada si el helado NO está bajo control de IA
+        IceCream iceCream = game.getBoard().getIceCream();
+        if (iceCream != null && !iceCream.isAIControlled()) {
+            processIceCreamInput(currentTime, Direction.UP, Direction.DOWN, Direction.LEFT, Direction.RIGHT,
+                    KeyEvent.VK_W, KeyEvent.VK_S, KeyEvent.VK_A, KeyEvent.VK_D,
+                    iceCream, true);
+        }
 
         // ===== HELADO 2 O MONSTRUO (FLECHAS) =====
         if (secondIceCreamFlavor != null) {
@@ -186,16 +195,16 @@ public class GameController implements KeyListener {
         int keyPressed = -1;
 
         // Determinar qué tecla está presionada (por orden de prioridad)
-        if (keysPressed.contains(upKey)) {
+        if (inputHandler.isKeyPressed(upKey)) {
             directionToProcess = upDir;
             keyPressed = upKey;
-        } else if (keysPressed.contains(downKey)) {
+        } else if (inputHandler.isKeyPressed(downKey)) {
             directionToProcess = downDir;
             keyPressed = downKey;
-        } else if (keysPressed.contains(leftKey)) {
+        } else if (inputHandler.isKeyPressed(leftKey)) {
             directionToProcess = leftDir;
             keyPressed = leftKey;
-        } else if (keysPressed.contains(rightKey)) {
+        } else if (inputHandler.isKeyPressed(rightKey)) {
             directionToProcess = rightDir;
             keyPressed = rightKey;
         }
@@ -247,16 +256,16 @@ public class GameController implements KeyListener {
         int keyPressed = -1;
 
         // Determinar qué tecla está presionada (por orden de prioridad)
-        if (keysPressed.contains(KeyEvent.VK_UP)) {
+        if (inputHandler.isKeyPressed(KeyEvent.VK_UP)) {
             directionToProcess = Direction.UP;
             keyPressed = KeyEvent.VK_UP;
-        } else if (keysPressed.contains(KeyEvent.VK_DOWN)) {
+        } else if (inputHandler.isKeyPressed(KeyEvent.VK_DOWN)) {
             directionToProcess = Direction.DOWN;
             keyPressed = KeyEvent.VK_DOWN;
-        } else if (keysPressed.contains(KeyEvent.VK_LEFT)) {
+        } else if (inputHandler.isKeyPressed(KeyEvent.VK_LEFT)) {
             directionToProcess = Direction.LEFT;
             keyPressed = KeyEvent.VK_LEFT;
-        } else if (keysPressed.contains(KeyEvent.VK_RIGHT)) {
+        } else if (inputHandler.isKeyPressed(KeyEvent.VK_RIGHT)) {
             directionToProcess = Direction.RIGHT;
             keyPressed = KeyEvent.VK_RIGHT;
         }
@@ -301,7 +310,7 @@ public class GameController implements KeyListener {
         }
 
         // RESETEAR EL ESTADO DE LAS TECLAS PRESIONADAS
-        keysPressed.clear();
+        inputHandler.clearAllKeys();
         keyPressTime.clear();
         lastIceCreamDirection = null;
         lastEnemyDirection = null;
@@ -421,7 +430,7 @@ public class GameController implements KeyListener {
         gameTimer.stop();
 
         // RESETEAR EL ESTADO DE LAS TECLAS PRESIONADAS AL PAUSAR
-        keysPressed.clear();
+        inputHandler.clearAllKeys();
         keyPressTime.clear();
         lastIceCreamDirection = null;
         lastEnemyDirection = null;
@@ -469,7 +478,7 @@ public class GameController implements KeyListener {
             keyPressTime.put(keyCode, System.currentTimeMillis());
         }
 
-        keysPressed.add(keyCode); // Agregar tecla al Set para input buffering
+        inputHandler.keyPressed(e); // Delegar a InputHandler
 
         // Pausar/Reanudar con P o ESC
         if (keyCode == KeyEvent.VK_P || keyCode == KeyEvent.VK_ESCAPE) {
@@ -669,13 +678,13 @@ public class GameController implements KeyListener {
                 return;
 
             // Actualizar la dirección del helado según la última tecla presionada
-            if (keysPressed.contains(KeyEvent.VK_W)) {
+            if (inputHandler.isKeyPressed(KeyEvent.VK_W)) {
                 iceCream.setCurrentDirection(Direction.UP);
-            } else if (keysPressed.contains(KeyEvent.VK_S)) {
+            } else if (inputHandler.isKeyPressed(KeyEvent.VK_S)) {
                 iceCream.setCurrentDirection(Direction.DOWN);
-            } else if (keysPressed.contains(KeyEvent.VK_A)) {
+            } else if (inputHandler.isKeyPressed(KeyEvent.VK_A)) {
                 iceCream.setCurrentDirection(Direction.LEFT);
-            } else if (keysPressed.contains(KeyEvent.VK_D)) {
+            } else if (inputHandler.isKeyPressed(KeyEvent.VK_D)) {
                 iceCream.setCurrentDirection(Direction.RIGHT);
             }
 
@@ -725,13 +734,13 @@ public class GameController implements KeyListener {
             if (secondIceCreamFlavor != null && secondIceCream != null) {
                 // Actualizar la dirección del helado 2 según la última tecla de flecha
                 // presionada
-                if (keysPressed.contains(KeyEvent.VK_UP)) {
+                if (inputHandler.isKeyPressed(KeyEvent.VK_UP)) {
                     secondIceCream.setCurrentDirection(Direction.UP);
-                } else if (keysPressed.contains(KeyEvent.VK_DOWN)) {
+                } else if (inputHandler.isKeyPressed(KeyEvent.VK_DOWN)) {
                     secondIceCream.setCurrentDirection(Direction.DOWN);
-                } else if (keysPressed.contains(KeyEvent.VK_LEFT)) {
+                } else if (inputHandler.isKeyPressed(KeyEvent.VK_LEFT)) {
                     secondIceCream.setCurrentDirection(Direction.LEFT);
-                } else if (keysPressed.contains(KeyEvent.VK_RIGHT)) {
+                } else if (inputHandler.isKeyPressed(KeyEvent.VK_RIGHT)) {
                     secondIceCream.setCurrentDirection(Direction.RIGHT);
                 }
 
@@ -818,7 +827,7 @@ public class GameController implements KeyListener {
     @Override
     public void keyReleased(KeyEvent e) {
         int keyCode = e.getKeyCode();
-        keysPressed.remove(keyCode); // Remover tecla del Set cuando se suelta
+        inputHandler.keyReleased(e); // Delegar a InputHandler
         keyPressTime.remove(keyCode); // Limpiar el registro de tiempo de presión
     }
 

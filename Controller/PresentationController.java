@@ -177,13 +177,19 @@ public class PresentationController {
                 selectedIceCream = "Chocolate";
                 pvp.setVisible(false);
 
-                // Si es Helado vs Monstruo, mostrar selección de IA del helado
-                if (selectedPVPMode == PVPMode.ICE_CREAM_VS_MONSTER) {
+                if (selectedGameMode == GameMode.MVM) {
+                    // MVM: mostrar selección de estrategia IA SOLO en MVM
                     mostrarSeleccionIAHelado();
-                } else if (selectedPVPMode == PVPMode.ICE_CREAM_COOPERATIVE) {
-                    // Si es Cooperativo, mostrar selección del segundo helado
-                    pvp.setVisible(true);
-                } else {
+                } else if (selectedGameMode == GameMode.PVP) {
+                    // PVP: Vs Monstruo ir directo a selección de monstruo
+                    if (selectedPVPMode == PVPMode.ICE_CREAM_VS_MONSTER) {
+                        registrarCallbacksMonstruos();
+                        selectMonster.setVisible(true);
+                    } else if (selectedPVPMode == PVPMode.ICE_CREAM_COOPERATIVE) {
+                        // Si es Cooperativo, mostrar selección del segundo helado
+                        pvp.setVisible(true);
+                    }
+                } else if (selectedGameMode == GameMode.PVM) {
                     // PVM: mostrar selección de nivel
                     mostrarSeleccionNivel();
                 }
@@ -201,13 +207,19 @@ public class PresentationController {
                 selectedIceCream = "Vainilla";
                 pvp.setVisible(false);
 
-                // Si es Helado vs Monstruo, mostrar selección de IA del helado
-                if (selectedPVPMode == PVPMode.ICE_CREAM_VS_MONSTER) {
+                if (selectedGameMode == GameMode.MVM) {
+                    // MVM: mostrar selección de estrategia IA SOLO en MVM
                     mostrarSeleccionIAHelado();
-                } else if (selectedPVPMode == PVPMode.ICE_CREAM_COOPERATIVE) {
-                    // Si es Cooperativo, mostrar selección del segundo helado
-                    pvp.setVisible(true);
-                } else {
+                } else if (selectedGameMode == GameMode.PVP) {
+                    // PVP: Vs Monstruo ir directo a selección de monstruo
+                    if (selectedPVPMode == PVPMode.ICE_CREAM_VS_MONSTER) {
+                        registrarCallbacksMonstruos();
+                        selectMonster.setVisible(true);
+                    } else if (selectedPVPMode == PVPMode.ICE_CREAM_COOPERATIVE) {
+                        // Si es Cooperativo, mostrar selección del segundo helado
+                        pvp.setVisible(true);
+                    }
+                } else if (selectedGameMode == GameMode.PVM) {
                     // PVM: mostrar selección de nivel
                     mostrarSeleccionNivel();
                 }
@@ -225,13 +237,19 @@ public class PresentationController {
                 selectedIceCream = "Fresa";
                 pvp.setVisible(false);
 
-                // Si es Helado vs Monstruo, mostrar selección de IA del helado
-                if (selectedPVPMode == PVPMode.ICE_CREAM_VS_MONSTER) {
+                if (selectedGameMode == GameMode.MVM) {
+                    // MVM: mostrar selección de estrategia IA SOLO en MVM
                     mostrarSeleccionIAHelado();
-                } else if (selectedPVPMode == PVPMode.ICE_CREAM_COOPERATIVE) {
-                    // Si es Cooperativo, mostrar selección del segundo helado
-                    pvp.setVisible(true);
-                } else {
+                } else if (selectedGameMode == GameMode.PVP) {
+                    // PVP: Vs Monstruo ir directo a selección de monstruo
+                    if (selectedPVPMode == PVPMode.ICE_CREAM_VS_MONSTER) {
+                        registrarCallbacksMonstruos();
+                        selectMonster.setVisible(true);
+                    } else if (selectedPVPMode == PVPMode.ICE_CREAM_COOPERATIVE) {
+                        // Si es Cooperativo, mostrar selección del segundo helado
+                        pvp.setVisible(true);
+                    }
+                } else if (selectedGameMode == GameMode.PVM) {
                     // PVM: mostrar selección de nivel
                     mostrarSeleccionNivel();
                 }
@@ -562,7 +580,7 @@ public class PresentationController {
         // Crear el controlador del juego con el helado y monstruo específico
         gameController = new GameController(selectedGameMode, helado, null, monstruo, selectedEnemyConfig,
                 selectedFruitConfig);
-        
+
         // Establecer la estrategia de IA del helado si es especificada
         if (aiStrategy != null && !aiStrategy.isEmpty()) {
             gameController.setIceCreamAIStrategy(aiStrategy);
@@ -821,7 +839,7 @@ public class PresentationController {
      * Se llama después de seleccionar el helado en modo PVM
      */
     /**
-     * Muestra el menú para seleccionar la IA del helado en modo PVP Vs Monstruo
+     * Muestra el menú para seleccionar la IA del helado en modo MVM
      */
     private void mostrarSeleccionIAHelado() {
         selectIceCreamAI.setVisible(true);
@@ -832,9 +850,9 @@ public class PresentationController {
             selectIceCreamAI.setOnStrategyClick(strategy, () -> {
                 selectedIceCreamAIStrategy = strategy;
                 selectIceCreamAI.setVisible(false);
-                // Mostrar selección de monstruo
-                registrarCallbacksMonstruos();
-                selectMonster.setVisible(true);
+
+                // En MVM: ir directamente a selección de nivel
+                mostrarSeleccionNivel();
             });
         }
 

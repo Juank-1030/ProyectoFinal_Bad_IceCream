@@ -56,8 +56,8 @@ public class GamePanel extends JPanel {
 
     // Colores
     private static final Color COLOR_BACKGROUND = new Color(230, 230, 250);
-    private static final Color COLOR_WALL = new Color(128, 128, 128);        // Gris para muros
-    private static final Color COLOR_ICE_BLOCK = new Color(173, 216, 230);   // Azul claro para hielo
+    private static final Color COLOR_WALL = new Color(128, 128, 128); // Gris para muros
+    private static final Color COLOR_ICE_BLOCK = new Color(173, 216, 230); // Azul claro para hielo
     private static final Color COLOR_GRID = new Color(200, 200, 200);
 
     // Colores de helados

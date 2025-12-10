@@ -18,21 +18,22 @@ public class ExpertAIStrategy implements IceCreamAIStrategy {
         List<Enemy> enemies = board.getEnemies();
         List<Fruit> fruits = board.getFruits();
 
-        // Primero: verificar si hay peligro inmediato
+        // PRIORIDAD 1: Si hay peligro INMEDIATO, HUIR primero
         Enemy closestEnemy = getClosestEnemy(currentPos, enemies);
         if (closestEnemy != null && getDistance(currentPos, closestEnemy.getPosition()) <= DANGER_DISTANCE) {
-            // Hay peligro: huir
-            return getDirectionAwayFrom(currentPos, closestEnemy.getPosition(), board);
+            Direction fleeDir = getDirectionAwayFrom(currentPos, closestEnemy.getPosition(), board);
+            if (fleeDir != null) {
+                return fleeDir;
+            }
         }
 
-        // Segundo: si hay frutas cercanas, ir por ellas
+        // PRIORIDAD 2: Si hay frutas cercanas Y REACHABLE, ir por ellas
         if (!fruits.isEmpty()) {
-            Fruit closestFruit = getClosestFruit(currentPos, fruits);
-            if (closestFruit != null) {
-                double fruitDistance = getDistance(currentPos, closestFruit.getPosition());
-                // Si la fruta está cerca y no hay peligro, ir por ella
+            Fruit reachableFruit = getClosestReachableFruit(currentPos, fruits, board);
+            if (reachableFruit != null) {
+                double fruitDistance = getDistance(currentPos, reachableFruit.getPosition());
                 if (fruitDistance <= FRUIT_PRIORITY_DISTANCE) {
-                    Direction towardFruit = getDirectionTowards(currentPos, closestFruit.getPosition(), board);
+                    Direction towardFruit = getDirectionTowards(currentPos, reachableFruit.getPosition(), board);
                     if (towardFruit != null) {
                         return towardFruit;
                     }
@@ -40,25 +41,46 @@ public class ExpertAIStrategy implements IceCreamAIStrategy {
             }
         }
 
-        // Tercero: si hay enemigos cerca, alejarse preventivamente
-        if (closestEnemy != null && getDistance(currentPos, closestEnemy.getPosition()) <= DANGER_DISTANCE * 2) {
-            return getDirectionAwayFrom(currentPos, closestEnemy.getPosition(), board);
-        }
-
-        // Cuarto: explorar buscando frutas
-        if (!fruits.isEmpty()) {
-            Fruit closestFruit = getClosestFruit(currentPos, fruits);
-            if (closestFruit != null) {
-                return getDirectionTowards(currentPos, closestFruit.getPosition(), board);
+        // PRIORIDAD 3: Si hay enemigos moderadamente cerca, alejarse
+        if (closestEnemy != null && getDistance(currentPos, closestEnemy.getPosition()) <= DANGER_DISTANCE * 2.5) {
+            Direction awayDir = getDirectionAwayFrom(currentPos, closestEnemy.getPosition(), board);
+            if (awayDir != null) {
+                return awayDir;
             }
         }
 
-        return null; // Esperar
+        // PRIORIDAD 4: Ir hacia frutas lejanas REACHABLE para completar el nivel
+        if (!fruits.isEmpty()) {
+            Fruit reachableFruit = getClosestReachableFruit(currentPos, fruits, board);
+            if (reachableFruit != null) {
+                Direction towardFruit = getDirectionTowards(currentPos, reachableFruit.getPosition(), board);
+                if (towardFruit != null) {
+                    return towardFruit;
+                }
+            }
+        }
+
+        // PRIORIDAD 5: Explorar
+        Direction exploreDir = explorarActivamente(board, currentPos);
+        if (exploreDir != null) {
+            return exploreDir;
+        }
+
+        // FALLBACK: Cualquier dirección válida
+        Direction[] allDirs = { Direction.UP, Direction.DOWN, Direction.LEFT, Direction.RIGHT };
+        for (Direction dir : allDirs) {
+            if (board.isValidPosition(currentPos.move(dir))) {
+                return dir;
+            }
+        }
+
+        return null;
     }
 
     private Enemy getClosestEnemy(Position from, List<Enemy> enemies) {
-        if (enemies.isEmpty()) return null;
-        
+        if (enemies.isEmpty())
+            return null;
+
         Enemy closest = null;
         double minDistance = Double.MAX_VALUE;
 
@@ -72,17 +94,22 @@ public class ExpertAIStrategy implements IceCreamAIStrategy {
         return closest;
     }
 
-    private Fruit getClosestFruit(Position from, List<Fruit> fruits) {
-        if (fruits.isEmpty()) return null;
-        
+    private Fruit getClosestReachableFruit(Position from, List<Fruit> fruits, Board board) {
+        if (fruits.isEmpty())
+            return null;
+
         Fruit closest = null;
         double minDistance = Double.MAX_VALUE;
 
         for (Fruit fruit : fruits) {
             double distance = getDistance(from, fruit.getPosition());
             if (distance < minDistance) {
-                minDistance = distance;
-                closest = fruit;
+                // Validar que la fruta es alcanzable
+                Direction testDir = getDirectionTowards(from, fruit.getPosition(), board);
+                if (testDir != null) { // Solo considerar si es reachable
+                    minDistance = distance;
+                    closest = fruit;
+                }
             }
         }
         return closest;
@@ -128,19 +155,41 @@ public class ExpertAIStrategy implements IceCreamAIStrategy {
         Direction[] dirs = new Direction[4];
         int idx = 0;
 
-        if (dx > 0) dirs[idx++] = Direction.RIGHT;
-        if (dx < 0) dirs[idx++] = Direction.LEFT;
-        if (dy > 0) dirs[idx++] = Direction.DOWN;
-        if (dy < 0) dirs[idx++] = Direction.UP;
+        if (dx > 0)
+            dirs[idx++] = Direction.RIGHT;
+        if (dx < 0)
+            dirs[idx++] = Direction.LEFT;
+        if (dy > 0)
+            dirs[idx++] = Direction.DOWN;
+        if (dy < 0)
+            dirs[idx++] = Direction.UP;
 
         if (idx < 4) {
-            if (dx <= 0 && idx < 4) dirs[idx++] = Direction.LEFT;
-            if (dx >= 0 && idx < 4) dirs[idx++] = Direction.RIGHT;
-            if (dy <= 0 && idx < 4) dirs[idx++] = Direction.UP;
-            if (dy >= 0 && idx < 4) dirs[idx++] = Direction.DOWN;
+            if (dx <= 0 && idx < 4)
+                dirs[idx++] = Direction.LEFT;
+            if (dx >= 0 && idx < 4)
+                dirs[idx++] = Direction.RIGHT;
+            if (dy <= 0 && idx < 4)
+                dirs[idx++] = Direction.UP;
+            if (dy >= 0 && idx < 4)
+                dirs[idx++] = Direction.DOWN;
         }
 
         return dirs;
+    }
+
+    /**
+     * Explora en todas direcciones cuando no hay movimiento óptimo
+     */
+    private Direction explorarActivamente(Board board, Position from) {
+        Direction[] dirs = { Direction.UP, Direction.DOWN, Direction.LEFT, Direction.RIGHT };
+        for (Direction dir : dirs) {
+            Position nextPos = from.move(dir);
+            if (board.isValidPosition(nextPos)) {
+                return dir;
+            }
+        }
+        return null;
     }
 
     @Override

@@ -20,8 +20,8 @@ public class Level implements Serializable {
     // Configuración de entidades
     private List<EnemyConfig> enemyConfigs;
     private List<FruitConfig> fruitConfigs;
-    private List<Position> wallPositions;         // Bordes indestructibles
-    private List<Position> iceBlockPositions;    // Bloques rompibles interiores
+    private List<Position> wallPositions; // Bordes indestructibles
+    private List<Position> iceBlockPositions; // Bloques rompibles interiores
     private Position iceCreamStartPosition;
 
     /**
@@ -248,8 +248,8 @@ public class Level implements Serializable {
 
     public void addIceBlockPosition(Position pos) {
         // No agregar si está en un borde (donde hay muros)
-        if (pos.getX() <= 0 || pos.getX() >= boardWidth - 1 || 
-            pos.getY() <= 0 || pos.getY() >= boardHeight - 1) {
+        if (pos.getX() <= 0 || pos.getX() >= boardWidth - 1 ||
+                pos.getY() <= 0 || pos.getY() >= boardHeight - 1) {
             return; // Ignorar posiciones de borde
         }
         if (!iceBlockPositions.contains(pos)) {

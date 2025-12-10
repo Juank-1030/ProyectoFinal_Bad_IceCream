@@ -7,7 +7,8 @@ package Domain;
 public interface IceCreamAIStrategy {
     /**
      * Calcula el siguiente movimiento para el helado
-     * @param board Estado actual del tablero
+     * 
+     * @param board    Estado actual del tablero
      * @param iceCream Posición actual del helado
      * @return Dirección a seguir (puede ser null para quedarse quieto)
      */

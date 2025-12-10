@@ -15,28 +15,43 @@ public class FearfulAIStrategy implements IceCreamAIStrategy {
         Position currentPos = iceCream.getPosition();
         List<Enemy> enemies = board.getEnemies();
 
-        if (enemies.isEmpty()) {
-            return null; // No hay enemigos, no hacer nada
-        }
+        // PRIORIDAD 1: Si hay enemigos cercanos, HUIR
+        if (!enemies.isEmpty()) {
+            Enemy closestEnemy = null;
+            double minDistance = Double.MAX_VALUE;
 
-        // Encontrar el enemigo más cercano
-        Enemy closestEnemy = null;
-        double minDistance = Double.MAX_VALUE;
+            for (Enemy enemy : enemies) {
+                double distance = getDistance(currentPos, enemy.getPosition());
+                if (distance < minDistance) {
+                    minDistance = distance;
+                    closestEnemy = enemy;
+                }
+            }
 
-        for (Enemy enemy : enemies) {
-            double distance = getDistance(currentPos, enemy.getPosition());
-            if (distance < minDistance) {
-                minDistance = distance;
-                closestEnemy = enemy;
+            // Si hay peligro inmediato (dentro de 5 celdas), huir
+            if (closestEnemy != null && minDistance <= DANGER_DISTANCE) {
+                Direction fleeDir = getDirectionAwayFrom(currentPos, closestEnemy.getPosition(), board);
+                if (fleeDir != null) {
+                    return fleeDir;
+                }
             }
         }
 
-        if (closestEnemy == null || minDistance > DANGER_DISTANCE) {
-            return null; // Enemigo muy lejano, no hay peligro inmediato
+        // PRIORIDAD 2: No hay peligro, explorar activamente
+        Direction exploreDir = explorarActivamente(board, currentPos);
+        if (exploreDir != null) {
+            return exploreDir;
         }
 
-        // Huir del enemigo más cercano
-        return getDirectionAwayFrom(currentPos, closestEnemy.getPosition(), board);
+        // FALLBACK: Cualquier dirección válida
+        Direction[] allDirs = { Direction.UP, Direction.DOWN, Direction.LEFT, Direction.RIGHT };
+        for (Direction dir : allDirs) {
+            if (board.isValidPosition(currentPos.move(dir))) {
+                return dir;
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -76,20 +91,42 @@ public class FearfulAIStrategy implements IceCreamAIStrategy {
         int idx = 0;
 
         // Priorizar alejamiento en eje X
-        if (dx > 0) dirs[idx++] = Direction.RIGHT;
-        if (dx < 0) dirs[idx++] = Direction.LEFT;
-        if (dy > 0) dirs[idx++] = Direction.DOWN;
-        if (dy < 0) dirs[idx++] = Direction.UP;
+        if (dx > 0)
+            dirs[idx++] = Direction.RIGHT;
+        if (dx < 0)
+            dirs[idx++] = Direction.LEFT;
+        if (dy > 0)
+            dirs[idx++] = Direction.DOWN;
+        if (dy < 0)
+            dirs[idx++] = Direction.UP;
 
         // Llenar con direcciones restantes
         if (idx < 4) {
-            if (dx <= 0 && idx < 4) dirs[idx++] = Direction.LEFT;
-            if (dx >= 0 && idx < 4) dirs[idx++] = Direction.RIGHT;
-            if (dy <= 0 && idx < 4) dirs[idx++] = Direction.UP;
-            if (dy >= 0 && idx < 4) dirs[idx++] = Direction.DOWN;
+            if (dx <= 0 && idx < 4)
+                dirs[idx++] = Direction.LEFT;
+            if (dx >= 0 && idx < 4)
+                dirs[idx++] = Direction.RIGHT;
+            if (dy <= 0 && idx < 4)
+                dirs[idx++] = Direction.UP;
+            if (dy >= 0 && idx < 4)
+                dirs[idx++] = Direction.DOWN;
         }
 
         return dirs;
+    }
+
+    /**
+     * Explora en todas direcciones cuando no hay peligro
+     */
+    private Direction explorarActivamente(Board board, Position from) {
+        Direction[] dirs = { Direction.UP, Direction.DOWN, Direction.LEFT, Direction.RIGHT };
+        for (Direction dir : dirs) {
+            Position nextPos = from.move(dir);
+            if (board.isValidPosition(nextPos)) {
+                return dir;
+            }
+        }
+        return null;
     }
 
     @Override

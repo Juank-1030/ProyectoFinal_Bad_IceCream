@@ -32,9 +32,8 @@ public class Game implements Serializable {
     private String secondIceCreamFlavor; // Segundo sabor para modo cooperativo
 
     // Para modos con IA
-    private AI iceCreamAI; // Para modo MVM
     private List<AI> enemyAIs; // Para modos PVM y MVM
-    
+
     // Estrategia de IA para el helado controlado por IA
     private String iceCreamAIStrategyName; // Nombre de la estrategia
 
@@ -142,7 +141,7 @@ public class Game implements Serializable {
 
         // Crear el helado
         IceCream iceCream = createIceCream(currentLevel.getIceCreamStartPosition());
-        
+
         // Aplicar la estrategia de IA si fue especificada
         if (iceCreamAIStrategyName != null && !iceCreamAIStrategyName.isEmpty()) {
             IceCreamAIStrategy aiStrategy = IceCreamAIStrategyManager.getStrategy(iceCreamAIStrategyName);
@@ -151,7 +150,7 @@ public class Game implements Serializable {
                 System.out.println("✓ IA aplicada al helado: " + iceCreamAIStrategyName);
             }
         }
-        
+
         board.setIceCream(iceCream);
 
         // Crear segundo helado si es modo cooperativo
@@ -470,11 +469,6 @@ public class Game implements Serializable {
                 enemyAIs.add(new EnemyAI(enemies.get(i), board));
             }
         }
-
-        if (gameMode == GameMode.MVM) {
-            // Crear IA para el helado
-            iceCreamAI = new IceCreamAI(board.getIceCream(), board);
-        }
     }
 
     /**
@@ -493,35 +487,40 @@ public class Game implements Serializable {
 
         // Actualizar frutas (movimiento, teletransporte)
         updateFruits();
-        
+
         // Actualizar IA del helado si aplica
         IceCream iceCream = board.getIceCream();
         if (iceCream != null && iceCream.isAIControlled()) {
-            Direction move = iceCream.getAIStrategy().getNextMove(board, iceCream);
-            if (move != null) {
-                boolean moved = board.moveIceCream(move);
+            IceCreamAIStrategy strategy = iceCream.getAIStrategy();
+            if (strategy != null) {
+                Direction move = strategy.getNextMove(board, iceCream);
+                if (move != null) {
+                    // Establecer dirección actual del helado
+                    iceCream.setCurrentDirection(move);
 
-                // Sumar puntos si recolectó fruta
-                if (moved) {
-                    Fruit fruit = board.getAndClearLastCollectedFruit();
-                    if (fruit != null) {
-                        score += 50;
+                    boolean moved = board.moveIceCream(move);
+
+                    // ✅ MEJORADA: Si no se movió porque hay hielo, intenta romperlo
+                    if (!moved) {
+                        Position nextPos = iceCream.getPosition().move(move);
+                        if (board.isInBounds(nextPos) && board.hasIceBlock(nextPos)) {
+                            // Hay hielo bloqueando - intentar romper
+                            int brokenCount = board.toggleIceBlocks();
+
+                            // Si rompió hielo, intentar moverse inmediatamente
+                            if (brokenCount > 0) {
+                                // Después de romper, intentar moverse en la misma dirección
+                                moved = board.moveIceCream(move);
+                            }
+                        }
                     }
-                }
-            }
-        }
 
-        // Actualizar IA si aplica (modo MVM)
-        if (gameMode == GameMode.MVM && iceCreamAI != null) {
-            Direction move = iceCreamAI.getNextMove();
-            if (move != null) {
-                boolean moved = board.moveIceCream(move);
-
-                // Sumar puntos si recolectó fruta
-                if (moved) {
-                    Fruit fruit = board.getAndClearLastCollectedFruit();
-                    if (fruit != null) {
-                        score += 50;
+                    // Sumar puntos si recolectó fruta
+                    if (moved) {
+                        Fruit fruit = board.getAndClearLastCollectedFruit();
+                        if (fruit != null) {
+                            score += 50;
+                        }
                     }
                 }
             }

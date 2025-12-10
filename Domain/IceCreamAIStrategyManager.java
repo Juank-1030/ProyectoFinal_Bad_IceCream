@@ -19,7 +19,8 @@ public class IceCreamAIStrategyManager {
 
     /**
      * Registra una nueva estrategia de IA
-     * @param name Nombre de la estrategia
+     * 
+     * @param name          Nombre de la estrategia
      * @param strategyClass Clase que implementa IceCreamAIStrategy
      */
     public static void registerStrategy(String name, Class<? extends IceCreamAIStrategy> strategyClass) {
@@ -28,6 +29,7 @@ public class IceCreamAIStrategyManager {
 
     /**
      * Obtiene una instancia de una estrategia por nombre
+     * 
      * @param name Nombre de la estrategia
      * @return Instancia de la estrategia, o null si no existe
      */

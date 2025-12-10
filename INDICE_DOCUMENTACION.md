@@ -19,6 +19,14 @@
 1. ✅ **[CONCLUSION_FINAL.md](CONCLUSION_FINAL.md)** - Resumen de entrega
 2. 🧪 **[TestFlowIntegration.java](TestFlowIntegration.java)** - Ejecutar tests
 
+### 🎮 NUEVO - Para Pruebas de IA (Quiero Probar Sistema IA)
+1. 🚀 **[REFERENCIA_RAPIDA_IA.md](REFERENCIA_RAPIDA_IA.md)** - Resumen 1 página del sistema IA (COMIENZA AQUÍ)
+2. 🧪 **[GUIA_PRUEBA_IA.md](GUIA_PRUEBA_IA.md)** - Manual de pruebas paso-a-paso para 3 IAs
+3. 🔧 **[CAMBIOS_CODIGO_DETALLE.md](CAMBIOS_CODIGO_DETALLE.md)** - Cambios exactos línea-por-línea
+4. ✅ **[VERIFICACION_IA_REACHABILITY.md](VERIFICACION_IA_REACHABILITY.md)** - Detalles técnicos del sistema de validación
+5. 📝 **[RESUMEN_CORRECCION_IA_FINAL.md](RESUMEN_CORRECCION_IA_FINAL.md)** - Resumen ejecutivo de la corrección
+6. 📋 **[ESTADO_FINAL_PROYECTO.md](ESTADO_FINAL_PROYECTO.md)** - Estado actual del proyecto completo
+
 ---
 
 ## 📚 Documentos Completos
@@ -33,6 +41,16 @@
 | **FLUJO_VERIFICACION.md** | Flujos de juego documentados | Diseñadores/QA |
 | **CONCLUSION_FINAL.md** | Resumen de entrega | Gerencia |
 | **RESUMEN_EJECUTIVO_FINAL.md** | Resumen de 2 páginas | Ejecutivos |
+
+### 🎮 Documentación de IA (NUEVO)
+| Documento | Propósito | Audiencia |
+|-----------|-----------|-----------|
+| **REFERENCIA_RAPIDA_IA.md** | 1 página - Problema + Solución IA | Todos (comienza aquí) |
+| **GUIA_PRUEBA_IA.md** | Paso-a-paso para probar 3 IAs | QA/Testers |
+| **CAMBIOS_CODIGO_DETALLE.md** | Cambios línea-por-línea | Desarrolladores |
+| **VERIFICACION_IA_REACHABILITY.md** | Arquitectura validación reachability | Arquitectos |
+| **RESUMEN_CORRECCION_IA_FINAL.md** | Resumen técnico completo | Líderes técnicos |
+| **ESTADO_FINAL_PROYECTO.md** | Estado de todo el proyecto | Gerencia/QA |
 
 ---
 

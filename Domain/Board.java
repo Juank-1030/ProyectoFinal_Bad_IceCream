@@ -20,8 +20,8 @@ public class Board implements BoardStateProvider {
     private IceCream secondIceCream; // Segundo helado para modo cooperativo
     private List<Enemy> enemies;
     private List<Fruit> fruits;
-    private List<Position> walls;        // Muros indestructibles (bordes)
-    private List<IceBlock> iceBlocks;   // Bloques de hielo rompibles
+    private List<Position> walls; // Muros indestructibles (bordes)
+    private List<IceBlock> iceBlocks; // Bloques de hielo rompibles
 
     // Matriz de celdas (para búsqueda rápida)
     private CellType[][] cells;
