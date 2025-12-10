@@ -6,15 +6,18 @@ import java.util.Set;
 import java.util.HashSet;
 
 /**
- * InputHandler - Maneja la captura de eventos del teclado
+ * InputHandler - Detector de entrada del teclado
  * 
- * RESPONSABILIDAD ÚNICA:
- * - Capturar teclas presionadas/liberadas
- * - Mantener estado de teclas activas
- * - Proporcionar interfaz simple para consultar estado
+ * PROPÓSITO:
+ * Capturar y mantener el estado actual de las teclas presionadas
+ * 
+ * FUNCIÓN:
+ * - Implementa KeyListener para escuchar eventos del teclado
+ * - Almacena qué teclas están activas en cada momento
+ * - Proporciona métodos para consultar si una acción está siendo realizada
  * 
  * PATRÓN: Input Buffering
- * Evita pérdida de inputs durante frames
+ * Permite detectar inputs sin perderlos entre frames del juego
  */
 public class InputHandler implements KeyListener {
 

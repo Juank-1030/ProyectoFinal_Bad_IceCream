@@ -11,18 +11,23 @@ import java.util.Map;
 import Domain.GameState;
 
 /**
- * GameController - Controlador del juego
+ * GameController - Orquestador del juego (Model-View-Controller)
  * 
- * RESPONSABILIDADES:
- * - Capturar eventos del teclado
- * - Traducir eventos a comandos del juego
- * - Coordinar Model (Game) con View (GamePanel)
- * - Manejar el game loop (Timer)
+ * PROPÓSITO:
+ * Coordinar la interacción entre el Model (lógica del juego) y la View
+ * (interfaz gráfica)
+ * 
+ * FUNCIÓN:
+ * - Consulta InputHandler para saber qué acciones intenta el jugador
+ * - Traduce esas acciones en comandos al Model (Game)
+ * - Ejecuta el game loop (actualiza lógica + renderiza)
+ * - Maneja transiciones entre pantallas y estados del juego
+ * - Mantiene callbacks para eventos importantes (pausa, victoria, etc.)
  * 
  * NO TIENE:
- * - Lógica del juego (eso está en Game)
- * - Reglas (eso está en Game)
- * - Renderizado (eso está en GamePanel)
+ * - Lógica del juego (eso está en Game/Domain)
+ * - Reglas de físicas o movimiento (eso está en Game/Domain)
+ * - Renderizado gráfico (eso está en GamePanel)
  */
 public class GameController implements KeyListener {
 
