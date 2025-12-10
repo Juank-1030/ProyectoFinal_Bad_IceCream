@@ -949,4 +949,120 @@ public class GameController implements KeyListener {
             return PVPMode.ICE_CREAM_COOPERATIVE;
         }
     }
+
+    // ========================================
+    // MÉTODOS PARA GAMEPANEL (Presentation)
+    // Acceso a información sin importar Domain directamente
+    // ========================================
+
+    /**
+     * Obtiene el estado actual del juego como String
+     */
+    public String getGameStateAsString() {
+        if (game == null) return "LOADING";
+        GameState state = game.getGameState();
+        if (state == GameState.PLAYING) return "PLAYING";
+        if (state == GameState.PAUSED) return "PAUSED";
+        if (state == GameState.WON) return "WON";
+        if (state == GameState.LOST) return "LOST";
+        return "UNKNOWN";
+    }
+
+    /**
+     * Verifica si el juego está en cierto estado
+     */
+    public boolean isGameState(String stateName) {
+        return getGameStateAsString().equals(stateName);
+    }
+
+    /**
+     * Obtiene las dimensiones del tablero
+     */
+    public int[] getBoardDimensions() {
+        if (game == null || game.getBoard() == null) {
+            return new int[]{0, 0};
+        }
+        Board board = game.getBoard();
+        return new int[]{board.getWidth(), board.getHeight()};
+    }
+
+    /**
+     * Actualiza posiciones visuales de todas las entidades
+     */
+    public void updateAllVisualPositions() {
+        if (game == null || game.getBoard() == null) return;
+        Board board = game.getBoard();
+
+        if (board.getIceCream() != null) {
+            board.getIceCream().updateVisualPosition();
+        }
+        if (board.getSecondIceCream() != null) {
+            board.getSecondIceCream().updateVisualPosition();
+        }
+        for (Enemy enemy : board.getEnemies()) {
+            if (enemy != null) {
+                enemy.updateVisualPosition();
+            }
+        }
+    }
+
+    /**
+     * Obtiene lista de frutas (solo las no recolectadas)
+     */
+    public List<Fruit> getFruits() {
+        if (game == null || game.getBoard() == null) {
+            return new java.util.ArrayList<>();
+        }
+        return game.getBoard().getFruits();
+    }
+
+    /**
+     * Obtiene lista de muros
+     */
+    public List<Position> getWalls() {
+        if (game == null || game.getBoard() == null) {
+            return new java.util.ArrayList<>();
+        }
+        return game.getBoard().getWalls();
+    }
+
+    /**
+     * Obtiene lista de bloques de hielo
+     */
+    public List<IceBlock> getIceBlocks() {
+        if (game == null || game.getBoard() == null) {
+            return new java.util.ArrayList<>();
+        }
+        return game.getBoard().getIceBlocks();
+    }
+
+    /**
+     * Obtiene el helado principal (Jugador 1)
+     */
+    public IceCream getMainIceCream() {
+        if (game == null || game.getBoard() == null) {
+            return null;
+        }
+        return game.getBoard().getIceCream();
+    }
+
+    /**
+     * Obtiene el segundo helado (Jugador 2, solo en modo cooperativo)
+     */
+    public IceCream getSecondIceCream() {
+        if (game == null || game.getBoard() == null) {
+            return null;
+        }
+        return game.getBoard().getSecondIceCream();
+    }
+
+    /**
+     * Obtiene lista de enemigos
+     */
+    public List<Enemy> getEnemies() {
+        if (game == null || game.getBoard() == null) {
+            return new java.util.ArrayList<>();
+        }
+        return game.getBoard().getEnemies();
+    }
 }
