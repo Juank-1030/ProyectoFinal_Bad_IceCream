@@ -917,4 +917,31 @@ public class GameController implements KeyListener {
             game.setIceCreamAIStrategy(strategyName);
         }
     }
+
+    /**
+     * Obtiene las estrategias de IA disponibles para el helado
+     * (Para que SelectIceCreamAI no importe de Domain)
+     */
+    public String[] getAvailableIceCreamAIStrategies() {
+        return IceCreamAIStrategyManager.getAvailableStrategies();
+    }
+
+    /**
+     * Obtiene valores del enum PVPMode sin necesidad de importar Domain
+     */
+    public enum PVPModeValue {
+        ICE_CREAM_VS_MONSTER,
+        ICE_CREAM_COOPERATIVE
+    }
+
+    /**
+     * Convierte PVPModeValue a PVPMode del Domain
+     */
+    public PVPMode getPVPModeFromValue(PVPModeValue value) {
+        if (value == PVPModeValue.ICE_CREAM_VS_MONSTER) {
+            return PVPMode.ICE_CREAM_VS_MONSTER;
+        } else {
+            return PVPMode.ICE_CREAM_COOPERATIVE;
+        }
+    }
 }

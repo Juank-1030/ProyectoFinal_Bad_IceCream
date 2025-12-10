@@ -5,8 +5,8 @@ import Domain.*;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.*;
 import java.util.List;
+import java.util.Map;
 
 /**
  * GamePanel - Panel que renderiza el juego

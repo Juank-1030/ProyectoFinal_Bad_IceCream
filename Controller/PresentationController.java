@@ -648,6 +648,11 @@ public class PresentationController {
         gameController = new GameController(selectedGameMode, selectedIceCream, null, null, selectedEnemyConfig,
                 selectedFruitConfig);
 
+        // Establecer la estrategia de IA del helado SOLO en MVM
+        if (selectedIceCreamAIStrategy != null && !selectedIceCreamAIStrategy.isEmpty()) {
+            gameController.setIceCreamAIStrategy(selectedIceCreamAIStrategy);
+        }
+
         // Registrar callbacks
         gameController.setOnReturnToMenuClick(createReturnToMenuCallback());
         gameController.setOnSaveGameClick(createSaveGameCallback());
@@ -982,9 +987,9 @@ public class PresentationController {
             if (selectedPVPMode == PVPMode.ICE_CREAM_COOPERATIVE) {
                 iniciarJuegoCooperativo(helado, selectedSecondIceCream);
             } else if (selectedPVPMode == PVPMode.ICE_CREAM_VS_MONSTER) {
-                // PVP Vs Monstruo: ya tenemos el monstruo seleccionado en selectedMonster
+                // PVP Vs Monstruo: el helado es controlado por el jugador, NO por IA
                 if (selectedMonster != null) {
-                    iniciarJuegoVSMonstruo(helado, selectedMonster, selectedIceCreamAIStrategy);
+                    iniciarJuegoVSMonstruo(helado, selectedMonster, null);
                 } else {
                     System.err.println("❌ Error: No se ha seleccionado monstruo para modo PVP Vs Monstruo");
                 }

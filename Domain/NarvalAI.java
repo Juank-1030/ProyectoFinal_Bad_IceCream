@@ -28,24 +28,31 @@ public class NarvalAI implements AI {
         Position narvalPos = narval.getPosition();
         IceCream iceCream = board.getIceCream();
 
-        // Si el helado está en la misma fila o columna, activar habilidad
-        if (iceCream != null && isAlignedWithIceCream(narvalPos, iceCream.getPosition())) {
-            // Activar habilidad (ejecutar el ataque)
-            narval.executeAbility();
+        // SIEMPRE perseguir al helado (ampliar rango de búsqueda)
+        if (iceCream != null) {
+            Position targetPos = iceCream.getPosition();
 
-            // Moverse hacia el helado
-            Direction dirToIceCream = getDirectionToIceCream(narvalPos, iceCream.getPosition());
-            Position nextPos = calculateNextPosition(narvalPos, dirToIceCream);
+            // Si el helado está en la misma fila o columna, activar habilidad
+            if (isAlignedWithIceCream(narvalPos, targetPos)) {
+                narval.executeAbility();
+            }
 
-            if (canMove(nextPos)) {
-                currentDirection = dirToIceCream;
-                return dirToIceCream;
+            // Obtener todas las direcciones ordenadas por proximidad al objetivo
+            Direction[] directionsByProximity = getDirectionsByProximity(narvalPos, targetPos);
+
+            // Intentar moverse en cada dirección, priorizando las más cercanas al objetivo
+            for (Direction dir : directionsByProximity) {
+                Position nextPos = calculateNextPosition(narvalPos, dir);
+                if (canMove(nextPos)) {
+                    currentDirection = dir;
+                    stepsInDirection = 0;
+                    return dir;
+                }
             }
         }
 
-        // Movimiento aleatorio normal
+        // Fallback: movimiento aleatorio si no puede perseguir
         Position nextPos = calculateNextPosition(narvalPos, currentDirection);
-
         if (canMove(nextPos)) {
             stepsInDirection++;
             if (stepsInDirection >= MAX_STEPS_SAME_DIRECTION) {
@@ -151,8 +158,74 @@ public class NarvalAI implements AI {
         if (pos == null)
             return false;
 
+        // Verificar que no sea un muro
+        if (board.isWall(pos)) {
+            return false;
+        }
+
+        // Verificar que no hay hielo en esa posición
+        if (board.getIceBlockAt(pos) != null) {
+            return false;
+        }
+
         // Verificar que no hay enemigo en esa posición
         Enemy enemyAtPos = board.getEnemyAt(pos);
         return enemyAtPos == null;
+    }
+
+    /**
+     * Obtener todas las direcciones ordenadas por proximidad al objetivo
+     */
+    private Direction[] getDirectionsByProximity(Position from, Position to) {
+        int dx = to.getX() - from.getX();
+        int dy = to.getY() - from.getY();
+
+        Direction[] directions = new Direction[4];
+        int index = 0;
+
+        // Agregar direcciones por distancia
+        if (Math.abs(dx) > Math.abs(dy)) {
+            // Prioridad horizontal
+            if (dx > 0) {
+                directions[index++] = Direction.RIGHT;
+            } else if (dx < 0) {
+                directions[index++] = Direction.LEFT;
+            }
+
+            if (dy > 0) {
+                directions[index++] = Direction.DOWN;
+            } else if (dy < 0) {
+                directions[index++] = Direction.UP;
+            }
+        } else {
+            // Prioridad vertical
+            if (dy > 0) {
+                directions[index++] = Direction.DOWN;
+            } else if (dy < 0) {
+                directions[index++] = Direction.UP;
+            }
+
+            if (dx > 0) {
+                directions[index++] = Direction.RIGHT;
+            } else if (dx < 0) {
+                directions[index++] = Direction.LEFT;
+            }
+        }
+
+        // Completar con direcciones restantes
+        for (Direction d : Direction.values()) {
+            boolean found = false;
+            for (int i = 0; i < index; i++) {
+                if (directions[i] == d) {
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                directions[index++] = d;
+            }
+        }
+
+        return directions;
     }
 }

@@ -28,34 +28,26 @@ public class YellowSquidAI implements AI {
         }
 
         Position targetPos = iceCream.getPosition();
-        Direction dirToTarget = calculateDirectionTowards(squidPos, targetPos);
 
-        // Intentar moverse en dirección del helado
-        Position nextPos = calculateNextPosition(squidPos, dirToTarget);
+        // Obtener todas las direcciones ordenadas por proximidad al objetivo
+        Direction[] directionsByProximity = getDirectionsByProximity(squidPos, targetPos);
 
-        // Verificar si hay hielo bloqueando
-        if (board.getIceBlockAt(nextPos) != null) {
-            // Hay hielo, destruirlo con la habilidad
-            destroyIceBlock(nextPos);
-            return dirToTarget;
-        }
+        // Intentar moverse en cada dirección, priorizando las más cercanas al objetivo
+        for (Direction dir : directionsByProximity) {
+            Position nextPos = calculateNextPosition(squidPos, dir);
 
-        // Si puede moverse
-        if (canMove(nextPos)) {
-            currentDirection = dirToTarget;
-            return dirToTarget;
-        }
+            // Verificar si hay hielo bloqueando
+            if (board.getIceBlockAt(nextPos) != null) {
+                // Hay hielo, destruirlo con la habilidad
+                destroyIceBlock(nextPos);
+                currentDirection = dir;
+                return dir;
+            }
 
-        // Si no puede, intentar otras direcciones
-        for (Direction dir : Direction.values()) {
-            nextPos = calculateNextPosition(squidPos, dir);
-
-            // Priorizar moverse hacia el helado
-            if (isCloserToTarget(nextPos, targetPos, calculateNextPosition(squidPos, currentDirection))) {
-                if (canMove(nextPos)) {
-                    currentDirection = dir;
-                    return dir;
-                }
+            // Si puede moverse
+            if (canMove(nextPos)) {
+                currentDirection = dir;
+                return dir;
             }
         }
 
@@ -146,8 +138,74 @@ public class YellowSquidAI implements AI {
         if (pos == null)
             return false;
 
+        // Verificar que no sea un muro
+        if (board.isWall(pos)) {
+            return false;
+        }
+
+        // Verificar que no hay hielo en esa posición
+        if (board.getIceBlockAt(pos) != null) {
+            return false;
+        }
+
         // Verificar que no hay enemigo en esa posición
         Enemy enemyAtPos = board.getEnemyAt(pos);
         return enemyAtPos == null;
+    }
+
+    /**
+     * Obtener todas las direcciones ordenadas por proximidad al objetivo
+     */
+    private Direction[] getDirectionsByProximity(Position from, Position to) {
+        int dx = to.getX() - from.getX();
+        int dy = to.getY() - from.getY();
+
+        Direction[] directions = new Direction[4];
+        int index = 0;
+
+        // Agregar direcciones por distancia
+        if (Math.abs(dx) > Math.abs(dy)) {
+            // Prioridad horizontal
+            if (dx > 0) {
+                directions[index++] = Direction.RIGHT;
+            } else if (dx < 0) {
+                directions[index++] = Direction.LEFT;
+            }
+
+            if (dy > 0) {
+                directions[index++] = Direction.DOWN;
+            } else if (dy < 0) {
+                directions[index++] = Direction.UP;
+            }
+        } else {
+            // Prioridad vertical
+            if (dy > 0) {
+                directions[index++] = Direction.DOWN;
+            } else if (dy < 0) {
+                directions[index++] = Direction.UP;
+            }
+
+            if (dx > 0) {
+                directions[index++] = Direction.RIGHT;
+            } else if (dx < 0) {
+                directions[index++] = Direction.LEFT;
+            }
+        }
+
+        // Completar con direcciones restantes
+        for (Direction d : Direction.values()) {
+            boolean found = false;
+            for (int i = 0; i < index; i++) {
+                if (directions[i] == d) {
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                directions[index++] = d;
+            }
+        }
+
+        return directions;
     }
 }
