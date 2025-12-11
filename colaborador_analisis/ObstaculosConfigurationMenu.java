@@ -9,8 +9,7 @@ import javax.swing.*;
 
 /**
  * Menu para configurar obstáculos (Fogatas y Baldosas Calientes)
- * Permite agregar hasta 2 tipos diferentes de obstáculos y especificar
- * cantidad.
+ * Permite agregar hasta 2 tipos diferentes de obstáculos y especificar cantidad.
  */
 public class ObstaculosConfigurationMenu extends JFrame {
     private String rutaFondo = "Resources/Opciones_Menu/Fondo.png";
@@ -44,7 +43,7 @@ public class ObstaculosConfigurationMenu extends JFrame {
     private void inicializarVentana() {
         setTitle("Bad Ice Cream - Configurar Obstáculos");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(800, 700);
+        setSize(750, 560);
         setLocationRelativeTo(null);
         setResizable(false);
 
@@ -88,18 +87,18 @@ public class ObstaculosConfigurationMenu extends JFrame {
         agregarSlot(slotPanel);
 
         JScrollPane scrollPane = new JScrollPane(slotPanel);
-        scrollPane.setBounds(50, 120, 700, 350);
+        scrollPane.setBounds(60, 120, 620, 240);
         scrollPane.setOpaque(false);
         scrollPane.getViewport().setOpaque(false);
         scrollPane.setBorder(BorderFactory.createTitledBorder(
-                BorderFactory.createLineBorder(new Color(150, 150, 150)),
+                BorderFactory.createLineBorder(new Color(150,150,150)),
                 "Tipo y Cantidad",
                 0, 0,
                 new Font("Arial", Font.BOLD, 18), Color.DARK_GRAY));
         panelFondo.add(scrollPane);
 
         // Botón agregar
-        JButton btnAdd = crearBoton("+ AGREGAR OBSTÁCULO", 50, 490, new Color(130, 180, 255));
+        JButton btnAdd = crearBoton("+ AGREGAR OBSTÁCULO", 60, 375, new Color(130, 180, 255));
         btnAdd.addActionListener(e -> {
             if (obstacleSlots.size() < OBSTACLE_TYPES.length) {
                 agregarSlot(slotPanel);
@@ -113,19 +112,17 @@ public class ObstaculosConfigurationMenu extends JFrame {
         panelFondo.add(btnAdd);
 
         // Confirmar
-        JButton btnConfirm = crearBoton("✓ CONFIRMAR", 275, 550, new Color(100, 200, 100));
+        JButton btnConfirm = crearBoton("✓ CONFIRMAR", 170, 440, new Color(100, 200, 100));
         btnConfirm.addActionListener(e -> {
             guardarConfiguracion();
-            if (onConfirmClick != null)
-                onConfirmClick.run();
+            if (onConfirmClick != null) onConfirmClick.run();
         });
         panelFondo.add(btnConfirm);
 
         // Atrás
-        JButton btnBack = crearBoton("← ATRÁS", 475, 550, new Color(200, 100, 100));
+        JButton btnBack = crearBoton("← ATRÁS", 380, 440, new Color(200, 100, 100));
         btnBack.addActionListener(e -> {
-            if (onBackClick != null)
-                onBackClick.run();
+            if (onBackClick != null) onBackClick.run();
         });
         panelFondo.add(btnBack);
 
@@ -177,8 +174,7 @@ public class ObstaculosConfigurationMenu extends JFrame {
         Set<String> usados = new HashSet<>();
         for (ObstacleSlot slot : obstacleSlots) {
             String selected = (String) slot.typeCombo.getSelectedItem();
-            if (selected != null)
-                usados.add(selected);
+            if (selected != null) usados.add(selected);
         }
         java.util.List<String> disponibles = new ArrayList<>();
         for (String type : OBSTACLE_TYPES) {

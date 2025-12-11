@@ -95,7 +95,8 @@ public class GameController implements KeyListener {
         this.secondIceCreamFlavor = secondIceCreamFlavor;
         this.enemyConfig = enemyConfig;
         this.fruitConfig = fruitConfig;
-        this.game = new Game(gameMode, iceCreamFlavor, secondIceCreamFlavor, monsterType, enemyConfig, fruitConfig, obstacleConfig);
+        this.game = new Game(gameMode, iceCreamFlavor, secondIceCreamFlavor, monsterType, enemyConfig, fruitConfig,
+                obstacleConfig);
 
         // 2. Crear la View (GamePanel)
         this.gamePanel = new GamePanel(this);
@@ -1275,6 +1276,12 @@ public class GameController implements KeyListener {
                 cactusData.tipo = "cactus";
                 cactusData.visualState = fruit.getVisualState();
                 cactusData.collected = fruit.isCollected();
+                // Obtener el estado spiky desde el Cactus
+                if (fruit instanceof Cactus) {
+                    cactusData.spiky = ((Cactus) fruit).isSpiky();
+                } else {
+                    cactusData.spiky = false;
+                }
                 data.cactuses.add(cactusData);
             } else {
                 // Frutas normales

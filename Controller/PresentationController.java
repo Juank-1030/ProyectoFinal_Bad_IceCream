@@ -913,37 +913,6 @@ public class PresentationController {
     /**
      * Muestra el menú de configuración de obstáculos
      */
-    private void mostrarConfiguracionObstaculos() {
-        obstaculosConfigMenu.setVisible(true);
-
-        // Callback para confirmar configuración de obstáculos
-        obstaculosConfigMenu.setOnConfirmClick(() -> {
-            selectedObstacleConfig = obstaculosConfigMenu.getObstacleConfiguration();
-            System.out.println("🏜️ Configuración de obstáculos recibida:");
-            if (selectedObstacleConfig != null) {
-                for (String obstacle : selectedObstacleConfig.keySet()) {
-                    System.out.println("  - " + obstacle + ": " + selectedObstacleConfig.get(obstacle));
-                }
-            }
-            obstaculosConfigMenu.setVisible(false);
-
-            // Si no hay configuración personalizada, usar la del nivel predeterminado
-            if (selectedObstacleConfig.isEmpty()) {
-                System.out.println("⚠️ Configuración de obstáculos vacía, no habrá obstáculos personalizados");
-                selectedObstacleConfig = null; // null indica usar configuración predeterminada
-            }
-
-            // Mostrar menú de configuración de enemigos
-            mostrarConfiguracionEnemigos();
-        });
-
-        // Callback para atrás
-        obstaculosConfigMenu.setOnBackClick(() -> {
-            obstaculosConfigMenu.setVisible(false);
-            selectLevel.setVisible(true);
-        });
-    }
-
     /**
      * Muestra el menú de configuración de enemigos
      */
@@ -1005,13 +974,49 @@ public class PresentationController {
                 selectedFruitConfig = null; // null indica usar configuración predeterminada
             }
 
-            iniciarJuegoSegunModo(selectedIceCream);
+            fruitConfigMenu.setVisible(false);
+            // Mostrar menú de configuración de obstáculos
+            mostrarConfiguracionObstaculos();
         });
 
         // Callback para atrás
         fruitConfigMenu.setOnBackClick(() -> {
             fruitConfigMenu.setVisible(false);
-            enemyConfigMenu.setVisible(true);
+            mostrarConfiguracionObstaculos();
+        });
+    }
+
+    /**
+     * Muestra el menú de configuración de obstáculos
+     */
+    private void mostrarConfiguracionObstaculos() {
+        obstaculosConfigMenu.setVisible(true);
+
+        // Callback para confirmar configuración de obstáculos
+        obstaculosConfigMenu.setOnConfirmClick(() -> {
+            selectedObstacleConfig = obstaculosConfigMenu.getObstacleConfiguration();
+            System.out.println("🏜️ Configuración de obstáculos recibida:");
+            if (selectedObstacleConfig != null) {
+                for (String obstacle : selectedObstacleConfig.keySet()) {
+                    System.out.println("  - " + obstacle + ": " + selectedObstacleConfig.get(obstacle));
+                }
+            }
+            obstaculosConfigMenu.setVisible(false);
+
+            // Si no hay configuración personalizada, usar la del nivel predeterminado
+            if (selectedObstacleConfig.isEmpty()) {
+                System.out.println("⚠️ Configuración de obstáculos vacía, no habrá obstáculos personalizados");
+                selectedObstacleConfig = null; // null indica usar configuración predeterminada
+            }
+
+            // Iniciar el juego
+            iniciarJuegoSegunModo(selectedIceCream);
+        });
+
+        // Callback para atrás
+        obstaculosConfigMenu.setOnBackClick(() -> {
+            obstaculosConfigMenu.setVisible(false);
+            mostrarConfiguracionFrutas();
         });
     }
 

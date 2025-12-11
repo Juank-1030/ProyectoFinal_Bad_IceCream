@@ -19,11 +19,11 @@ public class Board implements BoardStateProvider {
     private IceCream iceCream;
     private IceCream secondIceCream; // Segundo helado para modo cooperativo
     private List<Enemy> enemies;
+    private List<Fogata> fogatas = new ArrayList<>();
     private List<Fruit> fruits;
-    private List<Position> walls; // Muros indestructibles (bordes)
-    private List<IceBlock> iceBlocks; // Bloques de hielo rompibles
-    private List<Fogata> fogatas; // Obstáculos dinámicos (fogatas)
-    private List<BaldosaCaliente> baldosasCalientes; // Obstáculos de baldosa caliente
+    private List<Position> walls;        // Muros indestructibles (bordes)
+    private List<IceBlock> iceBlocks;   // Bloques de hielo rompibles
+    private List<BaldosaCaliente> baldosasCalientes = new ArrayList<>();
 
     // Matriz de celdas (para búsqueda rápida)
     private CellType[][] cells;
@@ -41,8 +41,6 @@ public class Board implements BoardStateProvider {
         this.fruits = new ArrayList<>();
         this.walls = new ArrayList<>();
         this.iceBlocks = new ArrayList<>();
-        this.fogatas = new ArrayList<>();
-        this.baldosasCalientes = new ArrayList<>();
         this.cells = new CellType[height][width];
         initializeCells();
     }
@@ -93,11 +91,6 @@ public class Board implements BoardStateProvider {
 
         // Verificar si hay bloque de hielo
         if (hasIceBlock(pos)) {
-            return false;
-        }
-
-        // Verificar si hay baldosa caliente
-        if (hasBaldosaCaliente(pos)) {
             return false;
         }
 
@@ -480,65 +473,43 @@ public class Board implements BoardStateProvider {
         Position currentPos = iceCream.getPosition().move(direction);
         int blocksCreated = 0;
 
-        // Crear bloques en línea recta hasta encontrar obstáculo
+        // Crear bloques en línea recta
         while (isInBounds(currentPos)) {
-            // Verificar si hay enemigo (no crear bloque ahí)
-            if (getEnemyAt(currentPos) != null) {
-                break;
-            }
+            if (getEnemyAt(currentPos) != null) break;
+            if (hasIceBlock(currentPos)) break;
 
-            // Verificar si ya hay bloque de hielo (detener)
-            if (hasIceBlock(currentPos)) {
-                break;
-            }
-
-            // Verificar si es posición válida (sin hielo, sin pared)
             if (!isValidPosition(currentPos)) {
-                // Si hay una fruta, crear bloque de hielo SOBRE la fruta
                 Fruit fruitAtPos = getFruitAt(currentPos);
                 if (fruitAtPos != null) {
-                    // Crear bloque de hielo en la misma posición que la fruta
                     IceBlock newBlock = new IceBlock(currentPos, true, iceCream);
                     iceBlocks.add(newBlock);
-
                     // Derrite si hay baldosa caliente debajo
                     if (hasBaldosaCaliente(currentPos)) {
                         iceBlocks.remove(newBlock);
                         System.out.println("🔥 Baldosa caliente derritió el hielo en " + currentPos);
                     }
-
-                    // Apagar fogata si hay debajo
+                    // --- NUEVO: Apagar fogata si hay debajo ---
                     Fogata fogata = getFogataAt(currentPos);
-                    if (fogata != null) {
-                        fogata.apagar();
-                        System.out.println("❄️ Hielo apagó la fogata en " + currentPos);
-                    }
+                    if (fogata != null) fogata.apagar();
 
                     blocksCreated++;
                     currentPos = currentPos.move(direction);
-                    continue; // Seguir creando bloques
+                    continue;
                 } else {
-                    // Hay pared o algo más, detener
                     break;
                 }
             }
 
-            // Crear bloque en posición válida
             IceBlock newBlock = new IceBlock(currentPos, true, iceCream);
             iceBlocks.add(newBlock);
-
             // Derrite si hay baldosa caliente debajo
             if (hasBaldosaCaliente(currentPos)) {
                 iceBlocks.remove(newBlock);
                 System.out.println("🔥 Baldosa caliente derritió el hielo en " + currentPos);
             }
-
-            // Apagar fogata si hay debajo
+            // --- NUEVO: Apagar fogata si hay debajo ---
             Fogata fogata = getFogataAt(currentPos);
-            if (fogata != null) {
-                fogata.apagar();
-                System.out.println("❄️ Hielo apagó la fogata en " + currentPos);
-            }
+            if (fogata != null) fogata.apagar();
 
             blocksCreated++;
             currentPos = currentPos.move(direction);
@@ -559,65 +530,43 @@ public class Board implements BoardStateProvider {
         Position currentPos = secondIceCream.getPosition().move(direction);
         int blocksCreated = 0;
 
-        // Crear bloques en línea recta hasta encontrar obstáculo
+        // Crear bloques en línea recta
         while (isInBounds(currentPos)) {
-            // Verificar si hay enemigo (no crear bloque ahí)
-            if (getEnemyAt(currentPos) != null) {
-                break;
-            }
+            if (getEnemyAt(currentPos) != null) break;
+            if (hasIceBlock(currentPos)) break;
 
-            // Verificar si ya hay bloque de hielo (detener)
-            if (hasIceBlock(currentPos)) {
-                break;
-            }
-
-            // Verificar si es posición válida (sin hielo, sin pared)
             if (!isValidPosition(currentPos)) {
-                // Si hay una fruta, crear bloque de hielo SOBRE la fruta
                 Fruit fruitAtPos = getFruitAt(currentPos);
                 if (fruitAtPos != null) {
-                    // Crear bloque de hielo en la misma posición que la fruta
                     IceBlock newBlock = new IceBlock(currentPos, true, secondIceCream);
                     iceBlocks.add(newBlock);
-
                     // Derrite si hay baldosa caliente debajo
                     if (hasBaldosaCaliente(currentPos)) {
                         iceBlocks.remove(newBlock);
                         System.out.println("🔥 Baldosa caliente derritió el hielo en " + currentPos);
                     }
-
-                    // Apagar fogata si hay debajo
+                    // --- NUEVO: Apagar fogata si hay debajo ---
                     Fogata fogata = getFogataAt(currentPos);
-                    if (fogata != null) {
-                        fogata.apagar();
-                        System.out.println("❄️ Hielo apagó la fogata en " + currentPos);
-                    }
+                    if (fogata != null) fogata.apagar();
 
                     blocksCreated++;
                     currentPos = currentPos.move(direction);
-                    continue; // Seguir creando bloques
+                    continue;
                 } else {
-                    // Hay pared o algo más, detener
                     break;
                 }
             }
 
-            // Crear bloque en posición válida
             IceBlock newBlock = new IceBlock(currentPos, true, secondIceCream);
             iceBlocks.add(newBlock);
-
             // Derrite si hay baldosa caliente debajo
             if (hasBaldosaCaliente(currentPos)) {
                 iceBlocks.remove(newBlock);
                 System.out.println("🔥 Baldosa caliente derritió el hielo en " + currentPos);
             }
-
-            // Apagar fogata si hay debajo
+            // --- NUEVO: Apagar fogata si hay debajo ---
             Fogata fogata = getFogataAt(currentPos);
-            if (fogata != null) {
-                fogata.apagar();
-                System.out.println("❄️ Hielo apagó la fogata en " + currentPos);
-            }
+            if (fogata != null) fogata.apagar();
 
             blocksCreated++;
             currentPos = currentPos.move(direction);
@@ -643,6 +592,11 @@ public class Board implements BoardStateProvider {
             IceBlock block = getIceBlockAt(targetPos);
             if (block != null && block.isBreakable()) {
                 iceBlocks.remove(block);
+                // Apagar fogata si hay una en esa posición
+                Fogata fogata = getFogataAt(targetPos);
+                if (fogata != null) {
+                    fogata.apagar();
+                }
                 return true;
             }
         }
@@ -871,23 +825,17 @@ public class Board implements BoardStateProvider {
         }
     }
 
-    // ========== FOGATAS ==========
-    public void addFogata(Fogata fogata) {
-        this.fogatas.add(fogata);
-    }
+    public void addFogata(Fogata fogata) { this.fogatas.add(fogata); }
 
-    public List<Fogata> getFogatas() {
-        return new ArrayList<>(fogatas);
-    }
+    public List<Fogata> getFogatas() { return new ArrayList<>(fogatas); }
 
     public Fogata getFogataAt(Position pos) {
-        return fogatas.stream()
-                .filter(f -> f.getPosition().equals(pos))
-                .findFirst()
-                .orElse(null);
+        for (Fogata fogata : fogatas) {
+            if (fogata.getPosition().equals(pos)) return fogata;
+        }
+        return null;
     }
 
-    // ========== BALDOSAS CALIENTES ==========
     public void addBaldosaCaliente(BaldosaCaliente baldosa) {
         this.baldosasCalientes.add(baldosa);
     }
@@ -897,7 +845,9 @@ public class Board implements BoardStateProvider {
     }
 
     public boolean hasBaldosaCaliente(Position pos) {
-        return baldosasCalientes.stream()
-                .anyMatch(b -> b.getPosition().equals(pos));
+        for (BaldosaCaliente baldosa : baldosasCalientes) {
+            if (baldosa.getPosition().equals(pos)) return true;
+        }
+        return false;
     }
 }

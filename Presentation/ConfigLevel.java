@@ -24,7 +24,7 @@ public class ConfigLevel extends JFrame {
     private boolean mostrarCerezas = true;
     private boolean mostrarPinas = true;
     private boolean mostrarEnemigos = true;
-    
+
     // Configuración de obstáculos
     private java.util.Map<String, Integer> obstacleConfig = new java.util.LinkedHashMap<>();
 

@@ -18,6 +18,10 @@ import java.util.Random;
  * Coordina el tablero, niveles, puntuación, tiempo y modos de juego
  */
 public class Game implements Serializable {
+    // Configuración de fogatas y baldosas calientes
+    private boolean mostrarFogatas = false;
+    private int cantidadFogatas = 0;
+    private int cantidadBaldosasCalientes = 0;
     private static final long serialVersionUID = 1L;
 
     private Board board;
@@ -32,8 +36,9 @@ public class Game implements Serializable {
     private String secondIceCreamFlavor; // Segundo sabor para modo cooperativo
 
     // Para modos con IA
+    private AI iceCreamAI; // Para modo MVM
     private List<AI> enemyAIs; // Para modos PVM y MVM
-
+    
     // Estrategia de IA para el helado controlado por IA
     private String iceCreamAIStrategyName; // Nombre de la estrategia
 
@@ -53,7 +58,6 @@ public class Game implements Serializable {
     private String monsterType; // Tipo de monstruo seleccionado en PVP
     private Map<String, Integer> enemyConfig; // Configuración personalizada de enemigos
     private Map<String, Integer> fruitConfig; // Configuración personalizada de frutas
-    private Map<String, Integer> obstacleConfig; // Configuración personalizada de obstáculos
 
     public Game(GameMode gameMode, String iceCreamFlavor, String secondIceCreamFlavor, String monsterType) {
         this(gameMode, iceCreamFlavor, secondIceCreamFlavor, monsterType, null, null);
@@ -65,24 +69,18 @@ public class Game implements Serializable {
     }
 
     public Game(GameMode gameMode, String iceCreamFlavor, String secondIceCreamFlavor, String monsterType,
-            Map<String, Integer> enemyConfig, Map<String, Integer> fruitConfig, Map<String, Integer> obstacleConfig) {
+            Map<String, Integer> enemyConfig, Map<String, Integer> fruitConfig) {
         this.gameMode = gameMode;
         this.iceCreamFlavor = iceCreamFlavor;
         this.secondIceCreamFlavor = secondIceCreamFlavor; // null para modo vs Monstruo
         this.monsterType = monsterType; // PVP: Tipo de monstruo controlado
         this.enemyConfig = enemyConfig; // Configuración personalizada de enemigos
         this.fruitConfig = fruitConfig; // Configuración personalizada de frutas
-        this.obstacleConfig = obstacleConfig; // Configuración personalizada de obstáculos
         this.gameState = GameState.MENU;
         this.score = 0;
         // Sin sistema de vidas (como el juego original)
         this.enemyAIs = new ArrayList<>();
         this.lastUpdateTime = System.currentTimeMillis();
-    }
-
-    public Game(GameMode gameMode, String iceCreamFlavor, String secondIceCreamFlavor, String monsterType,
-            Map<String, Integer> enemyConfig, Map<String, Integer> fruitConfig) {
-        this(gameMode, iceCreamFlavor, secondIceCreamFlavor, monsterType, enemyConfig, fruitConfig, null);
     }
 
     // Constructor sin secondIceCreamFlavor (retrocompatibilidad para Helado vs
@@ -135,123 +133,119 @@ public class Game implements Serializable {
      * Configura el tablero con las entidades del nivel
      */
     private void setupBoard() {
-        // Agregar muros indestructibles (bordes del nivel)
-        for (Position wallPos : currentLevel.getWallPositions()) {
-            board.addWall(wallPos);
+    // 1) Muros indestructibles (bordes del nivel)
+    for (Position wallPos : currentLevel.getWallPositions()) {
+        board.addWall(wallPos);
+    }
+
+    // 2) FOGATAS ALEATORIAS SEGÚN EL MENÚ (USA LOS ATRIBUTOS INTERNOS)
+    if (mostrarFogatas && cantidadFogatas > 0) {
+        List<Position> emptyPositions = board.getEmptyPositions();
+        java.util.Collections.shuffle(emptyPositions);
+        int n = Math.min(cantidadFogatas, emptyPositions.size());
+        for (int i = 0; i < n; i++) {
+            board.addFogata(new Fogata(emptyPositions.get(i)));
         }
+        System.out.println("Se agregaron " + n + " fogatas aleatorias.");
+    }
 
-        // Agregar bloques de hielo rompibles (interior del nivel)
-        for (Position icePos : currentLevel.getIceBlockPositions()) {
-            IceBlock iceBlock = new IceBlock(icePos, true);
-            board.addIceBlock(iceBlock);
+    // 2.5) BALDOSAS CALIENTES ALEATORIAS SEGÚN EL MENÚ
+    if (cantidadBaldosasCalientes > 0) {
+        List<Position> emptyPositions = board.getEmptyPositions();
+        java.util.Collections.shuffle(emptyPositions);
+        int n = Math.min(cantidadBaldosasCalientes, emptyPositions.size());
+        for (int i = 0; i < n; i++) {
+            board.addBaldosaCaliente(new BaldosaCaliente(emptyPositions.get(i)));
         }
+        System.out.println("Se agregaron " + n + " baldosas calientes aleatorias.");
+    }
 
-        // Crear el helado
-        IceCream iceCream = createIceCream(currentLevel.getIceCreamStartPosition());
+    // 3) Bloques de hielo
+    for (Position icePos : currentLevel.getIceBlockPositions()) {
+        IceBlock iceBlock = new IceBlock(icePos, true);
+        board.addIceBlock(iceBlock);
+    }
 
-        // Aplicar la estrategia de IA si fue especificada
-        if (iceCreamAIStrategyName != null && !iceCreamAIStrategyName.isEmpty()) {
-            IceCreamAIStrategy aiStrategy = IceCreamAIStrategyManager.getStrategy(iceCreamAIStrategyName);
-            if (aiStrategy != null) {
-                iceCream.setAIStrategy(aiStrategy);
-                System.out.println("✓ IA aplicada al helado: " + iceCreamAIStrategyName);
-            }
-        }
+    // 4) Primer helado
+    IceCream iceCream = createIceCream(currentLevel.getIceCreamStartPosition());
 
-        board.setIceCream(iceCream);
-
-        // Crear segundo helado si es modo cooperativo
-        if (secondIceCreamFlavor != null) {
-            // Crear segunda posición para el segundo helado (diferente a la primera)
-            List<Position> emptyPositions = new ArrayList<>();
-            for (int x = 1; x < currentLevel.getBoardWidth() - 1; x++) {
-                for (int y = 1; y < currentLevel.getBoardHeight() - 1; y++) {
-                    Position pos = new Position(x, y);
-                    if (board.isValidPosition(pos) && !pos.equals(currentLevel.getIceCreamStartPosition())) {
-                        emptyPositions.add(pos);
-                    }
-                }
-            }
-
-            if (!emptyPositions.isEmpty()) {
-                Random random = new Random();
-                Position secondIceCreamPos = emptyPositions.get(random.nextInt(emptyPositions.size()));
-                IceCream secondIceCream = createSecondIceCream(secondIceCreamPos);
-                board.setSecondIceCream(secondIceCream);
-            }
-        }
-
-        // Crear enemigos
-        // En PVP Vs Monstruo: crear el monstruo seleccionado + enemigos adicionales
-        // En PVM/MVM: usar configuración personalizada si existe, sino usar la del
-        // nivel
-        if (gameMode == GameMode.PVP && monsterType != null) {
-            // Crear el monstruo seleccionado en posición aleatoria del nivel
-            List<Position> emptyPositions = new ArrayList<>();
-            for (int x = 1; x < currentLevel.getBoardWidth() - 1; x++) {
-                for (int y = 1; y < currentLevel.getBoardHeight() - 1; y++) {
-                    Position pos = new Position(x, y);
-                    if (board.isValidPosition(pos)) {
-                        emptyPositions.add(pos);
-                    }
-                }
-            }
-
-            if (!emptyPositions.isEmpty()) {
-                Random random = new Random();
-                Position enemyPos = emptyPositions.get(random.nextInt(emptyPositions.size()));
-                Level.EnemyConfig config = new Level.EnemyConfig(monsterType, enemyPos, null, 0);
-                Enemy enemy = createEnemy(config);
-                if (enemy != null) {
-                    board.addEnemy(enemy);
-                }
-            }
-
-            // ADEMÁS: agregar enemigos adicionales si existen
-            if (enemyConfig != null && !enemyConfig.isEmpty()) {
-                createEnemiesFromCustomConfig();
-            }
-        } else if (enemyConfig != null && !enemyConfig.isEmpty()) {
-            // PVM/MVM: usar configuración personalizada de enemigos
-            createEnemiesFromCustomConfig();
-        } else {
-            // PVM/MVM: crear todos los enemigos del nivel predeterminado
-            for (Level.EnemyConfig config : currentLevel.getEnemyConfigs()) {
-                Enemy enemy = createEnemy(config);
-                if (enemy != null) {
-                    board.addEnemy(enemy);
-                }
-            }
-        }
-
-        // Crear frutas
-        // Siempre crear frutas del nivel predeterminado
-        // Además: si hay configuración personalizada, agregar esas también
-        System.out.println("🍎 setupBoard() - Creando frutas...");
-        System.out.println("   fruitConfig: " + (fruitConfig != null ? "no nulo" : "nulo"));
-        if (fruitConfig != null) {
-            System.out.println("   tamaño: " + fruitConfig.size());
-        }
-
-        // Si hay configuración personalizada, usar SOLO esa (reemplaza la del nivel)
-        if (fruitConfig != null && !fruitConfig.isEmpty()) {
-            createFruitsFromCustomConfig();
-        } else {
-            // Si no hay configuración personalizada, usar frutas del nivel predeterminado
-            createFruitsFromLevelConfig();
-        }
-
-        // Crear obstáculos (Fogatas y Baldosas Calientes)
-        System.out.println("🏜️ setupBoard() - Creando obstáculos...");
-        System.out.println("   obstacleConfig: " + (obstacleConfig != null ? "no nulo" : "nulo"));
-        if (obstacleConfig != null) {
-            System.out.println("   tamaño: " + obstacleConfig.size());
-        }
-
-        if (obstacleConfig != null && !obstacleConfig.isEmpty()) {
-            createObstaclesFromCustomConfig();
+    // 5) IA al helado si corresponde
+    if (iceCreamAIStrategyName != null && !iceCreamAIStrategyName.isEmpty()) {
+        IceCreamAIStrategy aiStrategy = IceCreamAIStrategyManager.getStrategy(iceCreamAIStrategyName);
+        if (aiStrategy != null) {
+            iceCream.setAIStrategy(aiStrategy);
+            System.out.println("✓ IA aplicada al helado: " + iceCreamAIStrategyName);
         }
     }
+
+    board.setIceCream(iceCream);
+
+    // 6) Segundo helado, si hay
+    if (secondIceCreamFlavor != null) {
+        List<Position> emptyPositions = new ArrayList<>();
+        for (int x = 1; x < currentLevel.getBoardWidth() - 1; x++) {
+            for (int y = 1; y < currentLevel.getBoardHeight() - 1; y++) {
+                Position pos = new Position(x, y);
+                if (board.isValidPosition(pos) && !pos.equals(currentLevel.getIceCreamStartPosition())) {
+                    emptyPositions.add(pos);
+                }
+            }
+        }
+        if (!emptyPositions.isEmpty()) {
+            Random random = new Random();
+            Position secondIceCreamPos = emptyPositions.get(random.nextInt(emptyPositions.size()));
+            IceCream secondIceCream = createSecondIceCream(secondIceCreamPos);
+            board.setSecondIceCream(secondIceCream);
+        }
+    }
+
+    // 7) Enemigos
+    if (gameMode == GameMode.PVP && monsterType != null) {
+        List<Position> emptyPositions = new ArrayList<>();
+        for (int x = 1; x < currentLevel.getBoardWidth() - 1; x++) {
+            for (int y = 1; y < currentLevel.getBoardHeight() - 1; y++) {
+                Position pos = new Position(x, y);
+                if (board.isValidPosition(pos)) {
+                    emptyPositions.add(pos);
+                }
+            }
+        }
+        if (!emptyPositions.isEmpty()) {
+            Random random = new Random();
+            Position enemyPos = emptyPositions.get(random.nextInt(emptyPositions.size()));
+            Level.EnemyConfig config = new Level.EnemyConfig(monsterType, enemyPos, null, 0);
+            Enemy enemy = createEnemy(config);
+            if (enemy != null) {
+                board.addEnemy(enemy);
+            }
+        }
+        if (enemyConfig != null && !enemyConfig.isEmpty()) {
+            createEnemiesFromCustomConfig();
+        }
+    } else if (enemyConfig != null && !enemyConfig.isEmpty()) {
+        createEnemiesFromCustomConfig();
+    } else {
+        for (Level.EnemyConfig config : currentLevel.getEnemyConfigs()) {
+            Enemy enemy = createEnemy(config);
+            if (enemy != null) {
+                board.addEnemy(enemy);
+            }
+        }
+    }
+
+    // 8) Frutas
+    System.out.println("🍎 setupBoard() - Creando frutas...");
+    System.out.println("   fruitConfig: " + (fruitConfig != null ? "no nulo" : "nulo"));
+    if (fruitConfig != null) {
+        System.out.println("   tamaño: " + fruitConfig.size());
+    }
+
+    if (fruitConfig != null && !fruitConfig.isEmpty()) {
+        createFruitsFromCustomConfig();
+    } else {
+        createFruitsFromLevelConfig();
+    }
+}
 
     /**
      * Crea frutas desde la configuración personalizada del usuario
@@ -305,43 +299,6 @@ public class Game implements Serializable {
             }
         }
         System.out.println("✅ Total frutas agregadas: " + totalFruits);
-    }
-
-    /**
-     * Crea obstáculos (Fogatas y Baldosas Calientes) desde configuración
-     * personalizada
-     */
-    private void createObstaclesFromCustomConfig() {
-        if (obstacleConfig == null || obstacleConfig.isEmpty()) {
-            System.out.println("⚠️ Configuración de obstáculos vacía o nula");
-            return;
-        }
-
-        System.out.println("🏜️ Creando obstáculos desde configuración personalizada:");
-        for (String obstacleType : obstacleConfig.keySet()) {
-            int quantity = obstacleConfig.get(obstacleType);
-            System.out.println("  - " + obstacleType + ": " + quantity);
-
-            // Crear la cantidad especificada de cada tipo de obstáculo
-            for (int i = 0; i < quantity; i++) {
-                Position obstaclePos = getRandomEmptyPosition();
-                if (obstaclePos == null) {
-                    System.out.println("⚠️ No hay más posiciones disponibles para obstáculos");
-                    break;
-                }
-
-                if (obstacleType.equalsIgnoreCase("Fogata")) {
-                    Fogata fogata = new Fogata(obstaclePos);
-                    board.addFogata(fogata);
-                    System.out.println("  ✓ Fogata agregada en " + obstaclePos);
-                } else if (obstacleType.equalsIgnoreCase("Baldosa Caliente")) {
-                    BaldosaCaliente baldosa = new BaldosaCaliente(obstaclePos);
-                    board.addBaldosaCaliente(baldosa);
-                    System.out.println("  ✓ Baldosa Caliente agregada en " + obstaclePos);
-                }
-            }
-        }
-        System.out.println("✅ Obstáculos agregados correctamente");
     }
 
     /**
@@ -449,10 +406,9 @@ public class Game implements Serializable {
             case "cherry":
             case "cherries":
                 return new Cherry(position, board);
-
             // Cactus
-            case "cactus":
-            case "cactuses":
+            case "cactus": 
+            case "cacti":
                 return new Cactus(position);
 
             default:
@@ -529,12 +485,31 @@ public class Game implements Serializable {
                 enemyAIs.add(new EnemyAI(enemies.get(i), board));
             }
         }
+
+        if (gameMode == GameMode.MVM) {
+            // Crear IA para el helado
+            iceCreamAI = new IceCreamAI(board.getIceCream(), board);
+        }
     }
 
     /**
      * Actualiza el estado del juego (llamar cada frame)
      */
     public void update() {
+                // Verificar si algún helado pisa una fogata encendida
+                for (Fogata fogata : board.getFogatas()) {
+                    if (fogata.isEncendida()) {
+                        if (board.getIceCream() != null && board.getIceCream().getPosition().equals(fogata.getPosition())) {
+                            board.getIceCream().setAlive(false);
+                            gameState = GameState.LOST;
+                        }
+                        IceCream secondIceCream = board.getSecondIceCream();
+                        if (secondIceCream != null && secondIceCream.getPosition().equals(fogata.getPosition())) {
+                            secondIceCream.setAlive(false);
+                            gameState = GameState.LOST;
+                        }
+                    }
+                }
         if (gameState != GameState.PLAYING) {
             return;
         }
@@ -542,50 +517,45 @@ public class Game implements Serializable {
         long currentTime = System.currentTimeMillis();
         long deltaTime = currentTime - lastUpdateTime;
 
-        // Actualizar fogatas (estado de encendida/apagada)
+        // Actualizar enemigos
+        updateEnemies();
+
+        // Actualizar fogatas
         for (Fogata fogata : board.getFogatas()) {
             fogata.update();
         }
 
-        // Actualizar enemigos
-        updateEnemies();
-
         // Actualizar frutas (movimiento, teletransporte)
         updateFruits();
-
+        
         // Actualizar IA del helado si aplica
         IceCream iceCream = board.getIceCream();
         if (iceCream != null && iceCream.isAIControlled()) {
-            IceCreamAIStrategy strategy = iceCream.getAIStrategy();
-            if (strategy != null) {
-                Direction move = strategy.getNextMove(board, iceCream);
-                if (move != null) {
-                    // Establecer dirección actual del helado
-                    iceCream.setCurrentDirection(move);
+            Direction move = iceCream.getAIStrategy().getNextMove(board, iceCream);
+            if (move != null) {
+                boolean moved = board.moveIceCream(move);
 
-                    boolean moved = board.moveIceCream(move);
-
-                    // ✅ MEJORADA: Si no se movió porque hay hielo, intenta romperlo
-                    if (!moved) {
-                        Position nextPos = iceCream.getPosition().move(move);
-                        if (board.isInBounds(nextPos) && board.hasIceBlock(nextPos)) {
-                            // Hay hielo bloqueando - intentar romper
-                            int brokenCount = board.toggleIceBlocks();
-
-                            // Si rompió hielo, intentar moverse inmediatamente
-                            if (brokenCount > 0) {
-                                // Después de romper, intentar moverse en la misma dirección
-                                moved = board.moveIceCream(move);
-                            }
-                        }
+                // Sumar puntos si recolectó fruta
+                if (moved) {
+                    Fruit fruit = board.getAndClearLastCollectedFruit();
+                    if (fruit != null) {
+                        score += 50;
                     }
+                }
+            }
+        }
 
-                    // Sumar puntos si recolectó fruta
-                    if (moved) {
-                        Fruit fruit = board.getAndClearLastCollectedFruit();
-                        if (fruit != null) {
-                            score += 50;
-                        }
+        // Actualizar IA si aplica (modo MVM)
+        if (gameMode == GameMode.MVM && iceCreamAI != null) {
+            Direction move = iceCreamAI.getNextMove();
+            if (move != null) {
+                boolean moved = board.moveIceCream(move);
+
+                // Sumar puntos si recolectó fruta
+                if (moved) {
+                    Fruit fruit = board.getAndClearLastCollectedFruit();
+                    if (fruit != null) {
+                        score += 50;
                     }
                 }
             }
@@ -694,28 +664,6 @@ public class Game implements Serializable {
             return;
         }
 
-        // Verificar contacto con Fogata encendida
-        for (Fogata fogata : board.getFogatas()) {
-            if (fogata.isEncendida()) {
-                IceCream iceCream = board.getIceCream();
-                if (iceCream != null && iceCream.getPosition().equals(fogata.getPosition())) {
-                    iceCream.setAlive(false);
-                    gameState = GameState.LOST;
-                    System.out.println("🔥 ¡El helado entró en contacto con una Fogata encendida!");
-                    return;
-                }
-
-                // Verificar segundo helado si existe
-                IceCream secondIceCream = board.getSecondIceCream();
-                if (secondIceCream != null && secondIceCream.getPosition().equals(fogata.getPosition())) {
-                    secondIceCream.setAlive(false);
-                    gameState = GameState.LOST;
-                    System.out.println("🔥 ¡El segundo helado entró en contacto con una Fogata encendida!");
-                    return;
-                }
-            }
-        }
-
         // Verificar si recogió todas las frutas
         if (board.getRemainingFruits() == 0) {
             gameState = GameState.WON;
@@ -737,7 +685,18 @@ public class Game implements Serializable {
         if (moved) {
             Fruit fruit = board.getAndClearLastCollectedFruit();
             if (fruit != null) {
-                score += 50; // Todas las frutas valen 50 puntos
+                if (fruit instanceof Cactus) {
+                    Cactus cactus = (Cactus) fruit;
+                    if (cactus.isSpiky()) {
+                        // Helado MUERE instantáneamente: GAME OVER
+                        gameState = GameState.LOST;
+                        return false; // puedes salir o dejar que la lógica general lo maneje
+                    } else {
+                        score += cactus.getPoints();
+                    }
+                } else {
+                    score += fruit.getPoints();
+                }
             }
         }
 
@@ -869,6 +828,15 @@ public class Game implements Serializable {
     public void addScore(int points) {
         this.score += points;
     }
+
+
+    // Setters para configuración de fogatas y baldosas calientes
+    public void setMostrarFogatas(boolean mostrarFogatas) { this.mostrarFogatas = mostrarFogatas; }
+    public void setCantidadFogatas(int cantidadFogatas) { this.cantidadFogatas = cantidadFogatas; }
+    public void setCantidadBaldosasCalientes(int cantidadBaldosasCalientes) { this.cantidadBaldosasCalientes = cantidadBaldosasCalientes; }
+
+    // Getter para cantidad de baldosas calientes
+    public int getCantidadBaldosasCalientes() { return cantidadBaldosasCalientes; }
 
     public int getRemainingTime() {
         return remainingTime;

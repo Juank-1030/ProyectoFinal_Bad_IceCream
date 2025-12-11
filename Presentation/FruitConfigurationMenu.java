@@ -17,7 +17,7 @@ public class FruitConfigurationMenu extends JFrame {
     private String rutaFondo = "Resources/Opciones_Menu/Fondo.png";
 
     // Tipos de frutas disponibles
-    private static final String[] FRUIT_TYPES = { "Uvas", "Plátanos", "Cerezas", "Piñas" };
+    private static final String[] FRUIT_TYPES = { "Uvas", "Plátanos", "Cerezas", "Piñas", "Cactus" };
 
     // Configuración de frutas: [tipo][cantidad]
     private Map<String, Integer> fruitConfig = new LinkedHashMap<>();

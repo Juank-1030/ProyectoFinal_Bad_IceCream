@@ -1,10 +1,10 @@
 package Presentation;
 
-import javax.swing.*;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.util.HashMap;
 import java.util.Map;
+import javax.swing.*;
 
 /**
  * ImageLoader - Utility class to load and cache game sprites
@@ -46,11 +46,16 @@ public class ImageLoader {
         // Cargar sprites de frutas
         loadFruitSprites();
 
+
         // Cargar sprites de bloques de hielo
         loadIceBlockSprites();
 
-        // Cargar sprites de obstáculos dinámicos
-        loadObstacleSprites();
+        // Cargar imágenes de fogatas
+        loadImage("fogata_base",    "Resources/Obstaculos/Fogata/CampFire.gif"); // solo las piedras
+        loadImage("fogata_llama",   "Resources/Obstaculos/Fogata/Flame.gif");    // solo la llama (animada)
+
+        // Cargar imagen de baldosa caliente
+        loadImage("baldosa_caliente", "Resources/Obstaculos/Baldosa_Caliente/frames.gif");
 
         // Cargar imágenes del menú de pausa
         loadPauseMenuImages();
@@ -143,6 +148,12 @@ public class ImageLoader {
             }
         }
 
+            // Sprites especiales para cactus
+            loadImage("fruit_cactus_normal", "Resources/Frutas/Cactus/Normal.gif");
+            loadImage("fruit_cactus_spiky", "Resources/Frutas/Cactus/SpikesIdle.gif"); // Estado con púas (spiky)
+            loadImage("fruit_cactus_appear", "Resources/Frutas/Cactus/Appear.gif");
+            loadImage("fruit_cactus_collected", "Resources/Frutas/Cactus/Collected.gif");
+
         // Pineapple is special - it has Movement.gif instead of Normal.gif
         loadImage("fruit_pineapple_movement", "Resources/Frutas/Pineapple/Movement.gif");
         loadImage("fruit_pineapple_flying", "Resources/Frutas/Pineapple/Flying.gif");
@@ -164,27 +175,6 @@ public class ImageLoader {
             String path = "Resources/Obstaculos/Hielo/" + state + ".gif";
             loadImage(key, path);
         }
-    }
-
-    /**
-     * Carga los sprites de obstáculos dinámicos (Fogata, Baldosa Caliente)
-     */
-    private static void loadObstacleSprites() {
-        // Fogatas - Se cargan por componentes (base + llama)
-        loadImage("fogata_base", "Resources/Obstaculos/Fogata/CampFire.gif"); // Solo las piedras
-        loadImage("fogata_llama", "Resources/Obstaculos/Fogata/Flame.gif"); // Solo la llama (animada)
-        // Fallback para renderizado simple
-        loadImage("fogata_encendida", "Resources/Obstaculos/Fogata/CampFire.gif");
-        loadImage("fogata_apagada", "Resources/Obstaculos/Fogata/CampFire.gif");
-
-        // Baldosa Caliente
-        loadImage("baldosa_caliente", "Resources/Obstaculos/Baldosa_Caliente/frames.gif");
-
-        // Cactus - Estados especiales para spiky
-        loadImage("cactus_spiky", "Resources/Frutas/Cactus/SpikesIdle.gif");
-        loadImage("cactus_normal", "Resources/Frutas/Cactus/Normal.gif");
-        loadImage("cactus_appear", "Resources/Frutas/Cactus/Appear.gif");
-        loadImage("cactus_collected", "Resources/Frutas/Cactus/Collected.gif");
     }
 
     /**
@@ -430,7 +420,7 @@ public class ImageLoader {
     }
 
     /**
-     * Obtiene una imagen del menú PVP
+     * ✅ NUEVO: Obtiene una imagen del menú PVP
      * 
      * @param buttonType Tipo de botón: "icecream_vs_monster", "vs_monster", "coop",
      *                   "cooperativo"
@@ -449,10 +439,20 @@ public class ImageLoader {
     }
 
     /**
-     * Obtiene sprite de Fogata (Encendida o Apagada)
+     * Obtiene un sprite de fogata
      * 
-     * @param encendida true para Fogata encendida, false para apagada
-     * @return Imagen de la Fogata, o null
+     * @param encendida true para fogata encendida, false para apagada
+     * @return Imagen de la fogata, o null si no se pudo cargar
+     */
+    public static Image getBonfireSprite(boolean encendida) {
+        return getFogataSprite(encendida); // alias si quieres
+    }
+
+    /**
+     * Obtiene un sprite de fogata
+     * 
+     * @param encendida true para fogata encendida, false para apagada
+     * @return Imagen de la fogata, o null si no se pudo cargar
      */
     public static Image getFogataSprite(boolean encendida) {
         if (encendida) {
@@ -462,54 +462,20 @@ public class ImageLoader {
         }
     }
 
-    /**
-     * Obtiene la base de la Fogata (las piedras sin llama)
-     * 
-     * @return Imagen de la base de Fogata, o null
-     */
     public static Image getFogataBase() {
         return imageCache.get("fogata_base");
     }
 
-    /**
-     * Obtiene la llama de la Fogata (solo la llama animada)
-     * 
-     * @return Imagen de la llama, o null
-     */
     public static Image getFogataLlama() {
         return imageCache.get("fogata_llama");
     }
 
     /**
-     * Obtiene sprite de Baldosa Caliente
+     * Obtiene un sprite de baldosa caliente
      * 
-     * @return Imagen de la Baldosa, o null
+     * @return Imagen de la baldosa caliente, o null si no se pudo cargar
      */
     public static Image getBaldosaCalienteSprite() {
         return imageCache.get("baldosa_caliente");
-    }
-
-    /**
-     * Obtiene sprite de Cactus según su estado
-     * 
-     * @param spiky true para púas, false para normal
-     * @return Imagen del Cactus, o null
-     */
-    public static Image getCactusSprite(boolean spiky) {
-        if (spiky) {
-            return imageCache.get("cactus_spiky");
-        } else {
-            return imageCache.get("cactus_normal");
-        }
-    }
-
-    /**
-     * Obtiene una imagen genérica por su clave
-     * 
-     * @param key Clave de la imagen en el cache
-     * @return Imagen del cache, o null si no existe
-     */
-    public static Image getImage(String key) {
-        return imageCache.get(key);
     }
 }
