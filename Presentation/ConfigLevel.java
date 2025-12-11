@@ -16,6 +16,7 @@ public class ConfigLevel extends JFrame {
     // Callbacks para las opciones
     private Runnable onStartLevel;
     private Runnable onBackClick;
+    private Runnable onConfigureObstacles;
 
     // Opciones de configuración
     private boolean mostrarUvas = true;
@@ -23,6 +24,9 @@ public class ConfigLevel extends JFrame {
     private boolean mostrarCerezas = true;
     private boolean mostrarPinas = true;
     private boolean mostrarEnemigos = true;
+    
+    // Configuración de obstáculos
+    private java.util.Map<String, Integer> obstacleConfig = new java.util.LinkedHashMap<>();
 
     public ConfigLevel() {
         inicializarVentana();
@@ -90,6 +94,10 @@ public class ConfigLevel extends JFrame {
         panelFondo.add(cbPinas);
         panelFondo.add(cbEnemigos);
 
+        // Botón Configurar Obstáculos
+        JButton btnObstaculos = crearBotonObstaculos();
+        panelFondo.add(btnObstaculos);
+
         // Botón Iniciar Nivel
         JButton btnIniciar = crearBotonIniciar();
         panelFondo.add(btnIniciar);
@@ -110,9 +118,42 @@ public class ConfigLevel extends JFrame {
         return cb;
     }
 
+    private JButton crearBotonObstaculos() {
+        JButton btn = new JButton("CONFIGURAR OBSTÁCULOS");
+        btn.setBounds(250, 290, 300, 50);
+        btn.setBackground(new Color(100, 150, 200));
+        btn.setForeground(Color.WHITE);
+        btn.setFont(new Font("Arial", Font.BOLD, 16));
+        btn.setFocusPainted(false);
+        btn.setBorder(BorderFactory.createRaisedBevelBorder());
+
+        btn.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                btn.setBackground(new Color(120, 170, 220));
+                btn.setBorder(BorderFactory.createLoweredBevelBorder());
+            }
+
+            @Override
+            public void mouseExited(MouseEvent e) {
+                btn.setBackground(new Color(100, 150, 200));
+                btn.setBorder(BorderFactory.createRaisedBevelBorder());
+            }
+
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                if (onConfigureObstacles != null) {
+                    onConfigureObstacles.run();
+                }
+            }
+        });
+
+        return btn;
+    }
+
     private JButton crearBotonIniciar() {
         JButton btn = new JButton("INICIAR NIVEL");
-        btn.setBounds(250, 350, 300, 50);
+        btn.setBounds(250, 410, 300, 50);
         btn.setBackground(new Color(50, 150, 50));
         btn.setForeground(Color.WHITE);
         btn.setFont(new Font("Arial", Font.BOLD, 18));
@@ -204,6 +245,18 @@ public class ConfigLevel extends JFrame {
 
     public void setOnBackClick(Runnable callback) {
         this.onBackClick = callback;
+    }
+
+    public void setOnConfigureObstacles(Runnable callback) {
+        this.onConfigureObstacles = callback;
+    }
+
+    public java.util.Map<String, Integer> getObstacleConfiguration() {
+        return new java.util.LinkedHashMap<>(obstacleConfig);
+    }
+
+    public void setObstacleConfiguration(java.util.Map<String, Integer> config) {
+        this.obstacleConfig = new java.util.LinkedHashMap<>(config);
     }
 
     // Getters para opciones seleccionadas

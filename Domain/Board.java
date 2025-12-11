@@ -96,6 +96,11 @@ public class Board implements BoardStateProvider {
             return false;
         }
 
+        // Verificar si hay baldosa caliente
+        if (hasBaldosaCaliente(pos)) {
+            return false;
+        }
+
         return true;
     }
 

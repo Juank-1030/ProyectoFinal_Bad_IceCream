@@ -16,6 +16,7 @@ import Presentation.LevelConfigurationMenu;
 import Presentation.LevelCompletionMenu;
 import Presentation.EnemyConfigurationMenu;
 import Presentation.FruitConfigurationMenu;
+import Presentation.ObstaculosConfigurationMenu;
 import java.io.File;
 import java.util.Map;
 import javax.swing.JFrame;
@@ -39,6 +40,7 @@ public class PresentationController {
     private LevelCompletionMenu levelCompletionMenu;
     private EnemyConfigurationMenu enemyConfigMenu;
     private FruitConfigurationMenu fruitConfigMenu;
+    private ObstaculosConfigurationMenu obstaculosConfigMenu;
     private GameMode selectedGameMode; // Almacena el modo de juego seleccionado
     private PVPMode selectedPVPMode; // Almacena el tipo de PVP seleccionado
     private String selectedIceCream; // Almacena el helado seleccionado
@@ -48,6 +50,7 @@ public class PresentationController {
     private int selectedLevelNumber; // Almacena el número del nivel seleccionado (1, 2 o 3)
     private Map<String, Integer> selectedEnemyConfig; // Configuración de enemigos seleccionada
     private Map<String, Integer> selectedFruitConfig; // Configuración de frutas seleccionada
+    private Map<String, Integer> selectedObstacleConfig; // Configuración de obstáculos seleccionada
     private LevelManager levelManager; // Gestor de niveles
     private GameController gameController; // Controlador del juego
     private JFrame gameFrame; // Ventana para mostrar el GamePanel
@@ -69,6 +72,7 @@ public class PresentationController {
         this.levelConfigMenu = new LevelConfigurationMenu();
         this.enemyConfigMenu = new EnemyConfigurationMenu();
         this.fruitConfigMenu = new FruitConfigurationMenu();
+        this.obstaculosConfigMenu = new ObstaculosConfigurationMenu();
         this.levelManager = new LevelManager();
         this.selectedLevelNumber = 1; // Nivel por defecto
 
@@ -449,7 +453,7 @@ public class PresentationController {
 
         // Crear el controlador del juego con ambos helados
         gameController = new GameController(selectedGameMode, helado1, helado2, null, selectedEnemyConfig,
-                selectedFruitConfig);
+                selectedFruitConfig, selectedObstacleConfig);
 
         // Registrar callbacks
         gameController.setOnReturnToMenuClick(createReturnToMenuCallback());
@@ -519,7 +523,7 @@ public class PresentationController {
         // Crear el controlador del juego con PVM (sin monstruo específico, se asigna
         // por nivel)
         gameController = new GameController(selectedGameMode, helado, null, null, selectedEnemyConfig,
-                selectedFruitConfig);
+                selectedFruitConfig, selectedObstacleConfig);
 
         // Registrar callbacks
         gameController.setOnReturnToMenuClick(createReturnToMenuCallback());
@@ -579,7 +583,7 @@ public class PresentationController {
 
         // Crear el controlador del juego con el helado y monstruo específico
         gameController = new GameController(selectedGameMode, helado, null, monstruo, selectedEnemyConfig,
-                selectedFruitConfig);
+                selectedFruitConfig, selectedObstacleConfig);
 
         // Establecer la estrategia de IA del helado si es especificada
         if (aiStrategy != null && !aiStrategy.isEmpty()) {
@@ -646,7 +650,7 @@ public class PresentationController {
         // Crear el controlador del juego con MVM (sin monstruo específico, se asigna
         // por nivel)
         gameController = new GameController(selectedGameMode, selectedIceCream, null, null, selectedEnemyConfig,
-                selectedFruitConfig);
+                selectedFruitConfig, selectedObstacleConfig);
 
         // Establecer la estrategia de IA del helado SOLO en MVM
         if (selectedIceCreamAIStrategy != null && !selectedIceCreamAIStrategy.isEmpty()) {
@@ -877,21 +881,21 @@ public class PresentationController {
         selectLevel.setOnLevel1Click(() -> {
             selectedLevelNumber = 1;
             selectLevel.setVisible(false);
-            mostrarConfiguracionEnemigos();
+            mostrarConfiguracionObstaculos();
         });
 
         // Callback para nivel 2
         selectLevel.setOnLevel2Click(() -> {
             selectedLevelNumber = 2;
             selectLevel.setVisible(false);
-            mostrarConfiguracionEnemigos();
+            mostrarConfiguracionObstaculos();
         });
 
         // Callback para nivel 3
         selectLevel.setOnLevel3Click(() -> {
             selectedLevelNumber = 3;
             selectLevel.setVisible(false);
-            mostrarConfiguracionEnemigos();
+            mostrarConfiguracionObstaculos();
         });
 
         // Callback para atrás
@@ -903,6 +907,40 @@ public class PresentationController {
             selectMonster.setVisible(false);
             pvp.setVisible(true);
             selectedIceCream = null;
+        });
+    }
+
+    /**
+     * Muestra el menú de configuración de obstáculos
+     */
+    private void mostrarConfiguracionObstaculos() {
+        obstaculosConfigMenu.setVisible(true);
+
+        // Callback para confirmar configuración de obstáculos
+        obstaculosConfigMenu.setOnConfirmClick(() -> {
+            selectedObstacleConfig = obstaculosConfigMenu.getObstacleConfiguration();
+            System.out.println("🏜️ Configuración de obstáculos recibida:");
+            if (selectedObstacleConfig != null) {
+                for (String obstacle : selectedObstacleConfig.keySet()) {
+                    System.out.println("  - " + obstacle + ": " + selectedObstacleConfig.get(obstacle));
+                }
+            }
+            obstaculosConfigMenu.setVisible(false);
+
+            // Si no hay configuración personalizada, usar la del nivel predeterminado
+            if (selectedObstacleConfig.isEmpty()) {
+                System.out.println("⚠️ Configuración de obstáculos vacía, no habrá obstáculos personalizados");
+                selectedObstacleConfig = null; // null indica usar configuración predeterminada
+            }
+
+            // Mostrar menú de configuración de enemigos
+            mostrarConfiguracionEnemigos();
+        });
+
+        // Callback para atrás
+        obstaculosConfigMenu.setOnBackClick(() -> {
+            obstaculosConfigMenu.setVisible(false);
+            selectLevel.setVisible(true);
         });
     }
 
@@ -938,7 +976,7 @@ public class PresentationController {
         enemyConfigMenu.setOnBackClick(() -> {
             if (!inAutoProgressionMode) {
                 enemyConfigMenu.setVisible(false);
-                selectLevel.setVisible(true);
+                mostrarConfiguracionObstaculos();
             }
             // Si estamos en modo de progresión automática, no permitir ir atrás
         });

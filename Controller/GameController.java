@@ -89,13 +89,13 @@ public class GameController implements KeyListener {
     }
 
     public GameController(GameMode gameMode, String iceCreamFlavor, String secondIceCreamFlavor, String monsterType,
-            Map<String, Integer> enemyConfig, Map<String, Integer> fruitConfig) {
+            Map<String, Integer> enemyConfig, Map<String, Integer> fruitConfig, Map<String, Integer> obstacleConfig) {
         // 1. Crear el Model (Game)
         this.monsterType = monsterType;
         this.secondIceCreamFlavor = secondIceCreamFlavor;
         this.enemyConfig = enemyConfig;
         this.fruitConfig = fruitConfig;
-        this.game = new Game(gameMode, iceCreamFlavor, secondIceCreamFlavor, monsterType, enemyConfig, fruitConfig);
+        this.game = new Game(gameMode, iceCreamFlavor, secondIceCreamFlavor, monsterType, enemyConfig, fruitConfig, obstacleConfig);
 
         // 2. Crear la View (GamePanel)
         this.gamePanel = new GamePanel(this);
@@ -112,6 +112,11 @@ public class GameController implements KeyListener {
         // 4. Inicializar timer (pero no iniciarlo aún)
         this.running = false;
         setupGameTimer();
+    }
+
+    public GameController(GameMode gameMode, String iceCreamFlavor, String secondIceCreamFlavor, String monsterType,
+            Map<String, Integer> enemyConfig, Map<String, Integer> fruitConfig) {
+        this(gameMode, iceCreamFlavor, secondIceCreamFlavor, monsterType, enemyConfig, fruitConfig, null);
     }
 
     // Constructor sin secondIceCreamFlavor (retrocompatibilidad para Helado vs

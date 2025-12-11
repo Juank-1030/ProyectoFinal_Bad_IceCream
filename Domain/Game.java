@@ -53,6 +53,7 @@ public class Game implements Serializable {
     private String monsterType; // Tipo de monstruo seleccionado en PVP
     private Map<String, Integer> enemyConfig; // Configuración personalizada de enemigos
     private Map<String, Integer> fruitConfig; // Configuración personalizada de frutas
+    private Map<String, Integer> obstacleConfig; // Configuración personalizada de obstáculos
 
     public Game(GameMode gameMode, String iceCreamFlavor, String secondIceCreamFlavor, String monsterType) {
         this(gameMode, iceCreamFlavor, secondIceCreamFlavor, monsterType, null, null);
@@ -64,18 +65,24 @@ public class Game implements Serializable {
     }
 
     public Game(GameMode gameMode, String iceCreamFlavor, String secondIceCreamFlavor, String monsterType,
-            Map<String, Integer> enemyConfig, Map<String, Integer> fruitConfig) {
+            Map<String, Integer> enemyConfig, Map<String, Integer> fruitConfig, Map<String, Integer> obstacleConfig) {
         this.gameMode = gameMode;
         this.iceCreamFlavor = iceCreamFlavor;
         this.secondIceCreamFlavor = secondIceCreamFlavor; // null para modo vs Monstruo
         this.monsterType = monsterType; // PVP: Tipo de monstruo controlado
         this.enemyConfig = enemyConfig; // Configuración personalizada de enemigos
         this.fruitConfig = fruitConfig; // Configuración personalizada de frutas
+        this.obstacleConfig = obstacleConfig; // Configuración personalizada de obstáculos
         this.gameState = GameState.MENU;
         this.score = 0;
         // Sin sistema de vidas (como el juego original)
         this.enemyAIs = new ArrayList<>();
         this.lastUpdateTime = System.currentTimeMillis();
+    }
+
+    public Game(GameMode gameMode, String iceCreamFlavor, String secondIceCreamFlavor, String monsterType,
+            Map<String, Integer> enemyConfig, Map<String, Integer> fruitConfig) {
+        this(gameMode, iceCreamFlavor, secondIceCreamFlavor, monsterType, enemyConfig, fruitConfig, null);
     }
 
     // Constructor sin secondIceCreamFlavor (retrocompatibilidad para Helado vs
