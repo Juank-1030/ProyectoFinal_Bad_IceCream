@@ -254,9 +254,12 @@ public class GamePanel extends JPanel {
      */
     private void drawGame(Graphics2D g, ViewData viewData) {
         drawGrid(g, viewData);
-        drawFruits(g, viewData);
         drawWalls(g, viewData);
+        drawBaldosasCalientes(g, viewData);
+        drawFogatas(g, viewData);
         drawIceBlocks(g, viewData);
+        drawFruits(g, viewData);
+        drawCactuses(g, viewData);
         drawEnemies(g, viewData);
         drawIceCream(g, viewData);
         drawSecondIceCream(g, viewData);
@@ -1086,5 +1089,98 @@ public class GamePanel extends JPanel {
 
     public void setOnContinueGameClick(Runnable callback) {
         this.onContinueGameClick = callback;
+    }
+
+    // ========================================
+    // RENDERIZADO DE NUEVOS OBSTÁCULOS
+    // ========================================
+
+    /**
+     * Dibuja las baldosas calientes
+     */
+    private void drawBaldosasCalientes(Graphics2D g, ViewData viewData) {
+        if (viewData.baldosasCalientes == null || viewData.baldosasCalientes.isEmpty()) {
+            return;
+        }
+
+        for (ViewData.ObstaculoView baldosa : viewData.baldosasCalientes) {
+            int x = baldosa.x * CELL_SIZE;
+            int y = baldosa.y * CELL_SIZE + UI_HEIGHT;
+
+            Image img = ImageLoader.getImage("baldosa_caliente");
+            if (img != null) {
+                g.drawImage(img, x, y, CELL_SIZE, CELL_SIZE, null);
+            } else {
+                // Fallback: dibujar rectángulo rojo
+                g.setColor(new Color(255, 100, 100));
+                g.fillRect(x, y, CELL_SIZE, CELL_SIZE);
+            }
+        }
+    }
+
+    /**
+     * Dibuja las fogatas
+     */
+    private void drawFogatas(Graphics2D g, ViewData viewData) {
+        if (viewData.fogatas == null || viewData.fogatas.isEmpty()) {
+            return;
+        }
+
+        for (ViewData.ObstaculoView fogata : viewData.fogatas) {
+            int x = fogata.x * CELL_SIZE;
+            int y = fogata.y * CELL_SIZE + UI_HEIGHT;
+
+            String imageName = fogata.encendida ? "fogata_encendida" : "fogata_apagada";
+            Image img = ImageLoader.getImage(imageName);
+            if (img != null) {
+                g.drawImage(img, x, y, CELL_SIZE, CELL_SIZE, null);
+            } else {
+                // Fallback: dibujar círculo rojo (encendida) o gris (apagada)
+                if (fogata.encendida) {
+                    g.setColor(new Color(255, 150, 0));
+                } else {
+                    g.setColor(new Color(100, 100, 100));
+                }
+                g.fillOval(x + 5, y + 5, CELL_SIZE - 10, CELL_SIZE - 10);
+            }
+        }
+    }
+
+    /**
+     * Dibuja los cactuses especiales
+     */
+    private void drawCactuses(Graphics2D g, ViewData viewData) {
+        if (viewData.cactuses == null || viewData.cactuses.isEmpty()) {
+            return;
+        }
+
+        for (ViewData.FrutaEspecialView cactus : viewData.cactuses) {
+            int x = cactus.x * CELL_SIZE;
+            int y = cactus.y * CELL_SIZE + UI_HEIGHT;
+
+            String imageName = cactus.visualState != null ? ("cactus_" + cactus.visualState)
+                    : (cactus.spiky ? "cactus_spiky" : "cactus_normal");
+
+            Image img = ImageLoader.getImage(imageName);
+            if (img != null) {
+                g.drawImage(img, x, y, CELL_SIZE, CELL_SIZE, null);
+            } else {
+                // Fallback: dibujar rectángulo verde (normal) o con púas
+                if (cactus.spiky) {
+                    g.setColor(new Color(0, 150, 0));
+                } else {
+                    g.setColor(new Color(100, 200, 100));
+                }
+                g.fillRect(x, y, CELL_SIZE, CELL_SIZE);
+
+                // Dibujar pequeños triángulos para las púas
+                if (cactus.spiky) {
+                    g.setColor(new Color(255, 0, 0));
+                    int[] xPoints = { x + CELL_SIZE / 2, x + CELL_SIZE, x + CELL_SIZE / 2 };
+                    int[] yPoints = { y, y + CELL_SIZE / 2, y + CELL_SIZE };
+                    g.fillPolygon(xPoints, yPoints, 3);
+                }
+            }
+        }
     }
 }

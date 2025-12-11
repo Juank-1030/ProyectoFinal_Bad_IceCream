@@ -22,6 +22,8 @@ public class Board implements BoardStateProvider {
     private List<Fruit> fruits;
     private List<Position> walls; // Muros indestructibles (bordes)
     private List<IceBlock> iceBlocks; // Bloques de hielo rompibles
+    private List<GameObject> fogatas; // Obstáculos dinámicos
+    private List<GameObject> baldosasCalientes; // Obstáculos de baldosa
 
     // Matriz de celdas (para búsqueda rápida)
     private CellType[][] cells;
@@ -39,6 +41,8 @@ public class Board implements BoardStateProvider {
         this.fruits = new ArrayList<>();
         this.walls = new ArrayList<>();
         this.iceBlocks = new ArrayList<>();
+        this.fogatas = new ArrayList<>();
+        this.baldosasCalientes = new ArrayList<>();
         this.cells = new CellType[height][width];
         initializeCells();
     }
@@ -804,5 +808,35 @@ public class Board implements BoardStateProvider {
         if (!walls.contains(pos)) {
             walls.add(pos);
         }
+    }
+
+    // ========== FOGATAS ==========
+    public void addFogata(GameObject fogata) {
+        this.fogatas.add(fogata);
+    }
+
+    public List<GameObject> getFogatas() {
+        return new ArrayList<>(fogatas);
+    }
+
+    public GameObject getFogataAt(Position pos) {
+        return fogatas.stream()
+                .filter(f -> f.getPosition().equals(pos))
+                .findFirst()
+                .orElse(null);
+    }
+
+    // ========== BALDOSAS CALIENTES ==========
+    public void addBaldosaCaliente(GameObject baldosa) {
+        this.baldosasCalientes.add(baldosa);
+    }
+
+    public List<GameObject> getBaldosasCalientes() {
+        return new ArrayList<>(baldosasCalientes);
+    }
+
+    public boolean hasBaldosaCaliente(Position pos) {
+        return baldosasCalientes.stream()
+                .anyMatch(b -> b.getPosition().equals(pos));
     }
 }

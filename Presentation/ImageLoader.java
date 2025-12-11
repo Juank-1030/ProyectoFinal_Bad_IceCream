@@ -49,6 +49,9 @@ public class ImageLoader {
         // Cargar sprites de bloques de hielo
         loadIceBlockSprites();
 
+        // Cargar sprites de obstáculos dinámicos
+        loadObstacleSprites();
+
         // Cargar imágenes del menú de pausa
         loadPauseMenuImages();
 
@@ -161,6 +164,22 @@ public class ImageLoader {
             String path = "Resources/Obstaculos/Hielo/" + state + ".gif";
             loadImage(key, path);
         }
+    }
+
+    /**
+     * Carga los sprites de obstáculos dinámicos (Fogata, Baldosa Caliente)
+     */
+    private static void loadObstacleSprites() {
+        // Fogatas - Estados: Encendida y Apagada
+        loadImage("fogata_encendida", "Resources/Obstaculos/Fogata/Encendida.gif");
+        loadImage("fogata_apagada", "Resources/Obstaculos/Fogata/Apagada.gif");
+
+        // Baldosa Caliente
+        loadImage("baldosa_caliente", "Resources/Obstaculos/BaldosaCaliente/BaldosaCaliente.gif");
+
+        // Cactus - Estados especiales para spiky
+        loadImage("cactus_spiky", "Resources/Frutas/Cactus/Spiky.gif");
+        loadImage("cactus_normal", "Resources/Frutas/Cactus/Normal.gif");
     }
 
     /**
@@ -422,5 +441,15 @@ public class ImageLoader {
         }
 
         return null;
+    }
+
+    /**
+     * Obtiene una imagen genérica por su clave
+     * 
+     * @param key Clave de la imagen en el cache
+     * @return Imagen del cache, o null si no existe
+     */
+    public static Image getImage(String key) {
+        return imageCache.get(key);
     }
 }

@@ -1259,15 +1259,29 @@ public class GameController implements KeyListener {
 
         // Frutas
         data.fruits = new java.util.ArrayList<>();
+        data.cactuses = new java.util.ArrayList<>();
         for (Fruit fruit : board.getFruits()) {
-            ViewData.FruitView fruitData = new ViewData.FruitView();
-            Position pos = fruit.getPosition();
-            fruitData.x = pos.getX();
-            fruitData.y = pos.getY();
-            fruitData.type = fruit.getFruitType().toLowerCase();
-            fruitData.collected = fruit.isCollected();
-            fruitData.visualState = fruit.getVisualState();
-            data.fruits.add(fruitData);
+            if (fruit.getFruitType().equalsIgnoreCase("Cactus")) {
+                // Manejar Cactus especialmente
+                ViewData.FrutaEspecialView cactusData = new ViewData.FrutaEspecialView();
+                Position pos = fruit.getPosition();
+                cactusData.x = pos.getX();
+                cactusData.y = pos.getY();
+                cactusData.tipo = "cactus";
+                cactusData.visualState = fruit.getVisualState();
+                cactusData.collected = fruit.isCollected();
+                data.cactuses.add(cactusData);
+            } else {
+                // Frutas normales
+                ViewData.FruitView fruitData = new ViewData.FruitView();
+                Position pos = fruit.getPosition();
+                fruitData.x = pos.getX();
+                fruitData.y = pos.getY();
+                fruitData.type = fruit.getFruitType().toLowerCase();
+                fruitData.collected = fruit.isCollected();
+                fruitData.visualState = fruit.getVisualState();
+                data.fruits.add(fruitData);
+            }
         }
 
         // Bloques de hielo
@@ -1278,6 +1292,28 @@ public class GameController implements KeyListener {
             iceBlockData.x = pos.getX();
             iceBlockData.y = pos.getY();
             data.iceBlocks.add(iceBlockData);
+        }
+
+        // Fogatas
+        data.fogatas = new java.util.ArrayList<>();
+        for (GameObject fogata : board.getFogatas()) {
+            ViewData.ObstaculoView fogataView = new ViewData.ObstaculoView();
+            fogataView.x = fogata.getPosition().getX();
+            fogataView.y = fogata.getPosition().getY();
+            // Verificar si es instancia de Fogata para obtener estado encendida
+            if (fogata instanceof Fogata) {
+                fogataView.encendida = ((Fogata) fogata).isEncendida();
+            }
+            data.fogatas.add(fogataView);
+        }
+
+        // Baldosas calientes
+        data.baldosasCalientes = new java.util.ArrayList<>();
+        for (GameObject baldosa : board.getBaldosasCalientes()) {
+            ViewData.ObstaculoView baldosaView = new ViewData.ObstaculoView();
+            baldosaView.x = baldosa.getPosition().getX();
+            baldosaView.y = baldosa.getPosition().getY();
+            data.baldosasCalientes.add(baldosaView);
         }
 
         // Muros

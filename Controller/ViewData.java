@@ -103,6 +103,53 @@ public class ViewData {
         }
     }
 
+    // ========== OBSTÁCULOS DINÁMICOS ==========
+    public List<ObstaculoView> fogatas = new ArrayList<>();
+    public List<ObstaculoView> baldosasCalientes = new ArrayList<>();
+
+    // ========== FRUTAS ESPECIALES ==========
+    public List<FrutaEspecialView> cactuses = new ArrayList<>();
+
+    public static class ObstaculoView {
+        public int x;
+        public int y;
+        public boolean encendida; // para fogatas
+
+        public ObstaculoView() {
+        }
+
+        public ObstaculoView(int x, int y) {
+            this.x = x;
+            this.y = y;
+        }
+
+        public ObstaculoView(int x, int y, boolean encendida) {
+            this.x = x;
+            this.y = y;
+            this.encendida = encendida;
+        }
+    }
+
+    public static class FrutaEspecialView {
+        public int x;
+        public int y;
+        public String tipo; // "cactus"
+        public boolean spiky; // para cactus
+        public boolean collected; // si fue recolectada
+        public String visualState;
+
+        public FrutaEspecialView() {
+        }
+
+        public FrutaEspecialView(int x, int y, String tipo, boolean spiky, String visualState) {
+            this.x = x;
+            this.y = y;
+            this.tipo = tipo;
+            this.spiky = spiky;
+            this.visualState = visualState;
+        }
+    }
+
     public static class PositionView {
         public int x;
         public int y;
