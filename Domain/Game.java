@@ -1,0 +1,1072 @@
+package Domain;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+
+/**
+ * Clase principal que gestiona la lógica del juego
+ * Coordina el tablero, niveles, puntuación, tiempo y modos de juego
+ */
+public class Game implements Serializable {
+    // Configuración de fogatas y baldosas calientes
+    private boolean mostrarFogatas = false;
+    private int cantidadFogatas = 0;
+    private int cantidadBaldosasCalientes = 0;
+    private static final long serialVersionUID = 1L;
+
+    private Board board;
+    private Level currentLevel;
+    private GameMode gameMode;
+    private GameState gameState;
+
+    private int score;
+    private int remainingTime; // En segundos
+    // Sin sistema de vidas (como el juego original)
+    private String iceCreamFlavor; // Sabor elegido por el jugador
+    private String secondIceCreamFlavor; // Segundo sabor para modo cooperativo
+
+    // Para modos con IA
+    private AI iceCreamAI; // Para modo MVM
+    private List<AI> enemyAIs; // Para modos PVM y MVM
+    
+    // Estrategia de IA para el helado controlado por IA
+    private String iceCreamAIStrategyName; // Nombre de la estrategia
+
+    // Control de tiempo
+    private transient long lastUpdateTime;
+    private static final int FPS = 60;
+    // FRAME_TIME no se usa actualmente pero se mantiene para futura optimización
+
+    /**
+     * Constructor del juego
+     * 
+     * @param gameMode             Modo de juego seleccionado
+     * @param iceCreamFlavor       Sabor del helado seleccionado
+     * @param secondIceCreamFlavor Segundo sabor para modo cooperativo (puede ser
+     *                             null)
+     */
+    private String monsterType; // Tipo de monstruo seleccionado en PVP
+    private Map<String, Integer> enemyConfig; // Configuración personalizada de enemigos
+    private Map<String, Integer> fruitConfig; // Configuración personalizada de frutas
+
+    public Game(GameMode gameMode, String iceCreamFlavor, String secondIceCreamFlavor, String monsterType) {
+        this(gameMode, iceCreamFlavor, secondIceCreamFlavor, monsterType, null, null);
+    }
+
+    public Game(GameMode gameMode, String iceCreamFlavor, String secondIceCreamFlavor, String monsterType,
+            Map<String, Integer> enemyConfig) {
+        this(gameMode, iceCreamFlavor, secondIceCreamFlavor, monsterType, enemyConfig, null);
+    }
+
+    public Game(GameMode gameMode, String iceCreamFlavor, String secondIceCreamFlavor, String monsterType,
+            Map<String, Integer> enemyConfig, Map<String, Integer> fruitConfig) {
+        this.gameMode = gameMode;
+        this.iceCreamFlavor = iceCreamFlavor;
+        this.secondIceCreamFlavor = secondIceCreamFlavor; // null para modo vs Monstruo
+        this.monsterType = monsterType; // PVP: Tipo de monstruo controlado
+        this.enemyConfig = enemyConfig; // Configuración personalizada de enemigos
+        this.fruitConfig = fruitConfig; // Configuración personalizada de frutas
+        this.gameState = GameState.MENU;
+        this.score = 0;
+        // Sin sistema de vidas (como el juego original)
+        this.enemyAIs = new ArrayList<>();
+        this.lastUpdateTime = System.currentTimeMillis();
+    }
+
+    // Constructor sin secondIceCreamFlavor (retrocompatibilidad para Helado vs
+    // Monstruo)
+    public Game(GameMode gameMode, String iceCreamFlavor, String monsterType) {
+        this(gameMode, iceCreamFlavor, null, monsterType);
+    }
+
+    // Constructor antiguo (retrocompatibilidad)
+    @Deprecated
+    public Game(GameMode gameMode, String iceCreamFlavor) {
+        this(gameMode, iceCreamFlavor, null, null);
+    }
+
+    /**
+     * Inicia un nuevo nivel
+     */
+    public void startLevel(int levelNumber) {
+        // Crear el nivel
+        switch (levelNumber) {
+            case 1:
+                currentLevel = Level.createLevel1();
+                break;
+            case 2:
+                currentLevel = Level.createLevel2();
+                break;
+            case 3:
+                currentLevel = Level.createLevel3();
+                break;
+            default:
+                currentLevel = Level.createLevel1();
+        }
+
+        // Crear el tablero
+        board = new Board(currentLevel.getBoardWidth(), currentLevel.getBoardHeight());
+
+        // Configurar el tablero con el nivel
+        setupBoard();
+
+        // Inicializar tiempo
+        remainingTime = currentLevel.getTimeLimit();
+
+        // Configurar IA según el modo de juego
+        setupAI();
+
+        gameState = GameState.PLAYING;
+    }
+
+    /**
+     * Configura el tablero con las entidades del nivel
+     */
+    private void setupBoard() {
+    // 1) Muros indestructibles (bordes del nivel)
+    for (Position wallPos : currentLevel.getWallPositions()) {
+        board.addWall(wallPos);
+    }
+
+    // 2) FOGATAS ALEATORIAS SEGÚN EL MENÚ (USA LOS ATRIBUTOS INTERNOS)
+    if (mostrarFogatas && cantidadFogatas > 0) {
+        List<Position> emptyPositions = board.getEmptyPositions();
+        java.util.Collections.shuffle(emptyPositions);
+        int n = Math.min(cantidadFogatas, emptyPositions.size());
+        for (int i = 0; i < n; i++) {
+            board.addFogata(new Fogata(emptyPositions.get(i)));
+        }
+        System.out.println("Se agregaron " + n + " fogatas aleatorias.");
+    }
+
+    // 2.5) BALDOSAS CALIENTES ALEATORIAS SEGÚN EL MENÚ
+    if (cantidadBaldosasCalientes > 0) {
+        List<Position> emptyPositions = board.getEmptyPositions();
+        java.util.Collections.shuffle(emptyPositions);
+        int n = Math.min(cantidadBaldosasCalientes, emptyPositions.size());
+        for (int i = 0; i < n; i++) {
+            board.addBaldosaCaliente(new BaldosaCaliente(emptyPositions.get(i)));
+        }
+        System.out.println("Se agregaron " + n + " baldosas calientes aleatorias.");
+    }
+
+    // 3) Bloques de hielo
+    for (Position icePos : currentLevel.getIceBlockPositions()) {
+        IceBlock iceBlock = new IceBlock(icePos, true);
+        board.addIceBlock(iceBlock);
+    }
+
+    // 4) Primer helado
+    IceCream iceCream = createIceCream(currentLevel.getIceCreamStartPosition());
+
+    // 5) IA al helado si corresponde
+    if (iceCreamAIStrategyName != null && !iceCreamAIStrategyName.isEmpty()) {
+        IceCreamAIStrategy aiStrategy = IceCreamAIStrategyManager.getStrategy(iceCreamAIStrategyName);
+        if (aiStrategy != null) {
+            iceCream.setAIStrategy(aiStrategy);
+            System.out.println("✓ IA aplicada al helado: " + iceCreamAIStrategyName);
+        }
+    }
+
+    board.setIceCream(iceCream);
+
+    // 6) Segundo helado, si hay
+    if (secondIceCreamFlavor != null) {
+        List<Position> emptyPositions = new ArrayList<>();
+        for (int x = 1; x < currentLevel.getBoardWidth() - 1; x++) {
+            for (int y = 1; y < currentLevel.getBoardHeight() - 1; y++) {
+                Position pos = new Position(x, y);
+                if (board.isValidPosition(pos) && !pos.equals(currentLevel.getIceCreamStartPosition())) {
+                    emptyPositions.add(pos);
+                }
+            }
+        }
+        if (!emptyPositions.isEmpty()) {
+            Random random = new Random();
+            Position secondIceCreamPos = emptyPositions.get(random.nextInt(emptyPositions.size()));
+            IceCream secondIceCream = createSecondIceCream(secondIceCreamPos);
+            board.setSecondIceCream(secondIceCream);
+        }
+    }
+
+    // 7) Enemigos
+    if (gameMode == GameMode.PVP && monsterType != null) {
+        List<Position> emptyPositions = new ArrayList<>();
+        for (int x = 1; x < currentLevel.getBoardWidth() - 1; x++) {
+            for (int y = 1; y < currentLevel.getBoardHeight() - 1; y++) {
+                Position pos = new Position(x, y);
+                if (board.isValidPosition(pos)) {
+                    emptyPositions.add(pos);
+                }
+            }
+        }
+        if (!emptyPositions.isEmpty()) {
+            Random random = new Random();
+            Position enemyPos = emptyPositions.get(random.nextInt(emptyPositions.size()));
+            Level.EnemyConfig config = new Level.EnemyConfig(monsterType, enemyPos, null, 0);
+            Enemy enemy = createEnemy(config);
+            if (enemy != null) {
+                board.addEnemy(enemy);
+            }
+        }
+        if (enemyConfig != null && !enemyConfig.isEmpty()) {
+            createEnemiesFromCustomConfig();
+        }
+    } else if (enemyConfig != null && !enemyConfig.isEmpty()) {
+        createEnemiesFromCustomConfig();
+    } else {
+        for (Level.EnemyConfig config : currentLevel.getEnemyConfigs()) {
+            Enemy enemy = createEnemy(config);
+            if (enemy != null) {
+                board.addEnemy(enemy);
+            }
+        }
+    }
+
+    // 8) Frutas
+    System.out.println("🍎 setupBoard() - Creando frutas...");
+    System.out.println("   fruitConfig: " + (fruitConfig != null ? "no nulo" : "nulo"));
+    if (fruitConfig != null) {
+        System.out.println("   tamaño: " + fruitConfig.size());
+    }
+
+    if (fruitConfig != null && !fruitConfig.isEmpty()) {
+        createFruitsFromCustomConfig();
+    } else {
+        createFruitsFromLevelConfig();
+    }
+}
+
+    /**
+     * Crea frutas desde la configuración personalizada del usuario
+     */
+    private void createFruitsFromCustomConfig() {
+        if (fruitConfig == null || fruitConfig.isEmpty()) {
+            System.out.println("⚠️ Configuración de frutas vacía o nula, usando predeterminada");
+            createFruitsFromLevelConfig();
+            return;
+        }
+
+        System.out.println("🍎 Creando frutas desde configuración personalizada:");
+        for (String fruitType : fruitConfig.keySet()) {
+            int quantity = fruitConfig.get(fruitType);
+            System.out.println("  - " + fruitType + ": " + quantity);
+
+            // Crear la cantidad especificada de cada tipo de fruta
+            for (int i = 0; i < quantity; i++) {
+                Position fruitPos = getRandomEmptyPosition();
+                Fruit fruit = createFruit(fruitType, fruitPos);
+                if (fruit != null) {
+                    board.addFruit(fruit);
+                }
+            }
+        }
+    }
+
+    /**
+     * Crea frutas desde la configuración predeterminada del nivel
+     */
+    private void createFruitsFromLevelConfig() {
+        System.out.println("🍎 Usando frutas predeterminadas del nivel");
+        int totalFruits = 0;
+        Random random = new Random();
+        for (Level.FruitConfig config : currentLevel.getFruitConfigs()) {
+            System.out.println("   Tipo: " + config.fruitType + ", Cantidad: " + config.quantity);
+            for (int i = 0; i < config.quantity; i++) {
+                Position fruitPos;
+                if (config.startPosition != null) {
+                    fruitPos = config.startPosition;
+                } else {
+                    // Generar posición aleatoria válida
+                    fruitPos = getRandomEmptyPosition();
+                }
+
+                Fruit fruit = createFruit(config.fruitType, fruitPos);
+                if (fruit != null) {
+                    board.addFruit(fruit);
+                    totalFruits++;
+                }
+            }
+        }
+        System.out.println("✅ Total frutas agregadas: " + totalFruits);
+    }
+
+    /**
+     * Crea un helado según el sabor seleccionado
+     */
+    private IceCream createIceCream(Position position) {
+        try {
+            return IceCreamFactory.create(iceCreamFlavor, position);
+        } catch (IllegalArgumentException e) {
+            // Fallback a vainilla si hay error
+            System.err.println("Error al crear helado: " + e.getMessage());
+            return new VanillaIceCream(position);
+        }
+    }
+
+    /**
+     * Crea el segundo helado según el sabor seleccionado (modo cooperativo)
+     */
+    private IceCream createSecondIceCream(Position position) {
+        try {
+            return IceCreamFactory.create(secondIceCreamFlavor, position);
+        } catch (IllegalArgumentException e) {
+            // Fallback a vainilla si hay error
+            System.err.println("Error al crear segundo helado: " + e.getMessage());
+            return new VanillaIceCream(position);
+        }
+    }
+
+    /**
+     * Crea un enemigo según la configuración
+     */
+    private Enemy createEnemy(Level.EnemyConfig config) {
+        Enemy enemy = null;
+        String normalized = config.enemyType.toLowerCase();
+
+        switch (normalized) {
+            case "troll":
+            case "trol":
+                if (config.pattern != null) {
+                    enemy = new Troll(config.startPosition, config.pattern, config.stepsPerDirection);
+                } else {
+                    enemy = new Troll(config.startPosition);
+                }
+                enemy.setColor(new java.awt.Color(34, 177, 76)); // Verde
+                break;
+
+            case "maceta":
+            case "pot":
+            case "olla":
+                enemy = new Pot(config.startPosition, board);
+                enemy.setColor(new java.awt.Color(255, 165, 0)); // Naranja
+                break;
+
+            case "calamar":
+            case "yellowsquid":
+            case "calamar naranja":
+                enemy = new YellowSquid(config.startPosition, board);
+                enemy.setColor(new java.awt.Color(255, 255, 0)); // Amarillo
+                break;
+
+            case "narval":
+                enemy = new Narval(config.startPosition, board);
+                enemy.setColor(new java.awt.Color(0, 112, 192)); // Azul
+                break;
+        }
+
+        return enemy;
+    }
+
+    /**
+     * Crea una fruta según el tipo
+     */
+    private Fruit createFruit(String fruitType, Position position) {
+        String normalized = fruitType.toLowerCase().trim();
+
+        switch (normalized) {
+            // Uvas
+            case "uvas":
+            case "uva":
+            case "grape":
+            case "grapes":
+                return new Grape(position);
+
+            // Plátanos
+            case "plátano":
+            case "plátanos":
+            case "platano":
+            case "platanos":
+            case "banana":
+            case "bananas":
+                return new Banana(position);
+
+            // Piñas
+            case "piña":
+            case "piñas":
+            case "pina":
+            case "pinas":
+            case "pineapple":
+            case "pineapples":
+                return new Pineapple(position, board);
+
+            // Cerezas
+            case "cereza":
+            case "cerezas":
+            case "cherry":
+            case "cherries":
+                return new Cherry(position, board);
+            // Cactus
+            case "cactus": 
+            case "cacti":
+                return new Cactus(position);
+
+            default:
+                System.err.println("⚠️ Tipo de fruta desconocido: " + fruitType);
+                return null;
+        }
+    }
+
+    /**
+     * Obtiene una posición aleatoria vacía en el tablero
+     */
+    private Position getRandomEmptyPosition() {
+        List<Position> emptyPositions = board.getEmptyPositions();
+        if (emptyPositions.isEmpty()) {
+            return new Position(1, 1); // Fallback
+        }
+        Random random = new Random();
+        return emptyPositions.get(random.nextInt(emptyPositions.size()));
+    }
+
+    /**
+     * Crea enemigos según la configuración personalizada
+     * Mapea nombres de enemigos a sus tipos y los crea con la cantidad especificada
+     */
+    private void createEnemiesFromCustomConfig() {
+        if (enemyConfig == null || enemyConfig.isEmpty()) {
+            return;
+        }
+
+        Random random = new Random();
+        for (String enemyType : enemyConfig.keySet()) {
+            int quantity = enemyConfig.get(enemyType);
+
+            // Crear la cantidad especificada de cada tipo de enemigo
+            for (int i = 0; i < quantity; i++) {
+                Position enemyPos = getRandomEmptyPosition();
+                Level.EnemyConfig config = new Level.EnemyConfig(enemyType, enemyPos, null, 0);
+                Enemy enemy = createEnemy(config);
+                if (enemy != null) {
+                    board.addEnemy(enemy);
+                }
+            }
+        }
+    }
+
+    /**
+     * Configura la IA según el modo de juego
+     */
+    private void setupAI() {
+        enemyAIs.clear();
+
+        if (gameMode == GameMode.PVM || gameMode == GameMode.MVM) {
+            // Crear IA para cada enemigo
+            for (Enemy enemy : board.getEnemies()) {
+                enemyAIs.add(new EnemyAI(enemy, board));
+            }
+        }
+
+        // En modo PVP COOPERATIVO (dos helados), también crear IA para enemigos
+        if (gameMode == GameMode.PVP && secondIceCreamFlavor != null) {
+            for (Enemy enemy : board.getEnemies()) {
+                enemyAIs.add(new EnemyAI(enemy, board));
+            }
+        }
+
+        // En modo PVP Vs Monstruo (sin segundo helado), crear IA para enemigos
+        // adicionales ÚNICAMENTE (el primer enemigo es el monstruo principal controlado
+        // por Jugador 2)
+        if (gameMode == GameMode.PVP && secondIceCreamFlavor == null && enemyConfig != null && !enemyConfig.isEmpty()) {
+            List<Enemy> enemies = board.getEnemies();
+            // Saltar el primer enemigo (monstruo principal) y crear IA para el resto
+            // (enemigos adicionales)
+            for (int i = 1; i < enemies.size(); i++) {
+                enemyAIs.add(new EnemyAI(enemies.get(i), board));
+            }
+        }
+
+        if (gameMode == GameMode.MVM) {
+            // Crear IA para el helado
+            iceCreamAI = new IceCreamAI(board.getIceCream(), board);
+        }
+    }
+
+    /**
+     * Actualiza el estado del juego (llamar cada frame)
+     */
+    public void update() {
+                // Verificar si algún helado pisa una fogata encendida
+                for (Fogata fogata : board.getFogatas()) {
+                    if (fogata.isEncendida()) {
+                        if (board.getIceCream() != null && board.getIceCream().getPosition().equals(fogata.getPosition())) {
+                            board.getIceCream().setAlive(false);
+                            gameState = GameState.LOST;
+                        }
+                        IceCream secondIceCream = board.getSecondIceCream();
+                        if (secondIceCream != null && secondIceCream.getPosition().equals(fogata.getPosition())) {
+                            secondIceCream.setAlive(false);
+                            gameState = GameState.LOST;
+                        }
+                    }
+                }
+        if (gameState != GameState.PLAYING) {
+            return;
+        }
+
+        long currentTime = System.currentTimeMillis();
+        long deltaTime = currentTime - lastUpdateTime;
+
+        // Actualizar enemigos
+        updateEnemies();
+
+        // Actualizar fogatas
+        for (Fogata fogata : board.getFogatas()) {
+            fogata.update();
+        }
+
+        // Actualizar frutas (movimiento, teletransporte)
+        updateFruits();
+        
+        // Actualizar IA del helado si aplica
+        IceCream iceCream = board.getIceCream();
+        if (iceCream != null && iceCream.isAIControlled()) {
+            Direction move = iceCream.getAIStrategy().getNextMove(board, iceCream);
+            if (move != null) {
+                boolean moved = board.moveIceCream(move);
+
+                // Sumar puntos si recolectó fruta
+                if (moved) {
+                    Fruit fruit = board.getAndClearLastCollectedFruit();
+                    if (fruit != null) {
+                        score += 50;
+                    }
+                }
+            }
+        }
+
+        // Actualizar IA si aplica (modo MVM)
+        if (gameMode == GameMode.MVM && iceCreamAI != null) {
+            Direction move = iceCreamAI.getNextMove();
+            if (move != null) {
+                boolean moved = board.moveIceCream(move);
+
+                // Sumar puntos si recolectó fruta
+                if (moved) {
+                    Fruit fruit = board.getAndClearLastCollectedFruit();
+                    if (fruit != null) {
+                        score += 50;
+                    }
+                }
+            }
+        }
+
+        // Verificar condiciones de victoria/derrota
+        checkGameConditions();
+
+        // Actualizar tiempo (cada segundo)
+        if (deltaTime >= 1000) {
+            remainingTime--;
+            lastUpdateTime = currentTime;
+
+            if (remainingTime <= 0) {
+                gameState = GameState.LOST;
+            }
+        }
+    }
+
+    /**
+     * Actualiza los enemigos (movimiento y IA)
+     */
+    private void updateEnemies() {
+        List<Enemy> enemies = board.getEnemies();
+
+        // En modo PVP vs Monstruo (1 helado vs 1 monstruo, con enemigos adicionales
+        // opcionales)
+        if (gameMode == GameMode.PVP && secondIceCreamFlavor == null) {
+            int aiIndex = 0; // Índice para acceder a enemyAIs
+
+            for (int i = 0; i < enemies.size(); i++) {
+                Enemy enemy = enemies.get(i);
+
+                // El primer enemigo es el monstruo principal (controlado por Jugador 2)
+                if (i == 0) {
+                    // Monstruo principal: sin IA, controlado manualmente
+                    if (enemy instanceof Narval) {
+                        Narval narval = (Narval) enemy;
+                        if (narval.isCharging()) {
+                            // El Narval está en modo carga: moverse automáticamente
+                            board.moveEnemy(narval, narval.getChargeDirection());
+                        }
+                    }
+                } else {
+                    // Enemigos adicionales: controlar con IA
+                    if (aiIndex < enemyAIs.size()) {
+                        Direction nextMove = enemyAIs.get(aiIndex).getNextMove();
+                        if (nextMove != null) {
+                            board.moveEnemy(enemy, nextMove);
+                        }
+                        aiIndex++;
+                    }
+                }
+                enemy.update();
+            }
+            return; // Salir del método después de procesar PVP vs Monstruo
+        }
+
+        for (int i = 0; i < enemies.size(); i++) {
+            Enemy enemy = enemies.get(i);
+            if (!enemy.isAlive()) {
+                continue;
+            }
+
+            Direction nextMove;
+
+            // Usar IA en modos PVM, MVM y PVP COOPERATIVO
+            if (gameMode == GameMode.PVM || gameMode == GameMode.MVM ||
+                    (gameMode == GameMode.PVP && secondIceCreamFlavor != null)) {
+                // Usar IA
+                if (i < enemyAIs.size()) {
+                    nextMove = enemyAIs.get(i).getNextMove();
+                } else {
+                    nextMove = enemy.getNextMove();
+                }
+            } else {
+                nextMove = enemy.getNextMove();
+            }
+
+            if (nextMove != null) {
+                board.moveEnemy(enemy, nextMove);
+            }
+
+            enemy.update();
+        }
+    }
+
+    /**
+     * Actualiza las frutas
+     */
+    private void updateFruits() {
+        for (Fruit fruit : board.getFruits()) {
+            if (!fruit.isCollected()) {
+                fruit.update();
+            }
+        }
+    }
+
+    /**
+     * Verifica las condiciones de victoria/derrota
+     */
+    private void checkGameConditions() {
+        // Verificar si el helado murió → GAME OVER inmediato (sin vidas)
+        if (!board.getIceCream().isAlive()) {
+            gameState = GameState.LOST;
+            return;
+        }
+
+        // Verificar si recogió todas las frutas
+        if (board.getRemainingFruits() == 0) {
+            gameState = GameState.WON;
+            // Bonus por tiempo restante
+            score += remainingTime * 10;
+        }
+    }
+
+    /**
+     * Mueve el helado (para control manual)
+     */
+    public boolean moveIceCream(Direction direction) {
+        if (gameState != GameState.PLAYING || gameMode == GameMode.MVM) {
+            return false;
+        }
+        boolean moved = board.moveIceCream(direction);
+
+        // Verificar si recolectó una fruta y sumar puntos
+        if (moved) {
+            Fruit fruit = board.getAndClearLastCollectedFruit();
+            if (fruit != null) {
+                if (fruit instanceof Cactus) {
+                    Cactus cactus = (Cactus) fruit;
+                    if (cactus.isSpiky()) {
+                        // Helado MUERE instantáneamente: GAME OVER
+                        gameState = GameState.LOST;
+                        return false; // puedes salir o dejar que la lógica general lo maneje
+                    } else {
+                        score += cactus.getPoints();
+                    }
+                } else {
+                    score += fruit.getPoints();
+                }
+            }
+        }
+
+        return moved;
+    }
+
+    /**
+     * Mueve el segundo helado (modo cooperativo)
+     */
+    public boolean moveSecondIceCream(Direction direction) {
+        if (gameState != GameState.PLAYING || board.getSecondIceCream() == null) {
+            return false;
+        }
+        boolean moved = board.moveSecondIceCream(direction);
+
+        // Verificar si recolectó una fruta y sumar puntos
+        if (moved) {
+            Fruit fruit = board.getAndClearLastCollectedFruit();
+            if (fruit != null) {
+                score += 50;
+            }
+        }
+
+        return moved;
+    }
+
+    /**
+     * Crea o rompe bloques de hielo (mismo botón)
+     * - Si hay espacio: crea FILA de bloques
+     * - Si hay bloque enfrente: rompe UN bloque
+     * (Como en el Bad Ice-Cream original)
+     */
+    /**
+     * Toggle de hielo: Crea o rompe bloques según si hay obstáculos
+     * - Si NO hay bloques en dirección: Crea hilera
+     * - Si HAY bloques en dirección: Los rompe (efecto dominó)
+     * 
+     * Devuelve: >0 si creó bloques, <0 si rompió bloques, 0 si no pudo hacer nada
+     */
+    public int toggleIceBlocks() {
+        if (gameState != GameState.PLAYING || gameMode == GameMode.MVM) {
+            return 0;
+        }
+        return board.toggleIceBlocks();
+    }
+
+    /**
+     * Toggle de hielo para el segundo helado (modo cooperativo)
+     */
+    public int toggleIceBlocksSecond() {
+        if (gameState != GameState.PLAYING || board.getSecondIceCream() == null) {
+            return 0;
+        }
+        return board.toggleIceBlocksSecond();
+    }
+
+    /**
+     * @deprecated Usa toggleIceBlocks() en su lugar
+     */
+    @Deprecated
+    public boolean createIceBlock() {
+        if (gameState != GameState.PLAYING || gameMode == GameMode.MVM) {
+            return false;
+        }
+        int result = board.createIceBlock();
+        return result > 0;
+    }
+
+    /**
+     * @deprecated Usa toggleIceBlocks() en su lugar
+     */
+    @Deprecated
+    public int breakIceBlocks() {
+        if (gameState != GameState.PLAYING || gameMode == GameMode.MVM) {
+            return 0;
+        }
+        return board.breakIceBlocks();
+    }
+
+    /**
+     * Rompe UN SOLO bloque de hielo en la dirección actual del helado
+     */
+    public boolean breakIceBlock() {
+        if (gameState != GameState.PLAYING || gameMode == GameMode.MVM) {
+            return false;
+        }
+        return board.breakIceBlock();
+    }
+
+    /**
+     * Pausa/reanuda el juego
+     */
+    public void togglePause() {
+        if (gameState == GameState.PLAYING) {
+            gameState = GameState.PAUSED;
+        } else if (gameState == GameState.PAUSED) {
+            gameState = GameState.PLAYING;
+            lastUpdateTime = System.currentTimeMillis();
+        }
+    }
+
+    /**
+     * Getter para el tipo de monstruo seleccionado
+     */
+    public String getMonsterType() {
+        return monsterType;
+    }
+
+    public Board getBoard() {
+        return board;
+    }
+
+    public Level getCurrentLevel() {
+        return currentLevel;
+    }
+
+    public GameMode getGameMode() {
+        return gameMode;
+    }
+
+    public GameState getGameState() {
+        return gameState;
+    }
+
+    public int getScore() {
+        return score;
+    }
+
+    public void addScore(int points) {
+        this.score += points;
+    }
+
+
+    // Setters para configuración de fogatas y baldosas calientes
+    public void setMostrarFogatas(boolean mostrarFogatas) { this.mostrarFogatas = mostrarFogatas; }
+    public void setCantidadFogatas(int cantidadFogatas) { this.cantidadFogatas = cantidadFogatas; }
+    public void setCantidadBaldosasCalientes(int cantidadBaldosasCalientes) { this.cantidadBaldosasCalientes = cantidadBaldosasCalientes; }
+
+    // Getter para cantidad de baldosas calientes
+    public int getCantidadBaldosasCalientes() { return cantidadBaldosasCalientes; }
+
+    public int getRemainingTime() {
+        return remainingTime;
+    }
+
+    public String getIceCreamFlavor() {
+        return iceCreamFlavor;
+    }
+
+    public String getSecondIceCreamFlavor() {
+        return secondIceCreamFlavor;
+    }
+
+    public void setGameState(GameState state) {
+        this.gameState = state;
+    }
+
+    /**
+     * Establece la estrategia de IA para el helado
+     */
+    public void setIceCreamAIStrategy(String strategyName) {
+        this.iceCreamAIStrategyName = strategyName;
+    }
+
+    /**
+     * Actualiza referencias después de desserialización
+     * Necesario porque los comportamientos tienen referencias transient a Board
+     */
+    public void updateBoardReferences() {
+        if (board == null || board.getEnemies() == null) {
+            return;
+        }
+
+        // Actualizar referencias en enemigos que usan ChaseMovement
+        for (Enemy enemy : board.getEnemies()) {
+            if (enemy instanceof Pot) {
+                ((Pot) enemy).updateStateProvider(board);
+            } else if (enemy instanceof YellowSquid) {
+                ((YellowSquid) enemy).updateStateProvider(board);
+            } else if (enemy instanceof Narval) {
+                ((Narval) enemy).updateStateProvider(board);
+            }
+        }
+    }
+
+    /**
+     * Mueve un enemigo (para modo PVP - Jugador 2)
+     * 
+     * @param enemyIndex Índice del enemigo (0, 1, 2...)
+     * @param direction  Dirección del movimiento
+     * @return true si el movimiento fue exitoso
+     */
+    public boolean moveEnemy(int enemyIndex, Direction direction) {
+        // Solo permitido en modo PVP
+        if (gameState != GameState.PLAYING || gameMode != GameMode.PVP) {
+            return false;
+        }
+
+        List<Enemy> enemies = board.getEnemies();
+        if (enemyIndex < 0 || enemyIndex >= enemies.size()) {
+            return false;
+        }
+
+        Enemy enemy = enemies.get(enemyIndex);
+        return board.moveEnemy(enemy, direction);
+    }
+
+    /**
+     * Obtiene el número de enemigos en el juego
+     * 
+     * @return Cantidad de enemigos
+     */
+    public int getEnemyCount() {
+        return board.getEnemies().size();
+    }
+    // ==================== MÉTODOS DE PERSISTENCIA ====================
+
+    /**
+     * Guarda la partida actual en un archivo .dat
+     * La partida se guarda en la carpeta "saves/" del proyecto
+     * 
+     * @param filename Nombre del archivo donde guardar (ej: "partida1.dat")
+     * @return true si se guardó exitosamente, false en caso de error
+     */
+    public boolean saveGame(String filename) {
+        // Crear directorio "saves" si no existe
+        File savesDir = new File("saves");
+        if (!savesDir.exists()) {
+            savesDir.mkdir();
+        }
+
+        // Asegurar que el filename tenga extensión .dat
+        if (!filename.endsWith(".dat")) {
+            filename = filename + ".dat";
+        }
+
+        // Ruta completa: saves/filename.dat
+        String fullPath = "saves" + File.separator + filename;
+
+        try (ObjectOutputStream out = new ObjectOutputStream(
+                new FileOutputStream(fullPath))) {
+            out.writeObject(this);
+            System.out.println("Partida guardada exitosamente en: " + fullPath);
+            return true;
+        } catch (IOException e) {
+            System.err.println("Error al guardar la partida: " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    /**
+     * Carga una partida desde un archivo .dat
+     * Busca el archivo en la carpeta "saves/"
+     * 
+     * @param filename Nombre del archivo a cargar (ej: "partida1.dat")
+     * @return Objeto Game cargado, o null si hubo un error
+     */
+    public static Game loadGame(String filename) {
+        // Asegurar que el filename tenga extensión .dat
+        if (!filename.endsWith(".dat")) {
+            filename = filename + ".dat";
+        }
+
+        // Ruta completa: saves/filename.dat
+        String fullPath = "saves" + File.separator + filename;
+
+        try (ObjectInputStream in = new ObjectInputStream(
+                new FileInputStream(fullPath))) {
+            Game game = (Game) in.readObject();
+
+            // Restaurar referencias transient después de la deserialización
+            game.lastUpdateTime = System.currentTimeMillis();
+            game.updateBoardReferences();
+
+            System.out.println("Partida cargada exitosamente desde: " + fullPath);
+            return game;
+        } catch (FileNotFoundException e) {
+            System.err.println("Archivo no encontrado: " + fullPath);
+            return null;
+        } catch (IOException e) {
+            System.err.println("Error al leer el archivo: " + e.getMessage());
+            e.printStackTrace();
+            return null;
+        } catch (ClassNotFoundException e) {
+            System.err.println("Error al deserializar: " + e.getMessage());
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    /**
+     * Verifica si existe un archivo de guardado .dat en la carpeta saves/
+     * 
+     * @param filename Nombre del archivo a verificar (ej: "partida1.dat")
+     * @return true si el archivo existe, false en caso contrario
+     */
+    public static boolean savedGameExists(String filename) {
+        // Asegurar que el filename tenga extensión .dat
+        if (!filename.endsWith(".dat")) {
+            filename = filename + ".dat";
+        }
+
+        File file = new File("saves" + File.separator + filename);
+        return file.exists() && file.isFile();
+    }
+
+    /**
+     * Elimina un archivo de guardado .dat de la carpeta saves/
+     * 
+     * @param filename Nombre del archivo a eliminar (ej: "partida1.dat")
+     * @return true si se eliminó exitosamente, false en caso contrario
+     */
+    public static boolean deleteSavedGame(String filename) {
+        // Asegurar que el filename tenga extensión .dat
+        if (!filename.endsWith(".dat")) {
+            filename = filename + ".dat";
+        }
+
+        File file = new File("saves" + File.separator + filename);
+        if (file.exists()) {
+            boolean deleted = file.delete();
+            if (deleted) {
+                System.out.println("Archivo eliminado: " + file.getPath());
+            }
+            return deleted;
+        }
+        return false;
+    }
+
+    /**
+     * Lista todos los archivos .dat guardados en la carpeta saves/
+     * 
+     * @return Array de nombres de archivos encontrados (solo nombres, sin ruta)
+     */
+    public static String[] listSavedGames() {
+        File dir = new File("saves");
+
+        if (!dir.exists() || !dir.isDirectory()) {
+            return new String[0];
+        }
+
+        File[] files = dir.listFiles((d, name) -> name.endsWith(".dat"));
+
+        if (files == null || files.length == 0) {
+            return new String[0];
+        }
+
+        String[] fileNames = new String[files.length];
+        for (int i = 0; i < files.length; i++) {
+            fileNames[i] = files[i].getName();
+        }
+
+        return fileNames;
+    }
+
+    /**
+     * Guarda automáticamente la partida con un nombre basado en la fecha/hora
+     * Se guarda en saves/ con formato: autosave_YYYYMMDD_HHMMSS.dat
+     * 
+     * @return Nombre del archivo generado, o null si hubo error
+     */
+    public String autoSave() {
+        String timestamp = new java.text.SimpleDateFormat("yyyyMMdd_HHmmss")
+                .format(new java.util.Date());
+        String filename = "autosave_" + timestamp + ".dat";
+
+        if (saveGame(filename)) {
+            return filename;
+        }
+        return null;
+    }
+}
