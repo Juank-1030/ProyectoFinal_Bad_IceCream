@@ -256,6 +256,7 @@ public class GamePanel extends JPanel {
         drawGrid(g, viewData);
         drawWalls(g, viewData);
         drawBaldosasCalientes(g, viewData);
+        drawIceBlockObstacles(g, viewData);
         drawFogatas(g, viewData);
         drawIceBlocks(g, viewData);
         drawFruits(g, viewData);
@@ -1189,6 +1190,34 @@ public class GamePanel extends JPanel {
                     g.fillPolygon(xPoints, yPoints, 3);
                 }
             }
+        }
+    }
+
+    /**
+     * Dibuja los bloques de hielo estáticos
+     */
+    private void drawIceBlockObstacles(Graphics2D g, ViewData viewData) {
+        if (viewData.iceBlockObstacles == null || viewData.iceBlockObstacles.isEmpty()) {
+            return;
+        }
+
+        for (ViewData.ObstaculoView iceBlock : viewData.iceBlockObstacles) {
+            int x = iceBlock.x * CELL_SIZE;
+            int y = iceBlock.y * CELL_SIZE + UI_HEIGHT;
+
+            // Dibujar bloque de hielo con color cian/azul claro
+            g.setColor(new Color(150, 200, 255));
+            g.fillRect(x, y, CELL_SIZE, CELL_SIZE);
+
+            // Dibujar bordes para darle aspecto de hielo
+            g.setColor(new Color(100, 150, 200));
+            g.setStroke(new java.awt.BasicStroke(2));
+            g.drawRect(x, y, CELL_SIZE, CELL_SIZE);
+
+            // Dibujar pequeños cristales de hielo (líneas)
+            g.setColor(new Color(200, 230, 255));
+            g.drawLine(x + 5, y + 5, x + CELL_SIZE - 5, y + CELL_SIZE - 5);
+            g.drawLine(x + CELL_SIZE - 5, y + 5, x + 5, y + CELL_SIZE - 5);
         }
     }
 }

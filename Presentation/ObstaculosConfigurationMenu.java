@@ -16,7 +16,7 @@ public class ObstaculosConfigurationMenu extends JFrame {
     private String rutaFondo = "Resources/Opciones_Menu/Fondo.png";
 
     // Tipos de obstáculos disponibles:
-    private static final String[] OBSTACLE_TYPES = { "Fogata", "Baldosa Caliente" };
+    private static final String[] OBSTACLE_TYPES = { "Fogata", "Baldosa Caliente", "Bloque de Hielo" };
 
     // Map tipo → cantidad
     private Map<String, Integer> obstacleConfig = new LinkedHashMap<>();

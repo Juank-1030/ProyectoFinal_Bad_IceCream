@@ -338,6 +338,10 @@ public class Game implements Serializable {
                     BaldosaCaliente baldosa = new BaldosaCaliente(obstaclePos);
                     board.addBaldosaCaliente(baldosa);
                     System.out.println("  ✓ Baldosa Caliente agregada en " + obstaclePos);
+                } else if (obstacleType.equalsIgnoreCase("Bloque de Hielo")) {
+                    IceBlockObstacle iceBlock = new IceBlockObstacle(obstaclePos);
+                    board.addIceBlockObstacle(iceBlock);
+                    System.out.println("  ✓ Bloque de Hielo agregado en " + obstaclePos);
                 }
             }
         }

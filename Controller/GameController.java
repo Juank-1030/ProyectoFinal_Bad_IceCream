@@ -1328,6 +1328,15 @@ public class GameController implements KeyListener {
             data.baldosasCalientes.add(baldosaView);
         }
 
+        // Bloques de hielo estáticos
+        data.iceBlockObstacles = new java.util.ArrayList<>();
+        for (IceBlockObstacle iceBlock : board.getIceBlockObstacles()) {
+            ViewData.ObstaculoView iceBlockView = new ViewData.ObstaculoView();
+            iceBlockView.x = iceBlock.getPosition().getX();
+            iceBlockView.y = iceBlock.getPosition().getY();
+            data.iceBlockObstacles.add(iceBlockView);
+        }
+
         // Muros
         data.walls = new java.util.ArrayList<>();
         for (Position pos : board.getWalls()) {

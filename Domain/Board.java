@@ -24,6 +24,7 @@ public class Board implements BoardStateProvider {
     private List<IceBlock> iceBlocks; // Bloques de hielo rompibles
     private List<Fogata> fogatas; // Obstáculos dinámicos (fogatas)
     private List<BaldosaCaliente> baldosasCalientes; // Obstáculos de baldosa caliente
+    private List<IceBlockObstacle> iceBlockObstacles; // Bloques de hielo estáticos como obstáculos
 
     // Matriz de celdas (para búsqueda rápida)
     private CellType[][] cells;
@@ -43,6 +44,7 @@ public class Board implements BoardStateProvider {
         this.iceBlocks = new ArrayList<>();
         this.fogatas = new ArrayList<>();
         this.baldosasCalientes = new ArrayList<>();
+        this.iceBlockObstacles = new ArrayList<>();
         this.cells = new CellType[height][width];
         initializeCells();
     }
@@ -98,6 +100,11 @@ public class Board implements BoardStateProvider {
 
         // Verificar si hay baldosa caliente
         if (hasBaldosaCaliente(pos)) {
+            return false;
+        }
+
+        // Verificar si hay bloque de hielo estático
+        if (hasIceBlockObstacle(pos)) {
             return false;
         }
 
@@ -899,5 +906,26 @@ public class Board implements BoardStateProvider {
     public boolean hasBaldosaCaliente(Position pos) {
         return baldosasCalientes.stream()
                 .anyMatch(b -> b.getPosition().equals(pos));
+    }
+
+    // ========== BLOQUES DE HIELO ESTÁTICOS ==========
+    public void addIceBlockObstacle(IceBlockObstacle iceBlockObstacle) {
+        this.iceBlockObstacles.add(iceBlockObstacle);
+    }
+
+    public List<IceBlockObstacle> getIceBlockObstacles() {
+        return new ArrayList<>(iceBlockObstacles);
+    }
+
+    public boolean hasIceBlockObstacle(Position pos) {
+        return iceBlockObstacles.stream()
+                .anyMatch(i -> i.getPosition().equals(pos));
+    }
+
+    public IceBlockObstacle getIceBlockObstacleAt(Position pos) {
+        return iceBlockObstacles.stream()
+                .filter(i -> i.getPosition().equals(pos))
+                .findFirst()
+                .orElse(null);
     }
 }

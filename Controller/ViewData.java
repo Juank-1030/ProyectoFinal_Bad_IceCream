@@ -106,6 +106,7 @@ public class ViewData {
     // ========== OBSTÁCULOS DINÁMICOS ==========
     public List<ObstaculoView> fogatas = new ArrayList<>();
     public List<ObstaculoView> baldosasCalientes = new ArrayList<>();
+    public List<ObstaculoView> iceBlockObstacles = new ArrayList<>();
 
     // ========== FRUTAS ESPECIALES ==========
     public List<FrutaEspecialView> cactuses = new ArrayList<>();
