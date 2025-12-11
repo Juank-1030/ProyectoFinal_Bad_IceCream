@@ -1172,4 +1172,120 @@ public class GameController implements KeyListener {
 
         return data;
     }
+
+    /**
+     * Obtiene todos los datos necesarios para renderizado usando ViewData (MVC
+     * completo)
+     * Permite que GamePanel NO necesite importar Domain
+     */
+    public ViewData getViewData() {
+        ViewData data = new ViewData();
+
+        // Estado del juego
+        data.gameState = getGameStateAsString();
+
+        if (game == null || game.getBoard() == null) {
+            data.boardWidth = 0;
+            data.boardHeight = 0;
+            return data;
+        }
+
+        Board board = game.getBoard();
+
+        // ✅ IMPORTANTE: Actualizar posiciones visuales ANTES de capturar datos
+        // Esto asegura que los helados y monstruos se vean en movimiento suave
+        if (board.getIceCream() != null) {
+            board.getIceCream().updateVisualPosition();
+        }
+        if (board.getSecondIceCream() != null) {
+            board.getSecondIceCream().updateVisualPosition();
+        }
+        for (Enemy enemy : board.getEnemies()) {
+            if (enemy != null) {
+                enemy.updateVisualPosition();
+            }
+        }
+
+        // Dimensiones
+        data.boardWidth = board.getWidth();
+        data.boardHeight = board.getHeight();
+
+        // UI
+        data.score = game.getScore();
+        data.remainingTime = game.getRemainingTime();
+        data.currentLevel = game.getCurrentLevel() != null ? game.getCurrentLevel().getLevelNumber() : 0;
+        data.remainingFruits = board.getRemainingFruits();
+        data.gameMode = game.getGameMode().toString();
+
+        // Helado principal
+        IceCream iceCream = board.getIceCream();
+        if (iceCream != null) {
+            data.iceCreamX = iceCream.getVisualX();
+            data.iceCreamY = iceCream.getVisualY();
+            data.iceCreamFlavor = iceCream.getFlavor().toLowerCase();
+            data.iceCreamDirection = iceCream.getCurrentDirection().toString().toLowerCase();
+            data.iceCreamAction = iceCream.getCurrentAction();
+            data.iceCreamAlive = iceCream.isAlive();
+        }
+
+        // Segundo helado
+        IceCream secondIceCream = board.getSecondIceCream();
+        if (secondIceCream != null) {
+            data.secondIceCreamX = secondIceCream.getVisualX();
+            data.secondIceCreamY = secondIceCream.getVisualY();
+            data.secondIceCreamFlavor = secondIceCream.getFlavor().toLowerCase();
+            data.secondIceCreamDirection = secondIceCream.getCurrentDirection().toString().toLowerCase();
+            data.secondIceCreamAction = secondIceCream.getCurrentAction();
+            data.secondIceCreamAlive = secondIceCream.isAlive();
+        }
+
+        // Enemigos
+        data.enemies = new java.util.ArrayList<>();
+        for (Enemy enemy : board.getEnemies()) {
+            if (enemy != null) {
+                ViewData.EnemyView enemyData = new ViewData.EnemyView();
+                enemyData.x = enemy.getVisualX();
+                enemyData.y = enemy.getVisualY();
+                enemyData.type = enemy.getEnemyType().toLowerCase();
+                enemyData.direction = enemy.getCurrentDirection().toString().toLowerCase();
+                enemyData.action = enemy.getCurrentAction();
+                if (enemy.getColor() != null) {
+                    enemyData.color = String.format("#%06X", enemy.getColor().getRGB() & 0xFFFFFF);
+                }
+                enemyData.alive = enemy.isAlive();
+                data.enemies.add(enemyData);
+            }
+        }
+
+        // Frutas
+        data.fruits = new java.util.ArrayList<>();
+        for (Fruit fruit : board.getFruits()) {
+            ViewData.FruitView fruitData = new ViewData.FruitView();
+            Position pos = fruit.getPosition();
+            fruitData.x = pos.getX();
+            fruitData.y = pos.getY();
+            fruitData.type = fruit.getFruitType().toLowerCase();
+            fruitData.collected = fruit.isCollected();
+            fruitData.visualState = fruit.getVisualState();
+            data.fruits.add(fruitData);
+        }
+
+        // Bloques de hielo
+        data.iceBlocks = new java.util.ArrayList<>();
+        for (IceBlock block : board.getIceBlocks()) {
+            ViewData.PositionView iceBlockData = new ViewData.PositionView();
+            Position pos = block.getPosition();
+            iceBlockData.x = pos.getX();
+            iceBlockData.y = pos.getY();
+            data.iceBlocks.add(iceBlockData);
+        }
+
+        // Muros
+        data.walls = new java.util.ArrayList<>();
+        for (Position pos : board.getWalls()) {
+            data.walls.add(new ViewData.PositionView(pos.getX(), pos.getY()));
+        }
+
+        return data;
+    }
 }

@@ -1,7 +1,5 @@
 package Presentation;
 
-import Domain.IceCreamAIStrategyManager;
-
 import javax.swing.*;
 import java.awt.*;
 import java.io.File;
@@ -10,8 +8,7 @@ import java.io.File;
  * Menú para seleccionar la estrategia de IA del helado en modo MVM
  * 
  * RESTRICCIONES MVC:
- * - ✅ Puede LEER de Domain (IceCreamAIStrategyManager) para obtener estrategias
- * disponibles
+ * - ✅ NO importa Domain - Usa Strings para estrategias
  * - ❌ NUNCA puede MODIFICAR Domain
  * - Solo obtiene lista de estrategias y notifica selección a través de
  * callbacks
@@ -64,8 +61,8 @@ public class SelectIceCreamAI extends JFrame {
         panelFondo.add(titulo);
         panelFondo.add(Box.createVerticalStrut(40));
 
-        // Obtener estrategias disponibles
-        String[] strategies = IceCreamAIStrategyManager.getAvailableStrategies();
+        // Estrategias de IA disponibles (hardcodeadas para no depender de Domain)
+        String[] strategies = { "EXPERT", "HUNGRY", "FEARFUL" };
 
         // Crear botones para cada estrategia
         for (String strategy : strategies) {

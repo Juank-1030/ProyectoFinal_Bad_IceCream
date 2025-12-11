@@ -1,6 +1,5 @@
 package Presentation;
 
-import Domain.PVPMode;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
@@ -12,7 +11,7 @@ import java.io.File;
  * Opciones: Helado vs Monstruo o Helado Cooperativo
  * 
  * RESTRICCIONES MVC:
- * - ✅ Puede LEER de Domain (PVPMode enum) solo para valores de opciones
+ * - ✅ NO importa Domain - Usa Strings para representar modos
  * - ❌ NUNCA puede MODIFICAR Domain
  * - Solo notifica selección a través de callbacks
  */
@@ -126,19 +125,19 @@ public class SelectPVPMode extends JFrame {
         panel.setPreferredSize(new Dimension(600, 220));
 
         // Botón Helado vs Monstruo (IZQUIERDA)
-        JPanel botonVsMonstruo = crearBotonConImagen("vs_monster", PVPMode.ICE_CREAM_VS_MONSTER);
+        JPanel botonVsMonstruo = crearBotonConImagen("vs_monster", "ICE_CREAM_VS_MONSTER");
         botonVsMonstruo.setBounds(20, 6, 280, 200);
         panel.add(botonVsMonstruo);
 
         // Botón Helado Cooperativo (DERECHA)
-        JPanel botonCoop = crearBotonConImagen("coop", PVPMode.ICE_CREAM_COOPERATIVE);
+        JPanel botonCoop = crearBotonConImagen("coop", "ICE_CREAM_COOPERATIVE");
         botonCoop.setBounds(280, 25, 280, 200);
         panel.add(botonCoop);
 
         return panel;
     }
 
-    private JPanel crearBotonConImagen(String imagenKey, PVPMode modo) {
+    private JPanel crearBotonConImagen(String imagenKey, String modo) {
         JPanel panelBoton = new JPanel();
         panelBoton.setLayout(new BorderLayout());
         panelBoton.setOpaque(false);
@@ -185,9 +184,9 @@ public class SelectPVPMode extends JFrame {
             labelImagen.addMouseListener(new MouseAdapter() {
                 @Override
                 public void mouseClicked(MouseEvent e) {
-                    if (modo == PVPMode.ICE_CREAM_VS_MONSTER && onIceCreamVsMonsterClick != null) {
+                    if ("ICE_CREAM_VS_MONSTER".equals(modo) && onIceCreamVsMonsterClick != null) {
                         onIceCreamVsMonsterClick.run();
-                    } else if (modo == PVPMode.ICE_CREAM_COOPERATIVE && onIceCreamCooperativeClick != null) {
+                    } else if ("ICE_CREAM_COOPERATIVE".equals(modo) && onIceCreamCooperativeClick != null) {
                         onIceCreamCooperativeClick.run();
                     }
                 }
@@ -197,7 +196,7 @@ public class SelectPVPMode extends JFrame {
         } else {
             // Fallback: mostrar texto si no encuentra la imagen
             JLabel labelTexto = new JLabel(
-                    modo == PVPMode.ICE_CREAM_VS_MONSTER ? "Helado vs Monstruo" : "Helado Cooperativo");
+                    "ICE_CREAM_VS_MONSTER".equals(modo) ? "Helado vs Monstruo" : "Helado Cooperativo");
             labelTexto.setForeground(Color.WHITE);
             labelTexto.setFont(new Font("Arial", Font.BOLD, 16));
             labelTexto.setHorizontalAlignment(SwingConstants.CENTER);

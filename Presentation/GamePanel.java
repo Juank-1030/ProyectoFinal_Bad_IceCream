@@ -1,7 +1,7 @@
 package Presentation;
 
 import Controller.GameController;
-import Domain.*;
+import Controller.ViewData;
 
 import javax.swing.*;
 import java.awt.*;
@@ -18,14 +18,16 @@ import java.util.Map;
  * - Mostrar mensajes (pausa, victoria, derrota)
  * 
  * RESTRICCIONES MVC:
- * - ✅ Puede LEER de Domain (Game, Board, etc.) para renderizar
- * - ❌ NUNCA puede MODIFICAR Domain
+ * - ✅ Puede LEER ViewData del Controller para renderizar
+ * - ❌ NUNCA accede a Domain directamente
+ * - ❌ NUNCA puede MODIFICAR estado de juego
  * - ❌ NO tiene lógica de juego (eso está en GameController)
  * - ❌ NO captura eventos de teclado (eso está en GameController)
  * 
- * PATRÓN: View Read-Only
- * GamePanel importa Domain solo para lectura de datos necesarios
- * para el renderizado. Toda modificación de estado pasa por Controller.
+ * PATRÓN: Clean MVC
+ * GamePanel importa ViewData del Controller, no Domain.
+ * Toda modificación de estado pasa por Controller.
+ * La View está completamente desacoplada de la lógica de negocio.
  */
 public class GamePanel extends JPanel {
 
@@ -127,9 +129,9 @@ public class GamePanel extends JPanel {
      * Maneja los clics del mouse para detectar botones
      */
     private void handleMouseClick(java.awt.event.MouseEvent e) {
-        Game game = controller.getGame();
+        ViewData viewData = controller.getViewData();
 
-        if (game != null && (game.getGameState() == GameState.PLAYING)) {
+        if (viewData != null && "PLAYING".equals(viewData.gameState)) {
             int buttonX = getWidth() - BUTTON_WIDTH - BUTTON_MARGIN;
             int buttonY = BUTTON_MARGIN;
 
@@ -141,7 +143,7 @@ public class GamePanel extends JPanel {
             }
         }
 
-        if (game != null && game.getGameState() == GameState.PAUSED) {
+        if (viewData != null && "PAUSED".equals(viewData.gameState)) {
             detectPauseButtonClick(e);
         }
     }
@@ -200,11 +202,10 @@ public class GamePanel extends JPanel {
      * Actualiza el tamaño del panel según el tamaño del tablero
      */
     private void updatePanelSize() {
-        Game game = controller.getGame();
-        if (game != null && game.getBoard() != null) {
-            Board board = game.getBoard();
-            int width = board.getWidth() * CELL_SIZE;
-            int height = board.getHeight() * CELL_SIZE + UI_HEIGHT + FRUIT_PANEL_HEIGHT;
+        ViewData viewData = controller.getViewData();
+        if (viewData != null && viewData.boardWidth > 0 && viewData.boardHeight > 0) {
+            int width = viewData.boardWidth * CELL_SIZE;
+            int height = viewData.boardHeight * CELL_SIZE + UI_HEIGHT + FRUIT_PANEL_HEIGHT;
             setPreferredSize(new Dimension(width, height));
         } else {
             setPreferredSize(new Dimension(600, 620));
@@ -215,85 +216,61 @@ public class GamePanel extends JPanel {
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
 
-        Game game = controller.getGame();
-        if (game == null) {
+        // Obtener ViewData del controller (no Domain directamente)
+        ViewData viewData = controller.getViewData();
+        if (viewData == null || viewData.boardWidth == 0) {
             drawMessage(g, "Cargando.. .");
             return;
         }
 
-        updateAllVisualPositions(game);
-
         Graphics2D g2d = (Graphics2D) g;
         g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-        GameState state = game.getGameState();
+        String state = viewData.gameState;
 
-        if (state == GameState.PLAYING || state == GameState.PAUSED) {
-            drawGame(g2d, game);
-            drawUI(g2d, game);
-            drawFruitPanel(g2d, game);
+        if ("PLAYING".equals(state) || "PAUSED".equals(state)) {
+            drawGame(g2d, viewData);
+            drawUI(g2d, viewData);
+            drawFruitPanel(g2d, viewData);
 
-            if (state == GameState.PAUSED) {
+            if ("PAUSED".equals(state)) {
                 drawPauseOverlay(g2d);
             }
-        } else if (state == GameState.WON) {
-            drawGame(g2d, game);
-            drawUI(g2d, game);
-            drawFruitPanel(g2d, game);
-            drawVictoryOverlay(g2d, game);
-        } else if (state == GameState.LOST) {
-            drawGame(g2d, game);
-            drawUI(g2d, game);
-            drawFruitPanel(g2d, game);
-            drawGameOverOverlay(g2d, game);
-        }
-    }
-
-    /**
-     * Actualiza las posiciones visuales de todos los objetos
-     */
-    private void updateAllVisualPositions(Game game) {
-        Board board = game.getBoard();
-
-        if (board.getIceCream() != null) {
-            board.getIceCream().updateVisualPosition();
-        }
-
-        if (board.getSecondIceCream() != null) {
-            board.getSecondIceCream().updateVisualPosition();
-        }
-
-        for (Enemy enemy : board.getEnemies()) {
-            if (enemy != null) {
-                enemy.updateVisualPosition();
-            }
+        } else if ("WON".equals(state)) {
+            drawGame(g2d, viewData);
+            drawUI(g2d, viewData);
+            drawFruitPanel(g2d, viewData);
+            drawVictoryOverlay(g2d, viewData);
+        } else if ("LOST".equals(state)) {
+            drawGame(g2d, viewData);
+            drawUI(g2d, viewData);
+            drawFruitPanel(g2d, viewData);
+            drawGameOverOverlay(g2d, viewData);
         }
     }
 
     /**
      * Dibuja el juego completo (tablero y entidades)
      */
-    private void drawGame(Graphics2D g, Game game) {
-        Board board = game.getBoard();
-
-        drawGrid(g, board);
-        drawFruits(g, board);
-        drawWalls(g, board);
-        drawIceBlocks(g, board);
-        drawEnemies(g, board);
-        drawIceCream(g, board);
-        drawSecondIceCream(g, board);
+    private void drawGame(Graphics2D g, ViewData viewData) {
+        drawGrid(g, viewData);
+        drawFruits(g, viewData);
+        drawWalls(g, viewData);
+        drawIceBlocks(g, viewData);
+        drawEnemies(g, viewData);
+        drawIceCream(g, viewData);
+        drawSecondIceCream(g, viewData);
     }
 
     /**
      * Dibuja la cuadrícula del tablero
      */
-    private void drawGrid(Graphics2D g, Board board) {
+    private void drawGrid(Graphics2D g, ViewData viewData) {
         Image mapBackground = ImageLoader.getMapBackground();
 
         if (mapBackground != null) {
-            int width = board.getWidth() * CELL_SIZE;
-            int height = board.getHeight() * CELL_SIZE;
+            int width = viewData.boardWidth * CELL_SIZE;
+            int height = viewData.boardHeight * CELL_SIZE;
             g.drawImage(mapBackground, 0, UI_HEIGHT, width, height, null);
         }
     }
@@ -301,13 +278,12 @@ public class GamePanel extends JPanel {
     /**
      * Dibuja los bloques de hielo
      */
-    private void drawIceBlocks(Graphics2D g, Board board) {
-        List<IceBlock> iceBlocks = board.getIceBlocks();
+    private void drawIceBlocks(Graphics2D g, ViewData viewData) {
+        List<ViewData.PositionView> iceBlocks = viewData.iceBlocks;
 
-        for (IceBlock block : iceBlocks) {
-            Position pos = block.getPosition();
-            int x = pos.getX() * CELL_SIZE;
-            int y = pos.getY() * CELL_SIZE + UI_HEIGHT;
+        for (ViewData.PositionView block : iceBlocks) {
+            int x = block.x * CELL_SIZE;
+            int y = block.y * CELL_SIZE + UI_HEIGHT;
 
             Image iceSprite = ImageLoader.getIceBlockSprite("static");
 
@@ -327,12 +303,12 @@ public class GamePanel extends JPanel {
     /**
      * Dibuja los muros indestructibles (bordes del nivel)
      */
-    private void drawWalls(Graphics2D g, Board board) {
-        List<Position> walls = board.getWalls();
+    private void drawWalls(Graphics2D g, ViewData viewData) {
+        List<ViewData.PositionView> walls = viewData.walls;
 
-        for (Position pos : walls) {
-            int x = pos.getX() * CELL_SIZE;
-            int y = pos.getY() * CELL_SIZE + UI_HEIGHT;
+        for (ViewData.PositionView pos : walls) {
+            int x = pos.x * CELL_SIZE;
+            int y = pos.y * CELL_SIZE + UI_HEIGHT;
 
             // Dibujar muro gris
             g.setColor(COLOR_WALL);
@@ -346,16 +322,15 @@ public class GamePanel extends JPanel {
     /**
      * Dibuja las frutas
      */
-    private void drawFruits(Graphics2D g, Board board) {
-        List<Fruit> fruits = board.getFruits();
+    private void drawFruits(Graphics2D g, ViewData viewData) {
+        List<ViewData.FruitView> fruits = viewData.fruits;
 
-        for (Fruit fruit : fruits) {
-            if (!fruit.isCollected()) {
-                Position pos = fruit.getPosition();
-                int x = pos.getX() * CELL_SIZE;
-                int y = pos.getY() * CELL_SIZE + UI_HEIGHT;
+        for (ViewData.FruitView fruit : fruits) {
+            if (!fruit.collected) {
+                int x = fruit.x * CELL_SIZE;
+                int y = fruit.y * CELL_SIZE + UI_HEIGHT;
 
-                String fruitType = fruit.getFruitType().toLowerCase();
+                String fruitType = fruit.type.toLowerCase();
                 String spriteType;
                 switch (fruitType) {
                     case "uvas":
@@ -380,7 +355,7 @@ public class GamePanel extends JPanel {
                         spriteType = fruitType;
                 }
 
-                String visualState = fruit.getVisualState();
+                String visualState = fruit.visualState;
                 Image fruitSprite = ImageLoader.getFruitSprite(spriteType, visualState);
 
                 if (fruitSprite != null) {
@@ -419,19 +394,19 @@ public class GamePanel extends JPanel {
     /**
      * Dibuja los enemigos
      */
-    private void drawEnemies(Graphics2D g, Board board) {
-        List<Enemy> enemies = board.getEnemies();
+    private void drawEnemies(Graphics2D g, ViewData viewData) {
+        List<ViewData.EnemyView> enemies = viewData.enemies;
 
         for (int i = 0; i < enemies.size(); i++) {
-            Enemy enemy = enemies.get(i);
-            if (enemy.isAlive()) {
-                float visualX = enemy.getVisualX();
-                float visualY = enemy.getVisualY();
+            ViewData.EnemyView enemy = enemies.get(i);
+            if (enemy.alive) {
+                float visualX = enemy.x;
+                float visualY = enemy.y;
 
                 int x = (int) (visualX * CELL_SIZE);
                 int y = (int) (visualY * CELL_SIZE) + UI_HEIGHT;
 
-                String enemyType = enemy.getEnemyType().toLowerCase();
+                String enemyType = enemy.type.toLowerCase();
                 String spriteType;
                 switch (enemyType) {
                     case "troll":
@@ -452,9 +427,8 @@ public class GamePanel extends JPanel {
                         spriteType = "troll";
                 }
 
-                String action = enemy.getCurrentAction();
-                Direction direction = enemy.getCurrentDirection();
-                String dirStr = direction.toString().toLowerCase();
+                String action = enemy.action;
+                String dirStr = enemy.direction;
 
                 Image enemySprite = ImageLoader.getMonsterSprite(spriteType, action, dirStr);
 
@@ -463,7 +437,8 @@ public class GamePanel extends JPanel {
                 } else {
                     int rectX = x + 5;
                     int rectY = y + 5;
-                    Color color = enemy.getColor() != null ? enemy.getColor() : Color.RED;
+                    Color color = enemy.color != null && !enemy.color.isEmpty() ? parseColorFromString(enemy.color)
+                            : Color.RED;
                     g.setColor(color);
                     g.fillRect(rectX, rectY, CELL_SIZE - 10, CELL_SIZE - 10);
                     g.setColor(color.darker());
@@ -477,17 +452,15 @@ public class GamePanel extends JPanel {
     /**
      * Dibuja el helado
      */
-    private void drawIceCream(Graphics2D g, Board board) {
-        IceCream iceCream = board.getIceCream();
-
-        if (iceCream != null && iceCream.isAlive()) {
-            float visualX = iceCream.getVisualX();
-            float visualY = iceCream.getVisualY();
+    private void drawIceCream(Graphics2D g, ViewData viewData) {
+        if (viewData.iceCreamAlive) {
+            float visualX = viewData.iceCreamX;
+            float visualY = viewData.iceCreamY;
 
             int x = (int) (visualX * CELL_SIZE);
             int y = (int) (visualY * CELL_SIZE) + UI_HEIGHT;
 
-            String flavor = iceCream.getFlavor().toLowerCase();
+            String flavor = viewData.iceCreamFlavor.toLowerCase();
             String spriteFlavor;
             switch (flavor) {
                 case "vainilla":
@@ -503,9 +476,8 @@ public class GamePanel extends JPanel {
                     spriteFlavor = "vainillia";
             }
 
-            String action = iceCream.getCurrentAction();
-            Direction direction = iceCream.getCurrentDirection();
-            String dirStr = direction.toString().toLowerCase();
+            String action = viewData.iceCreamAction;
+            String dirStr = viewData.iceCreamDirection;
 
             Image iceCreamSprite = ImageLoader.getIceCreamSprite(spriteFlavor, action, dirStr);
 
@@ -544,17 +516,15 @@ public class GamePanel extends JPanel {
     /**
      * Dibuja el segundo helado (modo cooperativo)
      */
-    private void drawSecondIceCream(Graphics2D g, Board board) {
-        IceCream secondIceCream = board.getSecondIceCream();
-
-        if (secondIceCream != null && secondIceCream.isAlive()) {
-            float visualX = secondIceCream.getVisualX();
-            float visualY = secondIceCream.getVisualY();
+    private void drawSecondIceCream(Graphics2D g, ViewData viewData) {
+        if (viewData.secondIceCreamAlive) {
+            float visualX = viewData.secondIceCreamX;
+            float visualY = viewData.secondIceCreamY;
 
             int x = (int) (visualX * CELL_SIZE);
             int y = (int) (visualY * CELL_SIZE) + UI_HEIGHT;
 
-            String flavor = secondIceCream.getFlavor().toLowerCase();
+            String flavor = viewData.secondIceCreamFlavor.toLowerCase();
             String spriteFlavor;
             switch (flavor) {
                 case "vainilla":
@@ -570,9 +540,8 @@ public class GamePanel extends JPanel {
                     spriteFlavor = "vainillia";
             }
 
-            String action = secondIceCream.getCurrentAction();
-            Direction direction = secondIceCream.getCurrentDirection();
-            String dirStr = direction.toString().toLowerCase();
+            String action = viewData.secondIceCreamAction;
+            String dirStr = viewData.secondIceCreamDirection;
 
             Image iceCreamSprite = ImageLoader.getIceCreamSprite(spriteFlavor, action, dirStr);
 
@@ -611,27 +580,25 @@ public class GamePanel extends JPanel {
     /**
      * Dibuja la interfaz de usuario (puntos, tiempo, vidas)
      */
-    private void drawUI(Graphics2D g, Game game) {
+    private void drawUI(Graphics2D g, ViewData viewData) {
         g.setColor(new Color(50, 50, 50));
         g.fillRect(0, 0, getWidth(), UI_HEIGHT);
 
         g.setColor(Color.WHITE);
         g.setFont(new Font("Arial", Font.BOLD, 20));
 
-        g.drawString("PUNTOS: " + game.getScore(), 20, 35);
+        g.drawString("PUNTOS: " + viewData.score, 20, 35);
 
-        int minutes = game.getRemainingTime() / 60;
-        int seconds = game.getRemainingTime() % 60;
+        int minutes = viewData.remainingTime / 60;
+        int seconds = viewData.remainingTime % 60;
         String timeStr = String.format("TIEMPO: %02d:%02d", minutes, seconds);
         g.drawString(timeStr, 20, 65);
 
-        if (game.getCurrentLevel() != null) {
-            g.drawString("NIVEL: " + game.getCurrentLevel().getLevelNumber(), 250, 65);
-        }
+        g.drawString("NIVEL: " + viewData.currentLevel, 250, 65);
 
-        g.drawString("FRUTAS: " + game.getBoard().getRemainingFruits(), 450, 35);
+        g.drawString("FRUTAS: " + viewData.remainingFruits, 450, 35);
 
-        if (game.getGameMode() == GameMode.PVP) {
+        if ("PVP".equals(viewData.gameMode)) {
             g.setFont(new Font("Arial", Font.PLAIN, 14));
             g.setColor(new Color(173, 216, 230));
             g.drawString("P1 (Helado): W/A/S/D", 650, 35);
@@ -646,12 +613,9 @@ public class GamePanel extends JPanel {
     /**
      * Dibuja el panel inferior de frutas
      */
-    private void drawFruitPanel(Graphics2D g, Game game) {
-        Board board = game.getBoard();
-        List<Fruit> fruits = board.getFruits();
-
-        int panelY = board.getHeight() * CELL_SIZE + UI_HEIGHT;
-        int panelWidth = board.getWidth() * CELL_SIZE;
+    private void drawFruitPanel(Graphics2D g, ViewData viewData) {
+        int panelY = viewData.boardHeight * CELL_SIZE + UI_HEIGHT;
+        int panelWidth = viewData.boardWidth * CELL_SIZE;
 
         // Fondo
         g.setColor(FRUIT_PANEL_BG);
@@ -669,9 +633,9 @@ public class GamePanel extends JPanel {
         g.drawString("FRUTAS DEL NIVEL:", 10, panelY + 22);
 
         // Agrupar frutas por tipo
-        java.util.Map<String, java.util.List<Fruit>> fruitsByType = new java.util.LinkedHashMap<>();
-        for (Fruit fruit : fruits) {
-            String type = fruit.getFruitType();
+        java.util.Map<String, java.util.List<ViewData.FruitView>> fruitsByType = new java.util.LinkedHashMap<>();
+        for (ViewData.FruitView fruit : viewData.fruits) {
+            String type = fruit.type;
             fruitsByType.putIfAbsent(type, new java.util.ArrayList<>());
             fruitsByType.get(type).add(fruit);
         }
@@ -681,9 +645,9 @@ public class GamePanel extends JPanel {
         int currentX = startX;
         int iconY = panelY + 35;
 
-        for (java.util.Map.Entry<String, java.util.List<Fruit>> entry : fruitsByType.entrySet()) {
+        for (java.util.Map.Entry<String, java.util.List<ViewData.FruitView>> entry : fruitsByType.entrySet()) {
             String fruitType = entry.getKey();
-            java.util.List<Fruit> fruitsOfType = entry.getValue();
+            java.util.List<ViewData.FruitView> fruitsOfType = entry.getValue();
 
             String spriteType;
             switch (fruitType.toLowerCase()) {
@@ -703,7 +667,7 @@ public class GamePanel extends JPanel {
                     spriteType = fruitType;
             }
 
-            for (Fruit fruit : fruitsOfType) {
+            for (ViewData.FruitView fruit : fruitsOfType) {
                 if (currentX + FRUIT_ICON_SIZE > panelWidth - 200) {
                     break;
                 }
@@ -711,7 +675,7 @@ public class GamePanel extends JPanel {
                 Image fruitSprite = ImageLoader.getFruitSprite(spriteType, "normal");
 
                 if (fruitSprite != null) {
-                    if (fruit.isCollected()) {
+                    if (fruit.collected) {
                         g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.3F));
                         g.drawImage(fruitSprite, currentX, iconY, FRUIT_ICON_SIZE, FRUIT_ICON_SIZE, null);
                         g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1.0F));
@@ -741,14 +705,14 @@ public class GamePanel extends JPanel {
                             color = Color.MAGENTA;
                     }
 
-                    if (fruit.isCollected()) {
+                    if (fruit.collected) {
                         g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.3F));
                     }
 
                     g.setColor(color);
                     g.fillOval(currentX + 6, iconY + 6, 16, 16);
 
-                    if (fruit.isCollected()) {
+                    if (fruit.collected) {
                         g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1.0F));
                     }
                 }
@@ -760,10 +724,10 @@ public class GamePanel extends JPanel {
         }
 
         // Contador de progreso
-        int totalFruits = fruits.size();
+        int totalFruits = viewData.fruits.size();
         int collectedFruits = 0;
-        for (Fruit fruit : fruits) {
-            if (fruit.isCollected()) {
+        for (ViewData.FruitView fruit : viewData.fruits) {
+            if (fruit.collected) {
                 collectedFruits++;
             }
         }
@@ -1006,7 +970,7 @@ public class GamePanel extends JPanel {
     /**
      * Dibuja overlay de victoria
      */
-    private void drawVictoryOverlay(Graphics2D g, Game game) {
+    private void drawVictoryOverlay(Graphics2D g, ViewData viewData) {
         g.setColor(new Color(0, 100, 0, 180));
         g.fillRect(0, 0, getWidth(), getHeight());
 
@@ -1021,7 +985,7 @@ public class GamePanel extends JPanel {
         g.drawString(msg, x, y);
 
         g.setFont(new Font("Arial", Font.BOLD, 24));
-        msg = "Puntuación: " + game.getScore();
+        msg = "Puntuación: " + viewData.score;
         fm = g.getFontMetrics();
         x = (getWidth() - fm.stringWidth(msg)) / 2;
         g.drawString(msg, x, y + 60);
@@ -1030,7 +994,7 @@ public class GamePanel extends JPanel {
     /**
      * Dibuja overlay de game over
      */
-    private void drawGameOverOverlay(Graphics2D g, Game game) {
+    private void drawGameOverOverlay(Graphics2D g, ViewData viewData) {
         g.setColor(new Color(100, 0, 0, 180));
         g.fillRect(0, 0, getWidth(), getHeight());
 
@@ -1045,7 +1009,7 @@ public class GamePanel extends JPanel {
         g.drawString(msg, x, y);
 
         g.setFont(new Font("Arial", Font.BOLD, 24));
-        msg = "Puntuación final: " + game.getScore();
+        msg = "Puntuación final: " + viewData.score;
         fm = g.getFontMetrics();
         x = (getWidth() - fm.stringWidth(msg)) / 2;
         g.drawString(msg, x, y + 60);
@@ -1084,6 +1048,28 @@ public class GamePanel extends JPanel {
         g2d.dispose();
 
         return buffered;
+    }
+
+    /**
+     * Convierte una cadena de color hexadecimal a Color
+     * Ejemplo: "#FF0000" → Color.RED
+     */
+    private Color parseColorFromString(String colorStr) {
+        try {
+            if (colorStr == null || colorStr.isEmpty()) {
+                return Color.RED;
+            }
+
+            if (colorStr.startsWith("#")) {
+                return Color.decode(colorStr);
+            } else if (colorStr.startsWith("0x")) {
+                return Color.decode(colorStr);
+            } else {
+                return Color.RED;
+            }
+        } catch (NumberFormatException e) {
+            return Color.RED;
+        }
     }
 
     // ========================================
