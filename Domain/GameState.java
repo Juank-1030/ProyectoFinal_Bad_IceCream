@@ -8,8 +8,7 @@ public enum GameState {
     PLAYING("Jugando"),
     PAUSED("Pausado"),
     WON("Victoria"),
-    LOST("Derrota"),
-    GAME_OVER("Fin del Juego");
+    LOST("Derrota");
 
     private final String description;
 

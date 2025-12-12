@@ -35,27 +35,11 @@ public class GameException extends Exception {
     private ErrorCode errorCode;
 
     /**
-     * Constructor con mensaje
-     */
-    public GameException(String message) {
-        super(message);
-        this.errorCode = ErrorCode.GAMEPLAY_ERROR;
-    }
-
-    /**
      * Constructor con mensaje y código de error
      */
     public GameException(String message, ErrorCode errorCode) {
         super(message);
         this.errorCode = errorCode;
-    }
-
-    /**
-     * Constructor con mensaje y causa
-     */
-    public GameException(String message, Throwable cause) {
-        super(message, cause);
-        this.errorCode = ErrorCode.GAMEPLAY_ERROR;
     }
 
     /**
