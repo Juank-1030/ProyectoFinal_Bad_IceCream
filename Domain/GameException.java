@@ -11,14 +11,9 @@ public class GameException extends Exception {
      * Código de error para categorización
      */
     public enum ErrorCode {
-        INVALID_POSITION("Posición inválida"),
-        INVALID_MOVEMENT("Movimiento inválido"),
-        ENTITY_NOT_FOUND("Entidad no encontrada"),
         LEVEL_LOAD_ERROR("Error al cargar nivel"),
-        BOARD_INITIALIZATION_ERROR("Error al inicializar tablero"),
         SAVE_ERROR("Error al guardar partida"),
         LOAD_ERROR("Error al cargar partida"),
-        CONFIGURATION_ERROR("Error de configuración"),
         GAMEPLAY_ERROR("Error durante el juego");
 
         private final String description;
