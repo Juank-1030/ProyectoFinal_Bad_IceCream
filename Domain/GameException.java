@@ -61,10 +61,10 @@ public class GameException extends Exception {
      * Obtiene un mensaje detallado del error
      */
     public String getDetailedMessage() {
-        return String.format("[%s] %s: %s", 
-            errorCode.name(), 
-            errorCode.getDescription(), 
-            getMessage());
+        return String.format("[%s] %s: %s",
+                errorCode.name(),
+                errorCode.getDescription(),
+                getMessage());
     }
 
     @Override

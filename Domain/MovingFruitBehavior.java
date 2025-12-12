@@ -1,6 +1,5 @@
 package Domain;
 
-
 /**
  * Comportamiento para frutas que se mueven constantemente
  * Usado por Piña
@@ -8,29 +7,19 @@ package Domain;
 public class MovingFruitBehavior implements FruitBehavior {
     private static final long serialVersionUID = 1L;
 
-    private transient Board board;  // Referencia al tablero para validar movimientos
+    private transient Board board; // Referencia al tablero para validar movimientos
     private Direction currentDirection;
     private int moveCounter;
-    private int movesPerUpdate;  // Cada cuántos updates se mueve
+    private int movesPerUpdate; // Cada cuántos updates se mueve
 
     /**
-     * Constructor
-     * @param board Referencia al tablero
-     * @param initialDirection Dirección inicial de movimiento
-     * @param movesPerUpdate Velocidad (cada cuántos updates se mueve)
-     */
-    public MovingFruitBehavior(Board board, Direction initialDirection, int movesPerUpdate) {
-        this.board = board;
-        this.currentDirection = initialDirection;
-        this.movesPerUpdate = movesPerUpdate;
-        this.moveCounter = 0;
-    }
-
-    /**
-     * Constructor con valores por defecto
+     * Constructor con valores por defecto (ÚNICO USADO)
      */
     public MovingFruitBehavior(Board board) {
-        this(board, getRandomDirection(), 2);
+        this.board = board;
+        this.currentDirection = getRandomDirection();
+        this.movesPerUpdate = 2;
+        this.moveCounter = 0;
     }
 
     /**
@@ -43,9 +32,9 @@ public class MovingFruitBehavior implements FruitBehavior {
     @Override
     public Position updatePosition(Position currentPosition) {
         moveCounter++;
-        
+
         if (moveCounter < movesPerUpdate) {
-            return null;  // No se mueve en este update
+            return null; // No se mueve en este update
         }
 
         moveCounter = 0;
@@ -60,7 +49,7 @@ public class MovingFruitBehavior implements FruitBehavior {
             if (currentDirection != null) {
                 newPosition = currentPosition.move(currentDirection);
             } else {
-                return null;  // No hay movimientos válidos
+                return null; // No hay movimientos válidos
             }
         }
 
@@ -72,7 +61,7 @@ public class MovingFruitBehavior implements FruitBehavior {
      */
     private Direction findValidDirection(Position position) {
         Direction[] directions = Direction.values();
-        
+
         // Mezclar direcciones aleatoriamente
         for (int i = 0; i < directions.length; i++) {
             int randomIndex = (int) (Math.random() * directions.length);

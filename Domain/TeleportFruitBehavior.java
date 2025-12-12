@@ -9,26 +9,17 @@ import java.util.List;
 public class TeleportFruitBehavior implements FruitBehavior {
     private static final long serialVersionUID = 1L;
 
-    private transient Board board;  // Referencia al tablero
+    private transient Board board; // Referencia al tablero
     private int teleportCounter;
-    private int teleportInterval;  // Cada cuántos updates se teletransporta
+    private int teleportInterval; // Cada cuántos updates se teletransporta
 
     /**
-     * Constructor
-     * @param board Referencia al tablero
-     * @param teleportInterval Intervalo de teletransporte
-     */
-    public TeleportFruitBehavior(Board board, int teleportInterval) {
-        this.board = board;
-        this.teleportInterval = teleportInterval;
-        this.teleportCounter = 0;
-    }
-
-    /**
-     * Constructor con valor por defecto
+     * Constructor con valor por defecto (ÚNICO USADO)
      */
     public TeleportFruitBehavior(Board board) {
-        this(board, 30);  // Se teletransporta cada 30 updates
+        this.board = board;
+        this.teleportInterval = 30; // Se teletransporta cada 30 updates
+        this.teleportCounter = 0;
     }
 
     /**
@@ -43,7 +34,7 @@ public class TeleportFruitBehavior implements FruitBehavior {
         teleportCounter++;
 
         if (teleportCounter < teleportInterval) {
-            return null;  // No se teletransporta aún
+            return null; // No se teletransporta aún
         }
 
         teleportCounter = 0;
@@ -57,7 +48,7 @@ public class TeleportFruitBehavior implements FruitBehavior {
             }
         }
 
-        return null;  // No hay posiciones disponibles
+        return null; // No hay posiciones disponibles
     }
 
     @Override
