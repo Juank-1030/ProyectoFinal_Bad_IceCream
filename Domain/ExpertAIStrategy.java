@@ -66,10 +66,11 @@ public class ExpertAIStrategy implements IceCreamAIStrategy {
             return exploreDir;
         }
 
-        // FALLBACK: Cualquier dirección válida
+        // FALLBACK: Cualquier dirección válida o con hielo
         Direction[] allDirs = { Direction.UP, Direction.DOWN, Direction.LEFT, Direction.RIGHT };
         for (Direction dir : allDirs) {
-            if (board.isValidPosition(currentPos.move(dir))) {
+            Position nextPos = currentPos.move(dir);
+            if (board.isInBounds(nextPos) && (board.isValidPosition(nextPos) || board.hasIceBlock(nextPos))) {
                 return dir;
             }
         }
@@ -129,8 +130,10 @@ public class ExpertAIStrategy implements IceCreamAIStrategy {
 
         for (Direction dir : attempts) {
             Position nextPos = from.move(dir);
-            if (board.isValidPosition(nextPos)) {
-                return dir;
+            if (board.isInBounds(nextPos)) {
+                if (board.isValidPosition(nextPos) || board.hasIceBlock(nextPos)) {
+                    return dir;
+                }
             }
         }
         return null;
@@ -144,8 +147,10 @@ public class ExpertAIStrategy implements IceCreamAIStrategy {
 
         for (Direction dir : attempts) {
             Position nextPos = from.move(dir);
-            if (board.isValidPosition(nextPos)) {
-                return dir;
+            if (board.isInBounds(nextPos)) {
+                if (board.isValidPosition(nextPos) || board.hasIceBlock(nextPos)) {
+                    return dir;
+                }
             }
         }
         return null;
