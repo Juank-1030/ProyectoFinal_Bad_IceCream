@@ -16,7 +16,7 @@ public class FearfulAIStrategy implements IceCreamAIStrategy {
         List<Enemy> enemies = board.getEnemies();
 
         // PRIORIDAD 1: Si hay enemigos cercanos, HUIR
-        if (!enemies.isEmpty()) {
+        if (enemies != null && !enemies.isEmpty()) {
             Enemy closestEnemy = null;
             double minDistance = Double.MAX_VALUE;
 
@@ -57,7 +57,15 @@ public class FearfulAIStrategy implements IceCreamAIStrategy {
             }
         }
 
-        return null;
+        // ULTIMO FALLBACK: si todo está bloqueado, devolver primera dirección en rango
+        for (Direction dir : allDirs) {
+            Position nextPos = currentPos.move(dir);
+            if (board.isInBounds(nextPos)) {
+                return dir;
+            }
+        }
+
+        return Direction.DOWN; // Nunca devolver null
     }
 
     /**

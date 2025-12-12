@@ -25,10 +25,15 @@ public class ExpertAIStrategy implements IceCreamAIStrategy {
             if (fleeDir != null) {
                 return fleeDir;
             }
+            // Si no puede huir, buscar cualquier escape
+            Direction escapeDir = findAnyValidDirection(board, currentPos);
+            if (escapeDir != null) {
+                return escapeDir;
+            }
         }
 
         // PRIORIDAD 2: Si hay frutas cercanas Y REACHABLE, ir por ellas
-        if (!fruits.isEmpty()) {
+        if (fruits != null && !fruits.isEmpty()) {
             Fruit reachableFruit = getClosestReachableFruit(currentPos, fruits, board);
             if (reachableFruit != null) {
                 double fruitDistance = getDistance(currentPos, reachableFruit.getPosition());
@@ -50,7 +55,7 @@ public class ExpertAIStrategy implements IceCreamAIStrategy {
         }
 
         // PRIORIDAD 4: Ir hacia frutas lejanas REACHABLE para completar el nivel
-        if (!fruits.isEmpty()) {
+        if (fruits != null && !fruits.isEmpty()) {
             Fruit reachableFruit = getClosestReachableFruit(currentPos, fruits, board);
             if (reachableFruit != null) {
                 Direction towardFruit = getDirectionTowards(currentPos, reachableFruit.getPosition(), board);
@@ -75,7 +80,15 @@ public class ExpertAIStrategy implements IceCreamAIStrategy {
             }
         }
 
-        return null;
+        // ULTIMO FALLBACK: si todo está bloqueado, devolver primera dirección en rango
+        for (Direction dir : allDirs) {
+            Position nextPos = currentPos.move(dir);
+            if (board.isInBounds(nextPos)) {
+                return dir;
+            }
+        }
+
+        return Direction.DOWN; // Nunca devolver null
     }
 
     private Enemy getClosestEnemy(Position from, List<Enemy> enemies) {
@@ -194,6 +207,31 @@ public class ExpertAIStrategy implements IceCreamAIStrategy {
                 return dir;
             }
         }
+        return null;
+    }
+
+    /**
+     * Encuentra cualquier dirección válida o con hielo rompible
+     */
+    private Direction findAnyValidDirection(Board board, Position from) {
+        Direction[] dirs = { Direction.UP, Direction.DOWN, Direction.LEFT, Direction.RIGHT };
+        
+        // Primero intentar direcciones completamente válidas
+        for (Direction dir : dirs) {
+            Position nextPos = from.move(dir);
+            if (board.isInBounds(nextPos) && board.isValidPosition(nextPos)) {
+                return dir;
+            }
+        }
+        
+        // Si no hay válidas, intentar con hielo rompible
+        for (Direction dir : dirs) {
+            Position nextPos = from.move(dir);
+            if (board.isInBounds(nextPos) && board.hasIceBlock(nextPos)) {
+                return dir;
+            }
+        }
+        
         return null;
     }
 
