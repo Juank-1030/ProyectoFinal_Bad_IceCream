@@ -881,21 +881,21 @@ public class PresentationController {
         selectLevel.setOnLevel1Click(() -> {
             selectedLevelNumber = 1;
             selectLevel.setVisible(false);
-            mostrarConfiguracionObstaculos();
+            mostrarConfiguracionEnemigos();
         });
 
         // Callback para nivel 2
         selectLevel.setOnLevel2Click(() -> {
             selectedLevelNumber = 2;
             selectLevel.setVisible(false);
-            mostrarConfiguracionObstaculos();
+            mostrarConfiguracionEnemigos();
         });
 
         // Callback para nivel 3
         selectLevel.setOnLevel3Click(() -> {
             selectedLevelNumber = 3;
             selectLevel.setVisible(false);
-            mostrarConfiguracionObstaculos();
+            mostrarConfiguracionEnemigos();
         });
 
         // Callback para atrás
@@ -974,7 +974,6 @@ public class PresentationController {
                 selectedFruitConfig = null; // null indica usar configuración predeterminada
             }
 
-            fruitConfigMenu.setVisible(false);
             // Mostrar menú de configuración de obstáculos
             mostrarConfiguracionObstaculos();
         });
@@ -982,7 +981,7 @@ public class PresentationController {
         // Callback para atrás
         fruitConfigMenu.setOnBackClick(() -> {
             fruitConfigMenu.setVisible(false);
-            mostrarConfiguracionObstaculos();
+            mostrarConfiguracionEnemigos();
         });
     }
 

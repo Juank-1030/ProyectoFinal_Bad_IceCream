@@ -499,6 +499,13 @@ public class Board implements BoardStateProvider {
                 break;
             }
 
+            // Verificar si es baldosa caliente (derritir pero continuar)
+            if (hasBaldosaCaliente(currentPos)) {
+                System.out.println("🔥 Baldosa caliente en " + currentPos + " - continuando fila");
+                currentPos = currentPos.move(direction);
+                continue; // Saltar esta posición pero continuar la fila
+            }
+
             // Verificar si es posición válida (sin hielo, sin pared)
             if (!isValidPosition(currentPos)) {
                 // Si hay una fruta, crear bloque de hielo SOBRE la fruta
@@ -508,10 +515,13 @@ public class Board implements BoardStateProvider {
                     IceBlock newBlock = new IceBlock(currentPos, true, iceCream);
                     iceBlocks.add(newBlock);
 
-                    // Derrite si hay baldosa caliente debajo
-                    if (hasBaldosaCaliente(currentPos)) {
-                        iceBlocks.remove(newBlock);
-                        System.out.println("🔥 Baldosa caliente derritió el hielo en " + currentPos);
+                    // Si es Cactus con púas, resetear sus púas (congela y desactiva espinas)
+                    if (fruitAtPos instanceof Cactus) {
+                        Cactus cactus = (Cactus) fruitAtPos;
+                        if (cactus.isSpiky()) {
+                            cactus.resetTimerAndSpiky();
+                            System.out.println("❄️ Cactus congelado - púas desactivadas en " + currentPos);
+                        }
                     }
 
                     // Apagar fogata si hay debajo
@@ -533,12 +543,6 @@ public class Board implements BoardStateProvider {
             // Crear bloque en posición válida
             IceBlock newBlock = new IceBlock(currentPos, true, iceCream);
             iceBlocks.add(newBlock);
-
-            // Derrite si hay baldosa caliente debajo
-            if (hasBaldosaCaliente(currentPos)) {
-                iceBlocks.remove(newBlock);
-                System.out.println("🔥 Baldosa caliente derritió el hielo en " + currentPos);
-            }
 
             // Apagar fogata si hay debajo
             Fogata fogata = getFogataAt(currentPos);
@@ -578,6 +582,13 @@ public class Board implements BoardStateProvider {
                 break;
             }
 
+            // Verificar si es baldosa caliente (derritir pero continuar)
+            if (hasBaldosaCaliente(currentPos)) {
+                System.out.println("🔥 Baldosa caliente en " + currentPos + " - continuando fila");
+                currentPos = currentPos.move(direction);
+                continue; // Saltar esta posición pero continuar la fila
+            }
+
             // Verificar si es posición válida (sin hielo, sin pared)
             if (!isValidPosition(currentPos)) {
                 // Si hay una fruta, crear bloque de hielo SOBRE la fruta
@@ -587,10 +598,13 @@ public class Board implements BoardStateProvider {
                     IceBlock newBlock = new IceBlock(currentPos, true, secondIceCream);
                     iceBlocks.add(newBlock);
 
-                    // Derrite si hay baldosa caliente debajo
-                    if (hasBaldosaCaliente(currentPos)) {
-                        iceBlocks.remove(newBlock);
-                        System.out.println("🔥 Baldosa caliente derritió el hielo en " + currentPos);
+                    // Si es Cactus con púas, resetear sus púas (congela y desactiva espinas)
+                    if (fruitAtPos instanceof Cactus) {
+                        Cactus cactus = (Cactus) fruitAtPos;
+                        if (cactus.isSpiky()) {
+                            cactus.resetTimerAndSpiky();
+                            System.out.println("❄️ Cactus congelado - púas desactivadas en " + currentPos);
+                        }
                     }
 
                     // Apagar fogata si hay debajo
@@ -612,12 +626,6 @@ public class Board implements BoardStateProvider {
             // Crear bloque en posición válida
             IceBlock newBlock = new IceBlock(currentPos, true, secondIceCream);
             iceBlocks.add(newBlock);
-
-            // Derrite si hay baldosa caliente debajo
-            if (hasBaldosaCaliente(currentPos)) {
-                iceBlocks.remove(newBlock);
-                System.out.println("🔥 Baldosa caliente derritió el hielo en " + currentPos);
-            }
 
             // Apagar fogata si hay debajo
             Fogata fogata = getFogataAt(currentPos);

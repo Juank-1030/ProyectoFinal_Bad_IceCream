@@ -55,15 +55,7 @@ public class Game implements Serializable {
     private Map<String, Integer> fruitConfig; // Configuración personalizada de frutas
     private Map<String, Integer> obstacleConfig; // Configuración personalizada de obstáculos
 
-    public Game(GameMode gameMode, String iceCreamFlavor, String secondIceCreamFlavor, String monsterType) {
-        this(gameMode, iceCreamFlavor, secondIceCreamFlavor, monsterType, null, null);
-    }
-
-    public Game(GameMode gameMode, String iceCreamFlavor, String secondIceCreamFlavor, String monsterType,
-            Map<String, Integer> enemyConfig) {
-        this(gameMode, iceCreamFlavor, secondIceCreamFlavor, monsterType, enemyConfig, null);
-    }
-
+    // Constructor principal con todos los parámetros
     public Game(GameMode gameMode, String iceCreamFlavor, String secondIceCreamFlavor, String monsterType,
             Map<String, Integer> enemyConfig, Map<String, Integer> fruitConfig, Map<String, Integer> obstacleConfig) {
         this.gameMode = gameMode;
@@ -78,23 +70,6 @@ public class Game implements Serializable {
         // Sin sistema de vidas (como el juego original)
         this.enemyAIs = new ArrayList<>();
         this.lastUpdateTime = System.currentTimeMillis();
-    }
-
-    public Game(GameMode gameMode, String iceCreamFlavor, String secondIceCreamFlavor, String monsterType,
-            Map<String, Integer> enemyConfig, Map<String, Integer> fruitConfig) {
-        this(gameMode, iceCreamFlavor, secondIceCreamFlavor, monsterType, enemyConfig, fruitConfig, null);
-    }
-
-    // Constructor sin secondIceCreamFlavor (retrocompatibilidad para Helado vs
-    // Monstruo)
-    public Game(GameMode gameMode, String iceCreamFlavor, String monsterType) {
-        this(gameMode, iceCreamFlavor, null, monsterType);
-    }
-
-    // Constructor antiguo (retrocompatibilidad)
-    @Deprecated
-    public Game(GameMode gameMode, String iceCreamFlavor) {
-        this(gameMode, iceCreamFlavor, null, null);
     }
 
     /**
@@ -720,6 +695,26 @@ public class Game implements Serializable {
             }
         }
 
+        // Verificar contacto con Baldosa Caliente
+        for (BaldosaCaliente baldosa : board.getBaldosasCalientes()) {
+            IceCream iceCream = board.getIceCream();
+            if (iceCream != null && iceCream.getPosition().equals(baldosa.getPosition())) {
+                iceCream.setAlive(false);
+                gameState = GameState.LOST;
+                System.out.println("🔥 ¡El helado entró en contacto con una Baldosa Caliente!");
+                return;
+            }
+
+            // Verificar segundo helado si existe
+            IceCream secondIceCream = board.getSecondIceCream();
+            if (secondIceCream != null && secondIceCream.getPosition().equals(baldosa.getPosition())) {
+                secondIceCream.setAlive(false);
+                gameState = GameState.LOST;
+                System.out.println("🔥 ¡El segundo helado entró en contacto con una Baldosa Caliente!");
+                return;
+            }
+        }
+
         // Verificar si recogió todas las frutas
         if (board.getRemainingFruits() == 0) {
             gameState = GameState.WON;
@@ -741,6 +736,17 @@ public class Game implements Serializable {
         if (moved) {
             Fruit fruit = board.getAndClearLastCollectedFruit();
             if (fruit != null) {
+                // Verificar si es Cactus con púas (instancia peligrosa)
+                if (fruit instanceof Cactus) {
+                    Cactus cactus = (Cactus) fruit;
+                    if (cactus.isSpiky()) {
+                        // El helado muere al intentar recolectar Cactus con púas
+                        board.getIceCream().setAlive(false);
+                        gameState = GameState.LOST;
+                        System.out.println("🌵 ¡El helado fue pinchado por el Cactus espinudo!");
+                        return false;
+                    }
+                }
                 score += 50; // Todas las frutas valen 50 puntos
             }
         }
@@ -761,6 +767,17 @@ public class Game implements Serializable {
         if (moved) {
             Fruit fruit = board.getAndClearLastCollectedFruit();
             if (fruit != null) {
+                // Verificar si es Cactus con púas (instancia peligrosa)
+                if (fruit instanceof Cactus) {
+                    Cactus cactus = (Cactus) fruit;
+                    if (cactus.isSpiky()) {
+                        // El segundo helado muere al intentar recolectar Cactus con púas
+                        board.getSecondIceCream().setAlive(false);
+                        gameState = GameState.LOST;
+                        System.out.println("🌵 ¡El segundo helado fue pinchado por el Cactus espinudo!");
+                        return false;
+                    }
+                }
                 score += 50;
             }
         }
@@ -796,29 +813,6 @@ public class Game implements Serializable {
             return 0;
         }
         return board.toggleIceBlocksSecond();
-    }
-
-    /**
-     * @deprecated Usa toggleIceBlocks() en su lugar
-     */
-    @Deprecated
-    public boolean createIceBlock() {
-        if (gameState != GameState.PLAYING || gameMode == GameMode.MVM) {
-            return false;
-        }
-        int result = board.createIceBlock();
-        return result > 0;
-    }
-
-    /**
-     * @deprecated Usa toggleIceBlocks() en su lugar
-     */
-    @Deprecated
-    public int breakIceBlocks() {
-        if (gameState != GameState.PLAYING || gameMode == GameMode.MVM) {
-            return 0;
-        }
-        return board.breakIceBlocks();
     }
 
     /**
