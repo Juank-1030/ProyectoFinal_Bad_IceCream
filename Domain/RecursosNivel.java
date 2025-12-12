@@ -13,12 +13,9 @@ public class RecursosNivel implements Serializable {
     private static final String LEVELS_DIRECTORY = "levels/";
     
     /**
-     * Guarda un nivel en un archivo binario
-     * @param level El nivel a guardar
-     * @param filename Nombre del archivo (sin extensión)
-     * @throws GameException Si hay error al guardar
+     * Guarda un nivel en un archivo binario (PRIVADO - solo para inicialización)
      */
-    public static void guardarNivel(Level level, String filename) throws GameException {
+    private static void guardarNivel(Level level, String filename) throws GameException {
         File directory = new File(LEVELS_DIRECTORY);
         if (!directory.exists()) {
             directory.mkdirs();
@@ -37,12 +34,9 @@ public class RecursosNivel implements Serializable {
     }
     
     /**
-     * Carga un nivel desde un archivo binario
-     * @param filename Nombre del archivo (sin extensión)
-     * @return El nivel cargado
-     * @throws GameException Si hay error al cargar
+     * Carga un nivel desde un archivo binario (PRIVADO - solo para cargarNivelPorNumero)
      */
-    public static Level cargarNivel(String filename) throws GameException {
+    private static Level cargarNivel(String filename) throws GameException {
         String filepath = LEVELS_DIRECTORY + filename + ".dat";
         File file = new File(filepath);
         
@@ -97,22 +91,6 @@ public class RecursosNivel implements Serializable {
     }
     
     /**
-     * Elimina un archivo de nivel
-     * @param filename Nombre del archivo (sin extensión)
-     * @return true si se eliminó exitosamente
-     */
-    public static boolean eliminarNivel(String filename) {
-        String filepath = LEVELS_DIRECTORY + filename + ".dat";
-        File file = new File(filepath);
-        
-        if (file.exists()) {
-            return file.delete();
-        }
-        
-        return false;
-    }
-    
-    /**
      * Carga un nivel por número (1, 2, 3, etc.)
      * Primero intenta cargar desde archivo, si no existe usa el predefinido
      * @param levelNumber Número del nivel
@@ -164,45 +142,5 @@ public class RecursosNivel implements Serializable {
         } catch (GameException e) {
             System.err.println("Error al crear niveles predefinidos: " + e.getMessage());
         }
-    }
-    
-    /**
-     * Clase para información de nivel (metadatos)
-     */
-    public static class InfoNivel implements Serializable {
-        private static final long serialVersionUID = 1L;
-        
-        public int numero;
-        public String nombre;
-        public String descripcion;
-        public int enemigos;
-        public int frutas;
-        public int tiempoLimite;
-        
-        public InfoNivel(Level level) {
-            this.numero = level.getLevelNumber();
-            this.nombre = level.getLevelName();
-            this.descripcion = "";
-            this.enemigos = level.getEnemyConfigs().size();
-            this.frutas = level.getTotalFruits();
-            this.tiempoLimite = level.getTimeLimit();
-        }
-        
-        @Override
-        public String toString() {
-            return String.format("Nivel %d: %s (%d enemigos, %d frutas, %d seg)",
-                               numero, nombre, enemigos, frutas, tiempoLimite);
-        }
-    }
-    
-    /**
-     * Obtiene información de un nivel sin cargarlo completamente
-     * @param filename Nombre del archivo
-     * @return Información del nivel
-     * @throws GameException Si hay error
-     */
-    public static InfoNivel obtenerInfoNivel(String filename) throws GameException {
-        Level level = cargarNivel(filename);
-        return new InfoNivel(level);
     }
 }
