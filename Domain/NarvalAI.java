@@ -1,13 +1,14 @@
 package Domain;
 
 import java.util.*;
+import java.io.Serializable;
 
 /**
  * IA para Narval
  * Movimiento aleatorio, pero activa su habilidad si detecta al helado
  * en la misma fila o columna
  */
-public class NarvalAI implements AI {
+public class NarvalAI implements AI, Serializable {
     private Enemy narval;
     private Board board;
     private Direction currentDirection;

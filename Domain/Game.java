@@ -129,7 +129,7 @@ public class Game implements Serializable {
             IceCreamAIStrategy aiStrategy = IceCreamAIStrategyManager.getStrategy(iceCreamAIStrategyName);
             if (aiStrategy != null) {
                 iceCream.setAIStrategy(aiStrategy);
-                System.out.println("✓ IA aplicada al helado: " + iceCreamAIStrategyName);
+                System.out.println("OK - IA aplicada al helado: " + iceCreamAIStrategyName);
             }
         }
 
@@ -202,7 +202,7 @@ public class Game implements Serializable {
         // Crear frutas
         // Siempre crear frutas del nivel predeterminado
         // Además: si hay configuración personalizada, agregar esas también
-        System.out.println("🍎 setupBoard() - Creando frutas...");
+        System.out.println("[INFO] setupBoard() - Creando frutas...");
         System.out.println("   fruitConfig: " + (fruitConfig != null ? "no nulo" : "nulo"));
         if (fruitConfig != null) {
             System.out.println("   tamaño: " + fruitConfig.size());
@@ -217,7 +217,7 @@ public class Game implements Serializable {
         }
 
         // Crear obstáculos (Fogatas y Baldosas Calientes)
-        System.out.println("🏜️ setupBoard() - Creando obstáculos...");
+        System.out.println("[INFO] setupBoard() - Creando obstáculos...");
         System.out.println("   obstacleConfig: " + (obstacleConfig != null ? "no nulo" : "nulo"));
         if (obstacleConfig != null) {
             System.out.println("   tamaño: " + obstacleConfig.size());
@@ -233,12 +233,12 @@ public class Game implements Serializable {
      */
     private void createFruitsFromCustomConfig() {
         if (fruitConfig == null || fruitConfig.isEmpty()) {
-            System.out.println("⚠️ Configuración de frutas vacía o nula, usando predeterminada");
+            System.out.println("[WARNING] Configuración de frutas vacía o nula, usando predeterminada");
             createFruitsFromLevelConfig();
             return;
         }
 
-        System.out.println("🍎 Creando frutas desde configuración personalizada:");
+        System.out.println("[INFO] Creando frutas desde configuración personalizada:");
         for (String fruitType : fruitConfig.keySet()) {
             int quantity = fruitConfig.get(fruitType);
             System.out.println("  - " + fruitType + ": " + quantity);
@@ -258,7 +258,7 @@ public class Game implements Serializable {
      * Crea frutas desde la configuración predeterminada del nivel
      */
     private void createFruitsFromLevelConfig() {
-        System.out.println("🍎 Usando frutas predeterminadas del nivel");
+        System.out.println("[INFO] Usando frutas predeterminadas del nivel");
         int totalFruits = 0;
         Random random = new Random();
         for (Level.FruitConfig config : currentLevel.getFruitConfigs()) {
@@ -279,7 +279,7 @@ public class Game implements Serializable {
                 }
             }
         }
-        System.out.println("✅ Total frutas agregadas: " + totalFruits);
+        System.out.println("[OK] Total frutas agregadas: " + totalFruits);
     }
 
     /**
@@ -288,11 +288,11 @@ public class Game implements Serializable {
      */
     private void createObstaclesFromCustomConfig() {
         if (obstacleConfig == null || obstacleConfig.isEmpty()) {
-            System.out.println("⚠️ Configuración de obstáculos vacía o nula");
+            System.out.println("[WARNING] Configuración de obstáculos vacía o nula");
             return;
         }
 
-        System.out.println("🏜️ Creando obstáculos desde configuración personalizada:");
+        System.out.println("[INFO] Creando obstáculos desde configuración personalizada:");
         for (String obstacleType : obstacleConfig.keySet()) {
             int quantity = obstacleConfig.get(obstacleType);
             System.out.println("  - " + obstacleType + ": " + quantity);
@@ -301,26 +301,26 @@ public class Game implements Serializable {
             for (int i = 0; i < quantity; i++) {
                 Position obstaclePos = getRandomEmptyPosition();
                 if (obstaclePos == null) {
-                    System.out.println("⚠️ No hay más posiciones disponibles para obstáculos");
+                    System.out.println("[WARNING] No hay más posiciones disponibles para obstáculos");
                     break;
                 }
 
                 if (obstacleType.equalsIgnoreCase("Fogata")) {
                     Fogata fogata = new Fogata(obstaclePos);
                     board.addFogata(fogata);
-                    System.out.println("  ✓ Fogata agregada en " + obstaclePos);
+                    System.out.println("  [OK] Fogata agregada en " + obstaclePos);
                 } else if (obstacleType.equalsIgnoreCase("Baldosa Caliente")) {
                     BaldosaCaliente baldosa = new BaldosaCaliente(obstaclePos);
                     board.addBaldosaCaliente(baldosa);
-                    System.out.println("  ✓ Baldosa Caliente agregada en " + obstaclePos);
+                    System.out.println("  [OK] Baldosa Caliente agregada en " + obstaclePos);
                 } else if (obstacleType.equalsIgnoreCase("Bloque de Hielo")) {
                     IceBlockObstacle iceBlock = new IceBlockObstacle(obstaclePos);
                     board.addIceBlockObstacle(iceBlock);
-                    System.out.println("  ✓ Bloque de Hielo agregado en " + obstaclePos);
+                    System.out.println("  [OK] Bloque de Hielo agregado en " + obstaclePos);
                 }
             }
         }
-        System.out.println("✅ Obstáculos agregados correctamente");
+        System.out.println("[OK] Obstáculos agregados correctamente");
     }
 
     /**
@@ -435,7 +435,7 @@ public class Game implements Serializable {
                 return new Cactus(position);
 
             default:
-                System.err.println("⚠️ Tipo de fruta desconocido: " + fruitType);
+                System.err.println("[WARNING] Tipo de fruta desconocido: " + fruitType);
                 return null;
         }
     }
@@ -680,7 +680,7 @@ public class Game implements Serializable {
                 if (iceCream != null && iceCream.getPosition().equals(fogata.getPosition())) {
                     iceCream.setAlive(false);
                     gameState = GameState.LOST;
-                    System.out.println("🔥 ¡El helado entró en contacto con una Fogata encendida!");
+                    System.out.println("[INFO] El helado entró en contacto con una Fogata encendida!");
                     return;
                 }
 
@@ -689,7 +689,7 @@ public class Game implements Serializable {
                 if (secondIceCream != null && secondIceCream.getPosition().equals(fogata.getPosition())) {
                     secondIceCream.setAlive(false);
                     gameState = GameState.LOST;
-                    System.out.println("🔥 ¡El segundo helado entró en contacto con una Fogata encendida!");
+                    System.out.println("[INFO] El segundo helado entró en contacto con una Fogata encendida!");
                     return;
                 }
             }
@@ -701,7 +701,7 @@ public class Game implements Serializable {
             if (iceCream != null && iceCream.getPosition().equals(baldosa.getPosition())) {
                 iceCream.setAlive(false);
                 gameState = GameState.LOST;
-                System.out.println("🔥 ¡El helado entró en contacto con una Baldosa Caliente!");
+                System.out.println("[INFO] El helado entró en contacto con una Baldosa Caliente!");
                 return;
             }
 
@@ -710,7 +710,7 @@ public class Game implements Serializable {
             if (secondIceCream != null && secondIceCream.getPosition().equals(baldosa.getPosition())) {
                 secondIceCream.setAlive(false);
                 gameState = GameState.LOST;
-                System.out.println("🔥 ¡El segundo helado entró en contacto con una Baldosa Caliente!");
+                System.out.println("[INFO] El segundo helado entró en contacto con una Baldosa Caliente!");
                 return;
             }
         }

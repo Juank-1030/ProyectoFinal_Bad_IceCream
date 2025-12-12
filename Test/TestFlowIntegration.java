@@ -1,3 +1,5 @@
+package Test;
+
 import Controller.GameController;
 import Domain.*;
 import java.util.HashMap;

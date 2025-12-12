@@ -127,6 +127,48 @@ public class GameController implements KeyListener {
     }
 
     /**
+     * Constructor para cargar un juego desde un estado guardado
+     * 
+     * @param loadedGame Objeto Game cargado desde el archivo de guardado
+     */
+    public GameController(Game loadedGame) {
+        // Usar el Game cargado directamente
+        this.game = loadedGame;
+        this.monsterType = null;
+        this.secondIceCreamFlavor = null;
+        this.enemyConfig = null;
+        this.fruitConfig = null;
+
+        // Restaurar el estado de juego a PLAYING (si estaba pausado al guardar)
+        if (game != null && game.getGameState() != Domain.GameState.PLAYING) {
+            game.setGameState(Domain.GameState.PLAYING);
+            System.out.println("[OK] Estado del juego restaurado a PLAYING");
+        }
+
+        // Crear la View (GamePanel)
+        this.gamePanel = new GamePanel(this);
+
+        // Crear InputHandler
+        this.inputHandler = new InputHandler();
+
+        // Configurar listeners
+        gamePanel.addKeyListener(inputHandler);
+        gamePanel.addKeyListener(this);
+        gamePanel.setFocusable(true);
+        gamePanel.requestFocusInWindow();
+
+        // Inicializar timer
+        this.running = false;
+        setupGameTimer();
+
+        // Iniciar el juego automáticamente
+        this.running = true;
+        this.gameTimer.start();
+
+        System.out.println("[OK] GameController creado con juego cargado y ejecutándose");
+    }
+
+    /**
      * Configura el Timer que ejecuta el game loop
      * Implementa el patrón Game Loop con sincronización en tiempo real
      */

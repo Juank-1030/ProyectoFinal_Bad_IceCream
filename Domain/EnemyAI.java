@@ -1,18 +1,20 @@
 package Domain;
 
+import java.io.Serializable;
 
 /**
  * IA para controlar enemigos en modos PVM y MVM
  * Utiliza el comportamiento de movimiento ya definido en cada enemigo
  */
-public class EnemyAI implements AI {
-    
+public class EnemyAI implements AI, Serializable {
+
     private Enemy enemy;
     private Board board;
     private int updateCounter;
 
     /**
      * Constructor de EnemyAI
+     * 
      * @param enemy El enemigo a controlar
      * @param board El tablero del juego
      */
@@ -35,12 +37,12 @@ public class EnemyAI implements AI {
         // Verificar si el movimiento es válido
         if (nextDirection != null) {
             var nextPos = enemy.getPosition().move(nextDirection);
-            
+
             // Si hay un bloque y el enemigo puede romperlo, intentar romperlo
             if (board.hasIceBlock(nextPos) && enemy.canBreakIce()) {
-                return nextDirection;  // Moverá y romperá el bloque
+                return nextDirection; // Moverá y romperá el bloque
             }
-            
+
             // Si la posición no es válida, buscar alternativa
             if (!board.isValidPosition(nextPos)) {
                 return findAlternativeDirection();
@@ -55,15 +57,15 @@ public class EnemyAI implements AI {
      */
     private Direction findAlternativeDirection() {
         Direction[] directions = Direction.values();
-        
+
         for (Direction dir : directions) {
             var testPos = enemy.getPosition().move(dir);
             if (board.isValidPosition(testPos)) {
                 return dir;
             }
         }
-        
-        return enemy.getCurrentDirection();  // Mantener dirección actual
+
+        return enemy.getCurrentDirection(); // Mantener dirección actual
     }
 
     @Override

@@ -34,9 +34,9 @@ public class LevelManager {
         for (int i = 1; i <= TOTAL_NIVELES; i++) {
             try {
                 nivelesDisponibles[i - 1] = cargarNivelDesdeArchivo(i);
-                System.out.println("✓ Nivel " + i + " cargado correctamente");
+                System.out.println("[OK] Nivel " + i + " cargado correctamente");
             } catch (IOException | ClassNotFoundException e) {
-                System.err.println("✗ Error cargando Nivel " + i + ": " + e.getMessage());
+                System.err.println("[ERROR] Error cargando Nivel " + i + ": " + e.getMessage());
                 nivelesDisponibles[i - 1] = crearNivelPorDefecto(i);
             }
         }
@@ -96,13 +96,13 @@ public class LevelManager {
      */
     public boolean cambiarNivel(int numeroNivel) {
         if (numeroNivel < 1 || numeroNivel > TOTAL_NIVELES) {
-            System.err.println("✗ Número de nivel inválido: " + numeroNivel);
+            System.err.println("[ERROR] Número de nivel inválido: " + numeroNivel);
             return false;
         }
 
         nivelActual = nivelesDisponibles[numeroNivel - 1];
         nivelActualIndex = numeroNivel - 1;
-        System.out.println("→ Cambio a Nivel " + numeroNivel);
+        System.out.println("[INFO] Cambio a Nivel " + numeroNivel);
         return true;
     }
 

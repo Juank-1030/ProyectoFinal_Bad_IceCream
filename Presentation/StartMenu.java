@@ -15,6 +15,7 @@ public class StartMenu extends JFrame {
 
     // Listeners para acciones de botones
     private Runnable onNewGameClick;
+    private Runnable onContinueGameClick;
     private Runnable onExitClick;
 
     public StartMenu() {
@@ -30,6 +31,13 @@ public class StartMenu extends JFrame {
      */
     public void setOnNewGameClick(Runnable listener) {
         this.onNewGameClick = listener;
+    }
+
+    /**
+     * Establece el listener para el clic en Continue_Game
+     */
+    public void setOnContinueGameClick(Runnable listener) {
+        this.onContinueGameClick = listener;
     }
 
     /**
@@ -150,6 +158,9 @@ public class StartMenu extends JFrame {
                 break;
             case "Continue_Game":
                 // Continuar Juego
+                if (onContinueGameClick != null) {
+                    onContinueGameClick.run();
+                }
                 break;
             case "Exit":
                 if (onExitClick != null) {

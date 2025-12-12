@@ -2,23 +2,25 @@ package Domain;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.io.Serializable;
 
 /**
  * IA para controlar el helado en modo MVM (Machine vs Machine)
  * Busca recolectar frutas evitando enemigos
  */
-public class IceCreamAI implements AI {
-    
+public class IceCreamAI implements AI, Serializable {
+
     private IceCream iceCream;
     private Board board;
-    private Position targetFruit;  // Fruta objetivo actual
+    private Position targetFruit; // Fruta objetivo actual
     private int updateCounter;
-    private static final int DECISION_INTERVAL = 5;  // Tomar decisiones cada 5 frames
+    private static final int DECISION_INTERVAL = 5; // Tomar decisiones cada 5 frames
 
     /**
      * Constructor de IceCreamAI
+     * 
      * @param iceCream El helado a controlar
-     * @param board El tablero del juego
+     * @param board    El tablero del juego
      */
     public IceCreamAI(IceCream iceCream, Board board) {
         this.iceCream = iceCream;
@@ -65,7 +67,7 @@ public class IceCreamAI implements AI {
             // Romper hielo si está bloqueando el camino
             iceCream.setCurrentDirection(directionToFruit);
             // La lógica de romper hielo se ejecuta en Game
-            return null;  // No moverse, solo romper
+            return null; // No moverse, solo romper
         }
 
         return directionToFruit;
@@ -141,14 +143,14 @@ public class IceCreamAI implements AI {
 
         for (Direction dir : directions) {
             Position testPos = iceCreamPos.move(dir);
-            
+
             if (!board.isValidPosition(testPos)) {
                 continue;
             }
 
             // Calcular distancia mínima a enemigos desde esta posición
             int minEnemyDistance = getMinEnemyDistance(testPos);
-            
+
             if (minEnemyDistance > maxDistance) {
                 maxDistance = minEnemyDistance;
                 safest = dir;

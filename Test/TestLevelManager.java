@@ -1,3 +1,5 @@
+package Test;
+
 // TestLevelManager.java - Programa de prueba para LevelManager
 
 import Domain.LevelManager;

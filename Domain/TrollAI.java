@@ -1,11 +1,13 @@
 package Domain;
 
+import java.io.Serializable;
+
 /**
  * IA para el Troll
  * Se mueve en círculos siguiendo el sentido del reloj por los bordes del mapa
  * Busca siempre el camino más largo disponible
  */
-public class TrollAI implements AI {
+public class TrollAI implements AI, Serializable {
     private Enemy troll;
     private Board board;
     private Direction currentDirection;

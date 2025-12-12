@@ -1,13 +1,14 @@
 package Domain;
 
 import java.util.*;
+import java.io.Serializable;
 
 /**
  * IA para Pot (Maceta)
  * Sin habilidad: movimiento aleatorio hasta bloquearse
  * Con habilidad activa: persigue al helado más cercano
  */
-public class PotAI implements AI {
+public class PotAI implements AI, Serializable {
     private Enemy pot;
     private Board board;
     private Direction currentDirection;

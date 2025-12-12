@@ -1,10 +1,12 @@
 package Domain;
 
+import java.io.Serializable;
+
 /**
  * IA para Calamar Amarillo (YellowSquid)
  * Persigue al helado y destruye bloques de hielo en su camino
  */
-public class YellowSquidAI implements AI {
+public class YellowSquidAI implements AI, Serializable {
     private Enemy yellowSquid;
     private Board board;
     private Direction currentDirection;

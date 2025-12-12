@@ -51,7 +51,7 @@ public class Pot extends Enemy {
             turboActive = true;
             turboStartTime = currentTime;
             this.speed = TURBO_SPEED; // Cambiar a velocidad turbo
-            System.out.println("⚡ Pot: ¡TURBO ACTIVADO!");
+            System.out.println("[INFO] Pot: TURBO ACTIVADO!");
         }
     }
 

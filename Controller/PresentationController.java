@@ -110,6 +110,24 @@ public class PresentationController {
             modos.setVisible(true);
         });
 
+        // Listener para el botón Continue_Game
+        menuInicio.setOnContinueGameClick(() -> {
+            // Cargar la partida guardada
+            if (Domain.Game.savedGameExists("savegame.dat")) {
+                Domain.Game loadedGame = Domain.Game.loadGame("savegame.dat");
+                if (loadedGame != null) {
+                    intro.setVisible(false);
+                    menuInicio.setVisible(false);
+                    // Iniciar el juego con el estado guardado
+                    iniciarJuegoConEstadoGuardado(loadedGame);
+                } else {
+                    System.err.println("[ERROR] No se pudo cargar la partida guardada");
+                }
+            } else {
+                System.err.println("[ERROR] No hay partida guardada disponible");
+            }
+        });
+
         // Listener para el botón Exit
         menuInicio.setOnExitClick(() -> {
             System.exit(0);
@@ -736,8 +754,17 @@ public class PresentationController {
      */
     private Runnable createSaveGameCallback() {
         return () -> {
-            System.out.println("✅ Partida guardada");
-            // TODO: Implementar lógica de guardado de partida
+            if (gameController != null && gameController.getGame() != null) {
+                Domain.Game game = gameController.getGame();
+                // Guardar la partida con un nombre de archivo estándar
+                if (game.saveGame("savegame")) {
+                    System.out.println("[OK] Partida guardada exitosamente en saves/savegame.dat");
+                } else {
+                    System.err.println("[ERROR] Error al guardar la partida");
+                }
+            } else {
+                System.err.println("[ERROR] No hay juego activo para guardar");
+            }
         };
     }
 
@@ -1038,6 +1065,55 @@ public class PresentationController {
             }
         } else if (selectedGameMode == GameMode.MVM) {
             iniciarJuegoMVM();
+        }
+    }
+
+    /**
+     * Inicia el juego con un estado guardado cargado desde archivo
+     * 
+     * @param loadedGame Objeto Game cargado desde el archivo de guardado
+     */
+    private void iniciarJuegoConEstadoGuardado(Domain.Game loadedGame) {
+        // Limpiar recursos del juego anterior
+        cleanupBeforeNewGame();
+
+        // Ocultar pantallas de selección
+        pvp.setVisible(false);
+        selectMonster.setVisible(false);
+        modos.setVisible(false);
+        menuInicio.setVisible(false);
+        intro.setVisible(false);
+
+        try {
+            // Crear el controlador del juego con el estado guardado
+            gameController = new GameController(loadedGame);
+
+            // Registrar callbacks
+            gameController.setOnReturnToMenuClick(createReturnToMenuCallback());
+            gameController.setOnSaveGameClick(createSaveGameCallback());
+            gameController.setOnContinueGameClick(createContinueGameCallback());
+            gameController.setOnLevelComplete(createLevelCompleteCallback());
+            gameController.setOnLevelFailed(createLevelFailedCallback());
+
+            // Crear una ventana para el juego si no existe
+            if (gameFrame == null) {
+                gameFrame = new JFrame("Bad Ice Cream - Juego Reanudado");
+                gameFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+                gameFrame.add(gameController.getGamePanel());
+                gameFrame.setSize(960, 864);
+                gameFrame.setLocationRelativeTo(null);
+                gameFrame.setResizable(false);
+                gameFrame.setVisible(true);
+                gameFrame.setFocusable(true);
+            }
+
+            // Restaurar el enfoque (el juego ya está ejecutándose desde el constructor)
+            gameController.getGamePanel().requestFocusInWindow();
+
+            System.out.println("[OK] Juego reanudado exitosamente desde el estado guardado");
+        } catch (Exception e) {
+            System.err.println("[ERROR] Error al iniciar juego con estado guardado: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 
