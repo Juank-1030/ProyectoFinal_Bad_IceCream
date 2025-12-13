@@ -61,8 +61,10 @@ public class SelectIceCreamAI extends JFrame {
         panelFondo.add(titulo);
         panelFondo.add(Box.createVerticalStrut(40));
 
-        // Estrategias de IA disponibles (hardcodeadas para no depender de Domain)
-        String[] strategies = { "EXPERT", "HUNGRY", "FEARFUL" };
+        // Estrategias de IA disponibles
+        // Nota: Los nombres deben coincidir con los registrados en
+        // IceCreamAIStrategyManager
+        String[] strategies = { "Hungry", "Fearful", "Expert" };
 
         // Crear botones para cada estrategia
         for (String strategy : strategies) {

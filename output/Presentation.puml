@@ -1,0 +1,484 @@
+
+@startuml
+skinparam classAttributeIconSize 0
+hide circle
+
+class ConfigLevel {
+  -rutaFondo: String = "Resources/Opciones_Menu/Fondo.png"
+  -onStartLevel: Runnable
+  -onBackClick: Runnable
+  -onConfigureObstacles: Runnable
+  -mostrarUvas: boolean = true
+  -mostrarPlatanos: boolean = true
+  -mostrarCerezas: boolean = true
+  -mostrarPinas: boolean = true
+  -mostrarEnemigos: boolean = true
+  -obstacleConfig: Map<String, Integer>
+  --
+  +ConfigLevel()
+  -inicializarVentana(): void
+  -crearCheckBox(texto: String, posX: int, posY: int, seleccionado: boolean): JCheckBox
+  -crearBotonObstaculos(): JButton
+  -crearBotonIniciar(): JButton
+  -crearBotonBack(): JButton
+  +setOnStartLevel(callback: Runnable): void
+  +setOnBackClick(callback: Runnable): void
+  +setOnConfigureObstacles(callback: Runnable): void
+  +getObstacleConfiguration(): Map<String,Integer>
+  +setObstacleConfiguration(config: Map<String,Integer>): void
+  +isMostrarUvas(): boolean
+  +setMostrarUvas(mostrar: boolean): void
+  +isMostrarPlatanos(): boolean
+  +setMostrarPlatanos(mostrar: boolean): void
+  +isMostrarCerezas(): boolean
+  +setMostrarCerezas(mostrar: boolean): void
+  +isMostrarPinas(): boolean
+  +setMostrarPinas(mostrar: boolean): void
+  +isMostrarEnemigos(): boolean
+  +setMostrarEnemigos(mostrar: boolean): void
+  +{static} main(args: String[]): void
+}
+
+class EnemyConfigurationMenu {
+  -rutaFondo: String = "Resources/Opciones_Menu/Fondo.png"
+  -{static} ENEMY_TYPES: String[] = { "Troll", "Narval", "Calamar Naranja", "Olla" }
+  -enemyConfig: Map<String, Integer>
+  -enemySlots: List<EnemySlot>
+  -excludedEnemyType: String
+  -onConfirmClick: Runnable
+  -onBackClick: Runnable
+  --
+  +EnemyConfigurationMenu()
+  +EnemyConfigurationMenu(excludedEnemyType: String)
+  -inicializarVentana(): void
+  -agregarSlot(slotPanel: JPanel): void
+  -guardarConfiguracion(): void
+  -normalizarNombreEnemigo(nombre: String): String
+  -crearBoton(texto: String, x: int, y: int, color: Color): JButton
+  +getEnemyConfiguration(): Map<String,Integer>
+  +isConfigurationEmpty(): boolean
+  -getAvailableEnemyTypes(): String[]
+  +setOnConfirmClick(callback: Runnable): void
+  +setOnBackClick(callback: Runnable): void
+  +{static} main(args: String[]): void
+}
+
+class EnemySlot {
+  ~typeCombo: JComboBox<String>
+  ~quantitySpinner: JSpinner
+  ~removeBtn: JButton
+  --
+  ~EnemySlot(typeCombo: JComboBox<String>, quantitySpinner: JSpinner, removeBtn: JButton)
+  ~getTypeCombo(): JComboBox<String>
+  ~getQuantitySpinner(): JSpinner
+  ~getRemoveBtn(): JButton
+}
+
+class FruitConfigurationMenu {
+  -rutaFondo: String = "Resources/Opciones_Menu/Fondo.png"
+  -{static} FRUIT_TYPES: String[] = { "Uvas", "Plátanos", "Cerezas", "Piñas", "Cactus" }
+  -fruitConfig: Map<String, Integer>
+  -fruitSlots: List<FruitSlot>
+  -onConfirmClick: Runnable
+  -onBackClick: Runnable
+  --
+  +FruitConfigurationMenu()
+  -inicializarVentana(): void
+  -agregarSlot(slotPanel: JPanel): void
+  -guardarConfiguracion(): void
+  +setOnConfirmClick(callback: Runnable): void
+  +setOnBackClick(callback: Runnable): void
+  +getFruitConfiguration(): Map<String,Integer>
+  +isConfigurationEmpty(): boolean
+}
+
+class FruitSlot {
+  ~typeCombo: JComboBox<String>
+  ~quantitySpinner: JSpinner
+  ~removeBtn: JButton
+  --
+  ~FruitSlot(typeCombo: JComboBox<String>, quantitySpinner: JSpinner, removeBtn: JButton)
+  ~getTypeCombo(): JComboBox<String>
+  ~getQuantitySpinner(): JSpinner
+  ~getRemoveBtn(): JButton
+}
+
+class GamePanel {
+  -controller: GameController
+  -onReturnToMenuClick: Runnable
+  -onSaveGameClick: Runnable
+  -onContinueGameClick: Runnable
+  -mousePosition: Point
+  -mousePressed: boolean = false
+  -pauseContinueBtnHitbox: Rectangle
+  -pauseSaveBtnHitbox: Rectangle
+  -pauseMenuBtnHitbox: Rectangle
+  -{static} CELL_SIZE: int = 40
+  -{static} UI_HEIGHT: int = 100
+  --
+  +GamePanel(controller: GameController)
+  -handleMouseClick(e: MouseEvent): void
+  -detectPauseButtonClick(e: MouseEvent): void
+  -updatePanelSize(): void
+  #paintComponent(g: Graphics): void
+  -drawGame(g: Graphics2D, viewData: ViewData): void
+  -drawGrid(g: Graphics2D, viewData: ViewData): void
+  -drawIceBlocks(g: Graphics2D, viewData: ViewData): void
+  -drawWalls(g: Graphics2D, viewData: ViewData): void
+  -drawFruits(g: Graphics2D, viewData: ViewData): void
+  -drawEnemies(g: Graphics2D, viewData: ViewData): void
+  -drawIceCream(g: Graphics2D, viewData: ViewData): void
+  -drawUI(g: Graphics2D, viewData: ViewData): void
+  -drawPauseOverlay(g: Graphics2D): void
+  -drawVictoryOverlay(g: Graphics2D, viewData: ViewData): void
+  -drawGameOverOverlay(g: Graphics2D, viewData: ViewData): void
+  +setOnReturnToMenuClick(callback: Runnable): void
+  +setOnSaveGameClick(callback: Runnable): void
+  +setOnContinueGameClick(callback: Runnable): void
+}
+
+class ImageLoader {
+  -{static} imageCache: Map<String, Image>
+  -{static} imagesLoaded: boolean = false
+  --
+  +{static} loadAllImages(): void
+  -{static} loadMapBackground(): void
+  -{static} loadIceCreamSprites(): void
+  -{static} loadMonsterSprites(): void
+  -{static} loadFruitSprites(): void
+  -{static} loadIceBlockSprites(): void
+  -{static} loadObstacleSprites(): void
+  -{static} loadImage(key: String, path: String): void
+  +{static} getMapBackground(): Image
+  +{static} getIceCreamSprite(flavor: String, action: String, direction: String): Image
+  +{static} getMonsterSprite(type: String, action: String, direction: String): Image
+  +{static} getFruitSprite(type: String, state: String): Image
+  +{static} getIceBlockSprite(state: String): Image
+  +{static} getFogataSprite(encendida: boolean): Image
+  +{static} getBaldosaCalienteSprite(): Image
+  +{static} getCactusSprite(spiky: boolean): Image
+  +{static} getImage(key: String): Image
+}
+
+class Intro {
+  -labelMedia: JLabel
+  -continuarAnimacion: boolean = true
+  -menuAbierto: boolean = false
+  -rutaRecursos: String = "Resources\\Marca\\"
+  -onMenuOpen: Runnable
+  -animationTimer: Timer
+  --
+  +Intro()
+  +setOnMenuOpen(listener: Runnable): void
+  -inicializarVentana(): void
+  +mostrarSecuenciaIntro(): void
+  -mostrarGif(nombreGif: String, duracionMs: long): void
+  +keyPressed(e: KeyEvent): void
+  +keyReleased(e: KeyEvent): void
+  +keyTyped(e: KeyEvent): void
+  +mouseClicked(e: MouseEvent): void
+  -abrirMenu(): void
+  +resetIntro(): void
+  +mousePressed(e: MouseEvent): void
+  +mouseReleased(e: MouseEvent): void
+  +mouseEntered(e: MouseEvent): void
+  +mostrarSegundoGif(): void
+  +mouseExited(e: MouseEvent): void
+  +mouseDragged(e: MouseEvent): void
+  +mouseMoved(e: MouseEvent): void
+}
+
+class LevelCompletionMenu {
+  -rutaFondo: String = "Resources/Opciones_Menu/Fondo.png"
+  -nivelActual: int
+  -puntuacion: int
+  -onNextLevelClick: Runnable
+  -onRetryClick: Runnable
+  -onMenuClick: Runnable
+  --
+  +LevelCompletionMenu(nivelActual: int, puntuacion: int)
+  -inicializarVentana(): void
+  -crearBoton(texto: String, x: int, y: int, color: Color): JButton
+  +setOnNextLevelClick(callback: Runnable): void
+  +setOnRetryClick(callback: Runnable): void
+  +setOnMenuClick(callback: Runnable): void
+  +{static} main(args: String[]): void
+}
+
+class LevelConfigurationMenu {
+  -rutaFondo: String = "Resources/Opciones_Menu/Fondo.png"
+  -mostrarUvas: boolean = true
+  -mostrarPlatanos: boolean = true
+  -mostrarCerezas: boolean = true
+  -mostrarPinas: boolean = true
+  -mostrarTroll: boolean = true
+  -mostrarNarval: boolean = true
+  -mostrarCalamarNaranja: boolean = true
+  -mostrarOlla: boolean = true
+  -onConfirmClick: Runnable
+  -onBackClick: Runnable
+  --
+  +LevelConfigurationMenu()
+  -inicializarVentana(): void
+  -crearCheckbox(texto: String, x: int, y: int, selected: boolean): JCheckBox
+  -crearBoton(texto: String, x: int, y: int, color: Color): JButton
+  +isMostrarUvas(): boolean
+  +isMostrarPlatanos(): boolean
+  +isMostrarCerezas(): boolean
+  +isMostrarPinas(): boolean
+  +isMostrarTroll(): boolean
+  +isMostrarNarval(): boolean
+  +isMostrarCalamarNaranja(): boolean
+  +isMostrarOlla(): boolean
+  +setOnConfirmClick(callback: Runnable): void
+  +setOnBackClick(callback: Runnable): void
+  +{static} main(args: String[]): void
+}
+
+class Modes {
+  -rutaFondo: String = "Resources/Opciones_Menu/Fondo.png"
+  -rutaBotones: String = "Resources/Botones/modes/"
+  -onBackClick: Runnable
+  -onPVPClick: Runnable
+  -onPVMClick: Runnable
+  -onMVMClick: Runnable
+  --
+  +Modes()
+  -inicializarVentana(): void
+  -crearBoton(nombreBoton: String, textoLabel: String, aumentarTamaño: boolean): JPanel
+  -accionBoton(nombreBoton: String): void
+  -agregarLetrero(panel: JPanel, nombreBoton: String): void
+  -crearBotonBack(): JButton
+  -accionBotonBack(): void
+  +setOnBackClick(callback: Runnable): void
+  +setOnPVPClick(callback: Runnable): void
+  +setOnPVMClick(callback: Runnable): void
+  +setOnMVMClick(callback: Runnable): void
+  -agregarLetreromodos(): JLabel
+  +{static} main(args: String[]): void
+}
+
+class ObstaculosConfigurationMenu {
+  -rutaFondo: String = "Resources/Opciones_Menu/Fondo.png"
+  -{static} OBSTACLE_TYPES: String[] = { "Fogata", "Baldosa Caliente", "Bloque de Hielo" }
+  -obstacleConfig: Map<String, Integer>
+  -obstacleSlots: List<ObstacleSlot>
+  -onConfirmClick: Runnable
+  -onBackClick: Runnable
+  --
+  +ObstaculosConfigurationMenu()
+  -inicializarVentana(): void
+  -agregarSlot(slotPanel: JPanel): void
+  -getAvailableObstacleTypes(): String[]
+  -guardarConfiguracion(): void
+  -crearBoton(texto: String, x: int, y: int, color: Color): JButton
+  +getObstacleConfiguration(): Map<String,Integer>
+  +setOnConfirmClick(callback: Runnable): void
+  +setOnBackClick(callback: Runnable): void
+  +{static} main(args: String[]): void
+}
+
+class ObstacleSlot {
+  ~typeCombo: JComboBox<String>
+  ~quantitySpinner: JSpinner
+  ~removeBtn: JButton
+  --
+  ~ObstacleSlot(typeCombo: JComboBox<String>, quantitySpinner: JSpinner, removeBtn: JButton)
+  ~getTypeCombo(): JComboBox<String>
+  ~getQuantitySpinner(): JSpinner
+  ~getRemoveBtn(): JButton
+}
+
+class SelectIceCream {
+  -rutaFondo: String = "Resources/Opciones_Menu/Fondo.png"
+  -rutaBotones: String = "Resources/Botones/Helados/"
+  -onBackClick: Runnable
+  -onChocolateClick: Runnable
+  -onVainillaClick: Runnable
+  -onFresaClick: Runnable
+  --
+  +SelectIceCream()
+  -inicializarVentana(): void
+  -agregarLetrero(): JLabel
+  -agregarLetrero(panel: JPanel, nombreHelado: String): void
+  -crearBoton(nombreHelado: String, aumentarTamaño: boolean): JPanel
+  -accionBoton(nombreHelado: String): void
+  -crearBotonBack(): JButton
+  -accionBotonBack(): void
+  +setOnBackClick(callback: Runnable): void
+  +setOnChocolateClick(callback: Runnable): void
+  +setOnVainillaClick(callback: Runnable): void
+  +setOnFresaClick(callback: Runnable): void
+  +{static} main(args: String[]): void
+}
+
+class SelectIceCreamAI {
+  -onBackClick: Runnable
+  -strategyCallbacks: Map<String, Runnable>
+  --
+  +SelectIceCreamAI()
+  -inicializarVentana(): void
+  -crearBotonEstrategia(strategyName: String): JButton
+  +setOnStrategyClick(strategy: String, callback: Runnable): void
+  +setOnBackClick(callback: Runnable): void
+}
+
+class SelectLevel {
+  -rutaFondo: String = "Resources/Opciones_Menu/Fondo.png"
+  -onBackClick: Runnable
+  -onLevel1Click: Runnable
+  -onLevel2Click: Runnable
+  -onLevel3Click: Runnable
+  --
+  +SelectLevel()
+  -inicializarVentana(): void
+  -crearBotonNivel(texto: String, dificultad: String, posX: int, colorFondo: Color): JPanel
+  -accionBotonNivel(nombreNivel: String): void
+  -crearBotonBack(): JButton
+  -accionBotonBack(): void
+  +setOnBackClick(callback: Runnable): void
+  +setOnLevel1Click(callback: Runnable): void
+  +setOnLevel2Click(callback: Runnable): void
+  +setOnLevel3Click(callback: Runnable): void
+  +{static} main(args: String[]): void
+}
+
+class SelectMonster {
+  -rutaFondo: String = "Resources/Opciones_Menu/Fondo.png"
+  -rutaBotones: String = "Resources/Botones/Monstruos/"
+  -onBackClick: Runnable
+  -monstruoCallbacks: Map<String, Runnable>
+  -{static} NOMBRE_ARCHIVO_MAP: Map<String, String>
+  --
+  +SelectMonster()
+  -inicializarVentana(): void
+  -cargarMonstruosDisponibles(): List<String>
+  -agregarLetrero(): JLabel
+  -crearLetrero(nombreMonstruo: String): JLabel
+  -crearBoton(nombreMonstruo: String, aumentarTamaño: boolean): JPanel
+  -accionBoton(nombreMonstruo: String): void
+  -crearBotonBack(): JButton
+  -accionBotonBack(): void
+  +setOnBackClick(callback: Runnable): void
+  +setOnMonstruoClick(nombreMonstruo: String, callback: Runnable): void
+  +limpiarCallbacks(): void
+  -normalizarNombreMonstruo(nombre: String): String
+  +{static} main(args: String[]): void
+}
+
+class SelectPVPMode {
+  -rutaFondo: String = "Resources/Opciones_Menu/Fondo.png"
+  -onBackClick: Runnable
+  -onIceCreamVsMonsterClick: Runnable
+  -onIceCreamCooperativeClick: Runnable
+  --
+  +SelectPVPMode()
+  -inicializarVentana(): void
+  -crearPanelBotones(): JPanel
+  -crearBotonConImagen(imagenKey: String, modo: String): JPanel
+  -crearBotonBack(): JButton
+  -crearLetrero(texto: String): JLabel
+  +setOnBackClick(callback: Runnable): void
+  +setOnIceCreamVsMonsterClick(callback: Runnable): void
+  +setOnIceCreamCooperativeClick(callback: Runnable): void
+}
+
+class StartMenu {
+  -rutaPanel: String = "Resources/Opciones_Menu/Panel_menu.png"
+  -rutaBotones: String = "Resources/Botones/Inicio/"
+  -btnNewGame: JButton
+  -btnContinueGame: JButton
+  -btnExit: JButton
+  -onNewGameClick: Runnable
+  -onExitClick: Runnable
+  --
+  +StartMenu()
+  +setOnNewGameClick(listener: Runnable): void
+  +setOnExitClick(listener: Runnable): void
+  -inicializarVentana(): void
+  -crearBoton(nombreBoton: String): JButton
+  -accionBoton(nombreBoton: String): void
+  +mostrarMenu(): void
+  +cerrarMenu(): void
+}
+
+class GameController {
+  -game: Game
+  -viewData: ViewData
+  --
+  +GameController(game: Game)
+  +getGame(): Game
+  +setGame(game: Game): void
+  +getViewData(): ViewData
+  +update(): void
+  +handleInput(keyCode: int): void
+}
+
+class ViewData {
+  -boardWidth: int
+  -boardHeight: int
+  -iceCreamPosition: Position
+  -secondIceCreamPosition: Position
+  -enemyPositions: List<Position>
+  -fruitPositions: Map<Position, Fruit>
+  -iceBlockPositions: List<Position>
+  -wallPositions: List<Position>
+  -score: int
+  -lives: int
+  -gameState: String
+  --
+  +ViewData()
+  +getBoardWidth(): int
+  +setBoardWidth(width: int): void
+  +getBoardHeight(): int
+  +setBoardHeight(height: int): void
+  +getScore(): int
+  +setScore(score: int): void
+  +getLives(): int
+  +setLives(lives: int): void
+  +getGameState(): String
+  +setGameState(state: String): void
+}
+
+class PresentationController {
+  -currentFrame: JFrame
+  -gamePanel: GamePanel
+  -gameController: GameController
+  --
+  +PresentationController()
+  -mostrarStartMenu(): void
+  -mostrarGamePanel(game: Game): void
+  -mostrarModos(): void
+  -mostrarSelectLevel(): void
+  +closeCurrentFrame(): void
+}
+
+EnemyConfigurationMenu o-- EnemySlot
+FruitConfigurationMenu o-- FruitSlot
+ObstaculosConfigurationMenu o-- ObstacleSlot
+GamePanel --> GameController
+GamePanel ..> ViewData
+GamePanel ..> ImageLoader
+PresentationController *-- GamePanel
+PresentationController *-- GameController
+GameController *-- ViewData
+Intro --> StartMenu
+StartMenu --> Modes
+Modes --> SelectLevel
+Modes --> SelectMonster
+Modes --> SelectPVPMode
+SelectLevel --> LevelConfigurationMenu
+SelectLevel --> ConfigLevel
+SelectLevel --> GamePanel
+SelectIceCream --> GamePanel
+SelectMonster --> GamePanel
+SelectPVPMode --> GamePanel
+ConfigLevel --> EnemyConfigurationMenu
+ConfigLevel --> FruitConfigurationMenu
+ConfigLevel --> ObstaculosConfigurationMenu
+ConfigLevel --> SelectIceCream
+LevelConfigurationMenu --> EnemyConfigurationMenu
+LevelConfigurationMenu --> FruitConfigurationMenu
+LevelConfigurationMenu --> ObstaculosConfigurationMenu
+LevelCompletionMenu --> GamePanel
+@enduml

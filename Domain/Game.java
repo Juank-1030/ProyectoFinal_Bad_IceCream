@@ -892,24 +892,66 @@ public class Game implements Serializable {
     }
 
     /**
+     * Obtiene el nombre de la estrategia de IA del helado
+     */
+    public String getIceCreamAIStrategyName() {
+        return iceCreamAIStrategyName;
+    }
+
+    /**
      * Actualiza referencias después de desserialización
      * Necesario porque los comportamientos tienen referencias transient a Board
+     * IMPORTANTE: Restaura TODAS las IA strategies de enemigos y helados
      */
     public void updateBoardReferences() {
-        if (board == null || board.getEnemies() == null) {
+        if (board == null) {
             return;
         }
 
-        // Actualizar referencias en enemigos que usan ChaseMovement
-        for (Enemy enemy : board.getEnemies()) {
-            if (enemy instanceof Pot) {
-                ((Pot) enemy).updateStateProvider(board);
-            } else if (enemy instanceof YellowSquid) {
-                ((YellowSquid) enemy).updateStateProvider(board);
-            } else if (enemy instanceof Narval) {
-                ((Narval) enemy).updateStateProvider(board);
+        // 1. Actualizar referencias en enemigos que usan ChaseMovement
+        if (board.getEnemies() != null) {
+            for (Enemy enemy : board.getEnemies()) {
+                if (enemy instanceof Pot) {
+                    ((Pot) enemy).updateStateProvider(board);
+                } else if (enemy instanceof YellowSquid) {
+                    ((YellowSquid) enemy).updateStateProvider(board);
+                } else if (enemy instanceof Narval) {
+                    ((Narval) enemy).updateStateProvider(board);
+                }
+                // Troll no necesita updateStateProvider (solo usa PatternMovement)
             }
         }
+
+        // 2. Restaurar la estrategia de IA del helado si está guardada
+        IceCream iceCream = board.getIceCream();
+        if (iceCream != null && iceCreamAIStrategyName != null && !iceCreamAIStrategyName.isEmpty()) {
+            if (iceCream.isAIControlled()) {
+                // La estrategia ya está serializada, solo verificar que esté bien
+                IceCreamAIStrategy strategy = iceCream.getAIStrategy();
+                if (strategy == null) {
+                    // Restaurar desde el nombre guardado
+                    strategy = IceCreamAIStrategyManager.getStrategy(iceCreamAIStrategyName);
+                    if (strategy != null) {
+                        iceCream.setAIStrategy(strategy);
+                    }
+                }
+            }
+        }
+
+        // 3. Restaurar la estrategia de IA del segundo helado (modo cooperativo)
+        IceCream secondIceCream = board.getSecondIceCream();
+        if (secondIceCream != null && secondIceCream.isAIControlled()) {
+            IceCreamAIStrategy strategy = secondIceCream.getAIStrategy();
+            if (strategy == null && iceCreamAIStrategyName != null && !iceCreamAIStrategyName.isEmpty()) {
+                strategy = IceCreamAIStrategyManager.getStrategy(iceCreamAIStrategyName);
+                if (strategy != null) {
+                    secondIceCream.setAIStrategy(strategy);
+                }
+            }
+        }
+
+        // 4. Reinicializar tiempo si es necesario
+        this.lastUpdateTime = System.currentTimeMillis();
     }
 
     /**

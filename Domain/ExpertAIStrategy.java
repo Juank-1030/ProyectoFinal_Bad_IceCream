@@ -215,7 +215,7 @@ public class ExpertAIStrategy implements IceCreamAIStrategy {
      */
     private Direction findAnyValidDirection(Board board, Position from) {
         Direction[] dirs = { Direction.UP, Direction.DOWN, Direction.LEFT, Direction.RIGHT };
-        
+
         // Primero intentar direcciones completamente válidas
         for (Direction dir : dirs) {
             Position nextPos = from.move(dir);
@@ -223,7 +223,7 @@ public class ExpertAIStrategy implements IceCreamAIStrategy {
                 return dir;
             }
         }
-        
+
         // Si no hay válidas, intentar con hielo rompible
         for (Direction dir : dirs) {
             Position nextPos = from.move(dir);
@@ -231,7 +231,7 @@ public class ExpertAIStrategy implements IceCreamAIStrategy {
                 return dir;
             }
         }
-        
+
         return null;
     }
 

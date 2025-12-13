@@ -650,6 +650,14 @@ public class GameController implements KeyListener {
             // Reemplazar el juego con el cargado
             this.game = partidaCargada;
 
+            // 🔧 CRÍTICO: Restaurar todas las referencias transient y IA strategies
+            this.game.updateBoardReferences();
+
+            // 🔧 Sincronizar configuración del controller con el juego cargado
+            this.monsterType = this.game.getMonsterType();
+            this.secondIceCreamFlavor = this.game.getSecondIceCreamFlavor();
+            this.iceCreamAIStrategy = this.game.getIceCreamAIStrategyName();
+
             // Reiniciar el timer y actualizar vista
             setupGameTimer();
             gamePanel.repaint();
@@ -658,7 +666,8 @@ public class GameController implements KeyListener {
                     gamePanel,
                     "¡Partida cargada exitosamente!\n" +
                             "Nivel: " + partidaCargada.getCurrentLevel().getLevelNumber() + "\n" +
-                            "Puntos: " + partidaCargada.getScore(),
+                            "Puntos: " + partidaCargada.getScore() + "\n" +
+                            "Modo: " + this.game.getGameMode(),
                     "Carga exitosa",
                     JOptionPane.INFORMATION_MESSAGE);
 

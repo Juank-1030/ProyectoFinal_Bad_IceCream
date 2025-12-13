@@ -16,7 +16,7 @@ public class FearfulAIStrategy implements IceCreamAIStrategy {
         List<Enemy> enemies = board.getEnemies();
 
         // PRIORIDAD 1: Si hay enemigos cercanos, HUIR
-        if (enemies != null && !enemies.isEmpty()) {
+        if (!enemies.isEmpty()) {
             Enemy closestEnemy = null;
             double minDistance = Double.MAX_VALUE;
 
@@ -34,11 +34,6 @@ public class FearfulAIStrategy implements IceCreamAIStrategy {
                 if (fleeDir != null) {
                     return fleeDir;
                 }
-                // Si no puede huir en la dirección preferida, buscar cualquier dirección válida
-                Direction escapeDir = findAnyValidDirection(board, currentPos);
-                if (escapeDir != null) {
-                    return escapeDir;
-                }
             }
         }
 
@@ -48,24 +43,15 @@ public class FearfulAIStrategy implements IceCreamAIStrategy {
             return exploreDir;
         }
 
-        // FALLBACK: Cualquier dirección válida o con hielo
+        // FALLBACK: Cualquier dirección válida
         Direction[] allDirs = { Direction.UP, Direction.DOWN, Direction.LEFT, Direction.RIGHT };
         for (Direction dir : allDirs) {
-            Position nextPos = currentPos.move(dir);
-            if (board.isInBounds(nextPos) && (board.isValidPosition(nextPos) || board.hasIceBlock(nextPos))) {
+            if (board.isValidPosition(currentPos.move(dir))) {
                 return dir;
             }
         }
 
-        // ULTIMO FALLBACK: si todo está bloqueado, devolver primera dirección en rango
-        for (Direction dir : allDirs) {
-            Position nextPos = currentPos.move(dir);
-            if (board.isInBounds(nextPos)) {
-                return dir;
-            }
-        }
-
-        return Direction.DOWN; // Nunca devolver null
+        return null;
     }
 
     /**
@@ -146,31 +132,6 @@ public class FearfulAIStrategy implements IceCreamAIStrategy {
                 return dir;
             }
         }
-        return null;
-    }
-
-    /**
-     * Encuentra cualquier dirección válida o con hielo rompible
-     */
-    private Direction findAnyValidDirection(Board board, Position from) {
-        Direction[] dirs = { Direction.UP, Direction.DOWN, Direction.LEFT, Direction.RIGHT };
-        
-        // Primero intentar direcciones completamente válidas
-        for (Direction dir : dirs) {
-            Position nextPos = from.move(dir);
-            if (board.isInBounds(nextPos) && board.isValidPosition(nextPos)) {
-                return dir;
-            }
-        }
-        
-        // Si no hay válidas, intentar con hielo rompible
-        for (Direction dir : dirs) {
-            Position nextPos = from.move(dir);
-            if (board.isInBounds(nextPos) && board.hasIceBlock(nextPos)) {
-                return dir;
-            }
-        }
-        
         return null;
     }
 

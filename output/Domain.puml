@@ -1,0 +1,971 @@
+
+
+@startuml
+skinparam classAttributeIconSize 0
+hide circle
+
+enum Direction {
+  UP
+  DOWN
+  LEFT
+  RIGHT
+  NONE
+}
+
+enum GameMode {
+  SINGLE_PLAYER
+  MULTIPLAYER
+  TRAINING
+}
+
+enum GameState {
+  MENU
+  IN_GAME
+  PAUSED
+  LEVEL_COMPLETE
+  GAME_OVER
+}
+
+enum PVPMode {
+  COOPERATIVE
+  COMPETITIVE
+  SURVIVAL
+}
+
+enum CellType {
+  EMPTY
+  WALL
+  ICE_BLOCK
+  FRUIT
+  ENEMY
+  ICE_CREAM
+}
+
+enum ErrorCode {
+  INVALID_POSITION
+  OUT_OF_BOUNDS
+  GAME_OVER
+  LEVEL_NOT_FOUND
+}
+
+interface AI {
+  ~getNextMove(): Direction
+  ~update(): void
+  ~reset(): void
+}
+
+class BaldosaCaliente {
+  +BaldosaCaliente(position: Position)
+  +canMoveTo(position: Position): boolean
+  +getType(): String
+  +update(): void
+}
+
+class Banana {
+  -{static} serialVersionUID: long = 1L
+  -{static} POINTS: int = 100
+  --
+  +Banana(position: Position)
+  +getPoints(): int
+}
+
+class Board {
+  -{static} serialVersionUID: long = 1L
+  -width: int
+  -height: int
+  -iceCream: IceCream
+  -secondIceCream: IceCream
+  -enemies: List<Enemy>
+  -fruits: List<Fruit>
+  -walls: List<Position>
+  -iceBlocks: List<IceBlock>
+  -fogatas: List<Fogata>
+  -baldosasCalientes: List<BaldosaCaliente>
+  -iceBlockObstacles: List<IceBlockObstacle>
+  -cells: CellType
+  -lastCollectedFruit: Fruit = null
+  --
+  +Board(width: int, height: int)
+  -initializeCells(): void
+  +isInBounds(pos: Position): boolean
+  +isValidPosition(pos: Position): boolean
+  +isWall(pos: Position): boolean
+  +hasIceBlock(pos: Position): boolean
+  +getIceBlockAt(pos: Position): IceBlock
+  +getFruitAt(pos: Position): Fruit
+  +getEnemyAt(pos: Position): Enemy
+  +getFruitAtForRendering(pos: Position): Fruit
+  +moveIceCream(direction: Direction): boolean
+  +moveSecondIceCream(direction: Direction): boolean
+  +getAndClearLastCollectedFruit(): Fruit
+  +moveEnemy(enemy: Enemy, direction: Direction): boolean
+  +yellowSquidBreakIce(squid: YellowSquid): boolean
+  +executeNarvalCharge(narval: Narval, direction: Direction): void
+  +createIceBlock(): int
+  +createIceBlockSecond(): int
+  +breakIceBlock(): boolean
+  +toggleIceBlocks(): int
+  +toggleIceBlocksSecond(): int
+  +breakIceBlocks(): int
+  +breakIceBlocksSecond(): int
+  +removeIceBlock(pos: Position): boolean
+  +getIceCreamPosition(): Position
+  +getEmptyPositions(): List<Position>
+  +getRemainingFruits(): int
+  +getWidth(): int
+  +getHeight(): int
+  +getIceCream(): IceCream
+  +setIceCream(iceCream: IceCream): void
+  +getSecondIceCream(): IceCream
+  +setSecondIceCream(secondIceCream: IceCream): void
+  +getEnemies(): List<Enemy>
+  +addEnemy(enemy: Enemy): void
+  +getFruits(): List<Fruit>
+  +addFruit(fruit: Fruit): void
+  +getIceBlocks(): List<IceBlock>
+  +addIceBlock(block: IceBlock): void
+  +getWalls(): List<Position>
+  +addWall(pos: Position): void
+  +addFogata(fogata: Fogata): void
+  +getFogatas(): List<Fogata>
+  +getFogataAt(pos: Position): Fogata
+  +addBaldosaCaliente(baldosa: BaldosaCaliente): void
+  +getBaldosasCalientes(): List<BaldosaCaliente>
+  +hasBaldosaCaliente(pos: Position): boolean
+  +addIceBlockObstacle(iceBlockObstacle: IceBlockObstacle): void
+  +getIceBlockObstacles(): List<IceBlockObstacle>
+  +hasIceBlockObstacle(pos: Position): boolean
+  +getIceBlockObstacleAt(pos: Position): IceBlockObstacle
+}
+
+interface BoardStateProvider {
+  ~getIceCreamPosition(): Position
+  ~isValidPosition(position: Position): boolean
+  ~getIceCream(): IceCream
+}
+
+class Cactus {
+  -{static} serialVersionUID: long = 1L
+  -{static} POINTS: int = 250
+  -{static} SPIKY_INTERVAL: long = 30000L
+  -spiky: boolean
+  -lastStateChange: long
+  --
+  +Cactus(position: Position)
+  +update(): void
+  +collect(): void
+  +getPoints(): int
+  +getVisualState(): String
+  +isSpiky(): boolean
+  +resetTimerAndSpiky(): void
+}
+
+class ChaseMovement {
+  -{static} serialVersionUID: long = 1L
+  -stateProvider: BoardStateProvider
+  --
+  +ChaseMovement(stateProvider: BoardStateProvider)
+  +setStateProvider(stateProvider: BoardStateProvider): void
+  +getNextMove(enemy: Enemy): Direction
+  -getRandomDirection(): Direction
+  +update(): void
+  +reset(): void
+}
+
+class Cherry {
+  -{static} serialVersionUID: long = 1L
+  -{static} POINTS: int = 150
+  --
+  +Cherry(position: Position, board: Board)
+  +getPoints(): int
+  +updateBoardReference(board: Board): void
+}
+
+class ChocolateIceCream {
+  -{static} serialVersionUID: long = 1L
+  --
+  +ChocolateIceCream(position: Position)
+  +getColor(): String
+}
+
+abstract class Enemy {
+  -{static} serialVersionUID: long = 1L
+  #enemyType: String
+  #movementBehavior: MovementBehavior
+  #canBreakIce: boolean
+  #color: Color
+  --
+  +Enemy(position: Position, enemyType: String, speed: int, canBreakIce: boolean)
+  +setMovementBehavior(behavior: MovementBehavior): void
+  +getNextMove(): Direction
+  +executeAbility(): void
+  +breakIceBlock(): Position
+  +canMoveTo(position: Position): boolean
+  +update(): void
+  +getType(): String
+  +getEnemyType(): String
+  +canBreakIce(): boolean
+  +getMovementBehavior(): MovementBehavior
+  +getColor(): Color
+  +setColor(color: Color): void
+}
+
+class EnemyAI {
+  -enemy: Enemy
+  -board: Board
+  -updateCounter: int
+  --
+  +EnemyAI(enemy: Enemy, board: Board)
+  +getNextMove(): Direction
+  -findAlternativeDirection(): Direction
+  +update(): void
+  +reset(): void
+  +getEnemy(): Enemy
+  +getBoard(): Board
+}
+
+class ExpertAIStrategy {
+  -{static} serialVersionUID: long = 1L
+  -{static} DANGER_DISTANCE: int = 4
+  -{static} FRUIT_PRIORITY_DISTANCE: int = 6
+  --
+  +getNextMove(board: Board, iceCream: IceCream): Direction
+  -getClosestEnemy(from: Position, enemies: List<Enemy>): Enemy
+  -getClosestReachableFruit(from: Position, fruits: List<Fruit>, board: Board): Fruit
+  -getDistance(a: Position, b: Position): double
+  -getDirectionTowards(from: Position, to: Position, board: Board): Direction
+  -getDirectionAwayFrom(from: Position, threat: Position, board: Board): Direction
+  -getPriorityDirections(dx: int, dy: int): Direction[]
+  -explorarActivamente(board: Board, from: Position): Direction
+  -findAnyValidDirection(board: Board, from: Position): Direction
+  +getName(): String
+}
+
+class FearfulAIStrategy {
+  -{static} serialVersionUID: long = 1L
+  -{static} DANGER_DISTANCE: int = 5
+  --
+  +getNextMove(board: Board, iceCream: IceCream): Direction
+  -getDistance(a: Position, b: Position): double
+  -getDirectionAwayFrom(from: Position, threat: Position, board: Board): Direction
+  -getPriorityDirections(dx: int, dy: int): Direction[]
+  -explorarActivamente(board: Board, from: Position): Direction
+  +getName(): String
+}
+
+class Fogata {
+  -{static} serialVersionUID: long = 1L
+  -encendida: boolean = true
+  -tiempoUltimaApagada: long = 0
+  -{static} DURACION_APAGADA: long = 10000L
+  --
+  +Fogata(position: Position)
+  +apagar(): void
+  +update(): void
+  +isEncendida(): boolean
+  +canMoveTo(position: Position): boolean
+  +getType(): String
+}
+
+abstract class Fruit {
+  -{static} serialVersionUID: long = 1L
+  #position: Position
+  #fruitType: String
+  #collected: boolean
+  #behavior: FruitBehavior
+  #appearing: boolean
+  #appearStartTime: long
+  #{static} APPEAR_DURATION: long = 600
+  --
+  +Fruit(position: Position, fruitType: String)
+  +setBehavior(behavior: FruitBehavior): void
+  +update(): void
+  -checkAppearanceFinished(): void
+  +isAppearing(): boolean
+  +getVisualState(): String
+  +collect(): void
+  +getPosition(): Position
+  +setPosition(position: Position): void
+  +getFruitType(): String
+  +isCollected(): boolean
+  +getBehavior(): FruitBehavior
+  +getPoints(): int
+  +toString(): String
+  +equals(obj: Object): boolean
+  +hashCode(): int
+}
+
+interface FruitBehavior {
+  ~updatePosition(currentPosition: Position): Position
+  ~reset(): void
+}
+
+class Game {
+  -{static} serialVersionUID: long = 1L
+  -board: Board
+  -currentLevel: Level
+  -gameMode: GameMode
+  -gameState: GameState
+  -score: int
+  -remainingTime: int
+  -iceCreamFlavor: String
+  -secondIceCreamFlavor: String
+  -enemyAIs: List<AI>
+  -iceCreamAIStrategyName: String
+  -lastUpdateTime: long
+  -{static} FPS: int = 60
+  -monsterType: String
+  -enemyConfig: Map<String, Integer>
+  -fruitConfig: Map<String, Integer>
+  -obstacleConfig: Map<String, Integer>
+  --
+  +Game(gameMode: GameMode, iceCreamFlavor: String, secondIceCreamFlavor: String, monsterType: String, enemyConfig: Map<String,Integer>, fruitConfig: Map<String,Integer>, obstacleConfig: Map<String,Integer>)
+  +startLevel(levelNumber: int): void
+  -setupBoard(): void
+  -createFruitsFromCustomConfig(): void
+  -createFruitsFromLevelConfig(): void
+  -createObstaclesFromCustomConfig(): void
+  -createIceCream(position: Position): IceCream
+  -createSecondIceCream(position: Position): IceCream
+  -createEnemy(config: Level.EnemyConfig): Enemy
+  -createFruit(fruitType: String, position: Position): Fruit
+  -getRandomEmptyPosition(): Position
+  -createEnemiesFromCustomConfig(): void
+  -setupAI(): void
+  +update(): void
+  -updateEnemies(): void
+  -updateFruits(): void
+  -checkGameConditions(): void
+  +moveIceCream(direction: Direction): boolean
+  +moveSecondIceCream(direction: Direction): boolean
+  +toggleIceBlocks(): int
+  +toggleIceBlocksSecond(): int
+  +breakIceBlock(): boolean
+  +togglePause(): void
+  +getMonsterType(): String
+  +getBoard(): Board
+  +getCurrentLevel(): Level
+  +getGameMode(): GameMode
+  +getGameState(): GameState
+  +getScore(): int
+  +addScore(points: int): void
+  +getRemainingTime(): int
+  +getIceCreamFlavor(): String
+  +getSecondIceCreamFlavor(): String
+  +setGameState(state: GameState): void
+  +setIceCreamAIStrategy(strategyName: String): void
+  +getIceCreamAIStrategyName(): String
+  +updateBoardReferences(): void
+  +moveEnemy(enemyIndex: int, direction: Direction): boolean
+  +getEnemyCount(): int
+  +saveGame(filename: String): boolean
+  +{static} loadGame(filename: String): Game
+  +{static} savedGameExists(filename: String): boolean
+  +{static} deleteSavedGame(filename: String): boolean
+  +{static} listSavedGames(): String[]
+  +autoSave(): String
+}
+
+class GameException {
+  -{static} serialVersionUID: long = 1L
+  -errorCode: ErrorCode
+  --
+  +GameException(message: String, errorCode: ErrorCode)
+  +GameException(message: String, errorCode: ErrorCode, cause: Throwable)
+  +getErrorCode(): ErrorCode
+  +getDetailedMessage(): String
+  +toString(): String
+}
+
+abstract class GameObject {
+  -{static} serialVersionUID: long = 1L
+  #position: Position
+  #currentDirection: Direction
+  #lastDirection: Direction
+  #currentAction: String
+  #speed: int
+  #alive: boolean
+  #lastMovementTime: long
+  #visualX: float
+  #visualY: float
+  #{static} INTERPOLATION_SPEED: float = 0.35F
+  --
+  +GameObject(position: Position, speed: int)
+  +getPosition(): Position
+  +setPosition(position: Position): void
+  +getCurrentDirection(): Direction
+  +setCurrentDirection(direction: Direction): void
+  +getLastDirection(): Direction
+  +getCurrentAction(): String
+  +setCurrentAction(action: String): void
+  +getSpeed(): int
+  +isAlive(): boolean
+  +setAlive(alive: boolean): void
+  +getVisualX(): float
+  +getVisualY(): float
+  +move(direction: Direction): Position
+  +getNextPosition(direction: Direction): Position
+  +updatePosition(newPosition: Position): void
+  +updateVisualPosition(): void
+  +syncVisualPosition(): void
+  +canMoveNow(): boolean
+  +resetMovementTimer(): void
+  +canMoveTo(position: Position): boolean
+  +update(): void
+  +getType(): String
+  +toString(): String
+}
+
+class Grape {
+  -{static} serialVersionUID: long = 1L
+  -{static} POINTS: int = 50
+  --
+  +Grape(position: Position)
+  +getPoints(): int
+}
+
+class HungryAIStrategy {
+  -{static} serialVersionUID: long = 1L
+  --
+  +getNextMove(board: Board, iceCream: IceCream): Direction
+  -findAlternativeDirection(current: Position, board: Board): Direction
+  -distance(a: Position, b: Position): double
+  +getName(): String
+}
+
+class IceBlock {
+  -{static} serialVersionUID: long = 1L
+  -position: Position
+  -breakable: boolean
+  -creator: GameObject
+  --
+  +IceBlock(position: Position, breakable: boolean)
+  +IceBlock(position: Position, breakable: boolean, creator: GameObject)
+  +getPosition(): Position
+  +isBreakable(): boolean
+  +setBreakable(breakable: boolean): void
+  +getCreator(): GameObject
+  +setCreator(creator: GameObject): void
+  +toString(): String
+  +equals(obj: Object): boolean
+  +hashCode(): int
+}
+
+class IceBlockObstacle {
+  -{static} serialVersionUID: long = 1L
+  --
+  +IceBlockObstacle(position: Position)
+  +canMoveTo(position: Position): boolean
+  +getType(): String
+  +update(): void
+}
+
+abstract class IceCream {
+  -{static} serialVersionUID: long = 1L
+  #flavor: String
+  #fruitsCollected: int
+  #canCreateIce: boolean
+  #canBreakIce: boolean
+  #aiStrategy: IceCreamAIStrategy
+  --
+  +IceCream(position: Position, flavor: String)
+  +createIceBlock(): Position
+  +breakIceBlocks(): Position[]
+  +collectFruit(): void
+  +canMoveTo(position: Position): boolean
+  +update(): void
+  +getType(): String
+  +getFlavor(): String
+  +getFruitsCollected(): int
+  +setFruitsCollected(fruitsCollected: int): void
+  +canCreateIce(): boolean
+  +setCanCreateIce(canCreateIce: boolean): void
+  +canBreakIce(): boolean
+  +setCanBreakIce(canBreakIce: boolean): void
+  +setAIStrategy(strategy: IceCreamAIStrategy): void
+  +getAIStrategy(): IceCreamAIStrategy
+  +isAIControlled(): boolean
+  +getColor(): String
+}
+
+class IceCreamAI {
+  -iceCream: IceCream
+  -board: Board
+  -targetFruit: Position
+  -updateCounter: int
+  -{static} DECISION_INTERVAL: int = 5
+  --
+  +IceCreamAI(iceCream: IceCream, board: Board)
+  +getNextMove(): Direction
+  -findNearestFruit(): Position
+  -getDirectionToTarget(target: Position): Direction
+  -isEnemyNearby(): boolean
+  -findSafeDirection(): Direction
+  -getMinEnemyDistance(pos: Position): int
+  -isFruitCollected(fruitPos: Position): boolean
+  +update(): void
+  +reset(): void
+  +getIceCream(): IceCream
+  +getBoard(): Board
+}
+
+interface IceCreamAIStrategy {
+  ~getNextMove(board: Board, iceCream: IceCream): Direction
+  ~getName(): String
+}
+
+class IceCreamAIStrategyManager {
+  -{static} strategies: Map<String, Class<? extends IceCreamAIStrategy>> = new HashMap<>()
+  --
+  +{static} registerStrategy(name: String, strategyClass: Class<? extends IceCreamAIStrategy>): void
+  +{static} getStrategy(name: String): IceCreamAIStrategy
+  +{static} getAvailableStrategies(): String[]
+  +{static} getStrategyCount(): int
+}
+
+class IceCreamFactory {
+  +{static} create(flavor: String, position: Position): IceCream
+  +{static} isValidFlavor(flavor: String): boolean
+  +{static} getAvailableFlavors(): String[]
+}
+
+class Level {
+  -{static} serialVersionUID: long = 1L
+  -levelNumber: int
+  -levelName: String
+  -boardWidth: int
+  -boardHeight: int
+  -timeLimit: int
+  -enemyConfigs: List<EnemyConfig>
+  -fruitConfigs: List<FruitConfig>
+  -wallPositions: List<Position>
+  -iceBlockPositions: List<Position>
+  -iceCreamStartPosition: Position
+  --
+  +Level(levelNumber: int, levelName: String, boardWidth: int, boardHeight: int)
+  +{static} createLevel1(): Level
+  +{static} createLevel2(): Level
+  +{static} createLevel3(): Level
+  -createLevel1Walls(): void
+  -createLevel2Walls(): void
+  -createLevel3Walls(): void
+  +addEnemyConfig(config: EnemyConfig): void
+  +addFruitConfig(config: FruitConfig): void
+  +addIceBlockPosition(pos: Position): void
+  +addWallPosition(pos: Position): void
+  +getLevelNumber(): int
+  +getLevelName(): String
+  +getBoardWidth(): int
+  +getBoardHeight(): int
+  +getTimeLimit(): int
+  +setTimeLimit(timeLimit: int): void
+  +getEnemyConfigs(): List<EnemyConfig>
+  +getFruitConfigs(): List<FruitConfig>
+  +getIceBlockPositions(): List<Position>
+  +getWallPositions(): List<Position>
+  +getIceCreamStartPosition(): Position
+  +setIceCreamStartPosition(iceCreamStartPosition: Position): void
+  +getTotalFruits(): int
+}
+
+class EnemyConfig {
+  -{static} serialVersionUID: long = 1L
+  +enemyType: String
+  +startPosition: Position
+  +pattern: Direction
+  +stepsPerDirection: int
+  --
+  +EnemyConfig(enemyType: String, startPosition: Position)
+  +EnemyConfig(enemyType: String, startPosition: Position, pattern: Direction[], stepsPerDirection: int)
+}
+
+class FruitConfig {
+  -{static} serialVersionUID: long = 1L
+  +fruitType: String
+  +startPosition: Position
+  +quantity: int
+  --
+  +FruitConfig(fruitType: String, startPosition: Position)
+  +FruitConfig(fruitType: String, quantity: int)
+}
+
+class LevelManager {
+  -{static} TOTAL_NIVELES: int = 3
+  -{static} RUTA_NIVELES: String = "levels/"
+  -nivelesDisponibles: Level
+  -nivelActual: Level
+  -nivelActualIndex: int
+  --
+  +LevelManager()
+  -cargarNiveles(): void
+  -cargarNivelDesdeArchivo(numeroNivel: int): Level
+  -crearNivelPorDefecto(numeroNivel: int): Level
+  +getNivelActual(): Level
+  +cambiarNivel(numeroNivel: int): boolean
+  +obtenerNivel(numeroNivel: int): Level
+  +getNivelesDisponibles(): Level[]
+  +getNivelActualIndex(): int
+  +getNumerNivelActual(): int
+  +{static} getTotalNiveles(): int
+  +{static} getRutaNiveles(): String
+}
+
+interface MovementBehavior {
+  ~getNextMove(enemy: Enemy): Direction
+  ~update(): void
+  ~reset(): void
+}
+
+class MovingFruitBehavior {
+  -{static} serialVersionUID: long = 1L
+  -board: Board
+  -currentDirection: Direction
+  -moveCounter: int
+  -movesPerUpdate: int
+  --
+  +MovingFruitBehavior(board: Board)
+  +setBoard(board: Board): void
+  +updatePosition(currentPosition: Position): Position
+  -findValidDirection(position: Position): Direction
+  -{static} getRandomDirection(): Direction
+  +reset(): void
+  +getCurrentDirection(): Direction
+  +setCurrentDirection(direction: Direction): void
+}
+
+class Narval {
+  -{static} serialVersionUID: long = 1L
+  -chargeActive: boolean
+  -chargeStartTime: long
+  -chargeDirection: Direction
+  -chargeRechargeStartTime: long
+  -{static} CHARGE_RECHARGE: long = 7000
+  -{static} NORMAL_SPEED: int = 500
+  -{static} CHARGE_SPEED: int = 143
+  --
+  +Narval(position: Position, stateProvider: BoardStateProvider)
+  +executeAbility(): void
+  +canCharge(): boolean
+  +isCharging(): boolean
+  +activateCharge(direction: Direction): void
+  +deactivateCharge(): void
+  +getChargeDirection(): Direction
+  +getChargeRechargeTimeRemaining(): long
+  +canBreakIce(): boolean
+  +updateStateProvider(stateProvider: BoardStateProvider): void
+  +update(): void
+  +toString(): String
+}
+
+class NarvalAI {
+  -narval: Enemy
+  -board: Board
+  -currentDirection: Direction
+  -random: Random
+  -stepsInDirection: int
+  -{static} MAX_STEPS_SAME_DIRECTION: int = 4
+  --
+  +NarvalAI(narval: Enemy, board: Board)
+  +getNextMove(): Direction
+  -isAlignedWithIceCream(narvalPos: Position, iceCreamPos: Position): boolean
+  -getDirectionToIceCream(from: Position, to: Position): Direction
+  +update(): void
+  +reset(): void
+  -getRandomDirection(): Direction
+  -calculateNextPosition(current: Position, direction: Direction): Position
+  -canMove(pos: Position): boolean
+  -getDirectionsByProximity(from: Position, to: Position): Direction[]
+}
+
+class OrangeSquid {
+  -{static} serialVersionUID: long = 1L
+  --
+  +OrangeSquid(position: Position, stateProvider: BoardStateProvider)
+  +executeAbility(): void
+  +updateStateProvider(stateProvider: BoardStateProvider): void
+}
+
+class PatternMovement {
+  -{static} serialVersionUID: long = 1L
+  -pattern: Direction
+  -currentStep: int
+  -stepsPerDirection: int
+  --
+  +PatternMovement(pattern: Direction[], stepsPerDirection: int)
+  +PatternMovement()
+  +getNextMove(enemy: Enemy): Direction
+  +update(): void
+  +reset(): void
+  +getPattern(): Direction[]
+  +setPattern(pattern: Direction[]): void
+  +getStepsPerDirection(): int
+  +setStepsPerDirection(stepsPerDirection: int): void
+}
+
+class Pineapple {
+  -{static} serialVersionUID: long = 1L
+  -{static} POINTS: int = 200
+  --
+  +Pineapple(position: Position, board: Board)
+  +getPoints(): int
+  +updateBoardReference(board: Board): void
+}
+
+class Position {
+  -{static} serialVersionUID: long = 1L
+  -x: int
+  -y: int
+  --
+  +Position(x: int, y: int)
+  +Position(other: Position)
+  +getX(): int
+  +setX(x: int): void
+  +getY(): int
+  +setY(y: int): void
+  +move(direction: Direction): Position
+  +distanceTo(other: Position): int
+  +equals(obj: Object): boolean
+  +hashCode(): int
+  +toString(): String
+}
+
+class Pot {
+  -{static} serialVersionUID: long = 1L
+  -turboActive: boolean
+  -turboStartTime: long
+  -turboRechargeStartTime: long
+  -{static} TURBO_DURATION: long = 6000
+  -{static} TURBO_RECHARGE: long = 6000
+  -{static} NORMAL_SPEED: int = 500
+  -{static} TURBO_SPEED: int = 250
+  --
+  +Pot(position: Position, stateProvider: BoardStateProvider)
+  +executeAbility(): void
+  +isTurboActive(): boolean
+  +getTurboTimeRemaining(): long
+  +getTurboRechargeTimeRemaining(): long
+  +updateStateProvider(stateProvider: BoardStateProvider): void
+  +update(): void
+  +toString(): String
+}
+
+class PotAI {
+  -pot: Enemy
+  -board: Board
+  -currentDirection: Direction
+  -random: Random
+  -stepsInDirection: int
+  -{static} MAX_STEPS_SAME_DIRECTION: int = 5
+  --
+  +PotAI(pot: Enemy, board: Board)
+  +getNextMove(): Direction
+  -getDirectionsByProximity(from: Position, to: Position): Direction[]
+  +update(): void
+  +reset(): void
+  -getRandomDirection(): Direction
+  -calculateNextPosition(current: Position, direction: Direction): Position
+  -canMove(pos: Position): boolean
+}
+
+class RecursosNivel {
+  -{static} serialVersionUID: long = 1L
+  -{static} LEVELS_DIRECTORY: String = "levels/"
+  --
+  -{static} guardarNivel(level: Level, filename: String): void
+  -{static} cargarNivel(filename: String): Level
+  +{static} listarNivelesDisponibles(): List<String>
+  +{static} existeNivel(filename: String): boolean
+  +{static} cargarNivelPorNumero(levelNumber: int): Level
+  +{static} crearNivelesPredefinidos(): void
+}
+
+class StaticFruitBehavior {
+  -{static} serialVersionUID: long = 1L
+  --
+  +updatePosition(currentPosition: Position): Position
+  +reset(): void
+}
+
+class StrawberryIceCream {
+  -{static} serialVersionUID: long = 1L
+  --
+  +StrawberryIceCream(position: Position)
+  +getColor(): String
+}
+
+class TeleportFruitBehavior {
+  -{static} serialVersionUID: long = 1L
+  -board: Board
+  -teleportCounter: int
+  -teleportInterval: int
+  --
+  +TeleportFruitBehavior(board: Board)
+  +setBoard(board: Board): void
+  +updatePosition(currentPosition: Position): Position
+  +reset(): void
+  +getTeleportInterval(): int
+  +setTeleportInterval(teleportInterval: int): void
+}
+
+class Troll {
+  -{static} serialVersionUID: long = 1L
+  --
+  +Troll(position: Position)
+  +Troll(position: Position, pattern: Direction[], stepsPerDirection: int)
+  +executeAbility(): void
+}
+
+class TrollAI {
+  -troll: Enemy
+  -board: Board
+  -currentDirection: Direction
+  -moveCount: int
+  -{static} CLOCKWISE: Direction = { Direction.UP, Direction.RIGHT, Direction.DOWN, Direction.LEFT }
+  -clockwiseIndex: int = 0
+  --
+  +TrollAI(troll: Enemy, board: Board)
+  +getNextMove(): Direction
+  +update(): void
+  +reset(): void
+  -calculateNextPosition(current: Position, direction: Direction): Position
+  -canMove(pos: Position): boolean
+}
+
+class VanillaIceCream {
+  -{static} serialVersionUID: long = 1L
+  --
+  +VanillaIceCream(position: Position)
+  +getColor(): String
+}
+
+class YellowSquid {
+  -{static} serialVersionUID: long = 1L
+  -breakInteractionCounter: int
+  -{static} BREAK_INTERACTIONS_NEEDED: int = 3
+  --
+  +YellowSquid(position: Position, stateProvider: BoardStateProvider)
+  +executeAbility(): void
+  +getIceBreakCounter(): int
+  +resetIceBreakCounter(): void
+  +updateStateProvider(stateProvider: BoardStateProvider): void
+  +toString(): String
+}
+
+class YellowSquidAI {
+  -yellowSquid: Enemy
+  -board: Board
+  -currentDirection: Direction
+  -abilityActivationCount: int
+  -{static} MAX_ABILITY_ACTIVATIONS: int = 3
+  --
+  +YellowSquidAI(yellowSquid: Enemy, board: Board)
+  +getNextMove(): Direction
+  -destroyIceBlock(icePos: Position): void
+  -calculateDirectionTowards(from: Position, to: Position): Direction
+  -isCloserToTarget(pos1: Position, target: Position, pos2: Position): boolean
+  +update(): void
+  +reset(): void
+  -calculateNextPosition(current: Position, direction: Direction): Position
+  -canMove(pos: Position): boolean
+  -getDirectionsByProximity(from: Position, to: Position): Direction[]
+}
+
+BaldosaCaliente --|> GameObject
+Banana --|> Fruit
+Board ..|> BoardStateProvider
+Board *-- IceCream
+Board o-- Enemy
+Board o-- Fruit
+Board o-- IceBlock
+Board o-- Fogata
+Board o-- BaldosaCaliente
+Board o-- IceBlockObstacle
+Board ..> YellowSquid
+Board ..> Narval
+BoardStateProvider ..> Position
+BoardStateProvider ..> IceCream
+Cactus --|> Fruit
+ChaseMovement ..|> MovementBehavior
+ChaseMovement *-- BoardStateProvider
+ChaseMovement ..> Enemy
+Cherry --|> Fruit
+ChocolateIceCream --|> IceCream
+Enemy --|> GameObject
+Enemy --> MovementBehavior
+Enemy ..> Position
+EnemyAI ..|> AI
+EnemyAI *-- Enemy
+EnemyAI *-- Board
+ExpertAIStrategy ..|> IceCreamAIStrategy
+ExpertAIStrategy ..> Board
+ExpertAIStrategy ..> IceCream
+ExpertAIStrategy ..> Enemy
+ExpertAIStrategy ..> Fruit
+FearfulAIStrategy ..|> IceCreamAIStrategy
+FearfulAIStrategy ..> Board
+FearfulAIStrategy ..> IceCream
+Fogata --|> GameObject
+Fruit *-- Position
+Fruit *-- FruitBehavior
+Game *-- Board
+Game *-- Level
+Game o-- AI
+Game ..> IceCream
+Game ..> EnemyConfig
+Game ..> Enemy
+Game ..> Fruit
+GameObject *-- Position
+Grape --|> Fruit
+HungryAIStrategy ..|> IceCreamAIStrategy
+HungryAIStrategy ..> Board
+HungryAIStrategy ..> IceCream
+IceBlock *-- Position
+IceBlock *-- GameObject
+IceBlockObstacle --|> GameObject
+IceCream --|> GameObject
+IceCream --> IceCreamAIStrategy
+IceCreamAI ..|> AI
+IceCreamAI *-- IceCream
+IceCreamAI *-- Board
+IceCreamAIStrategy ..> Board
+IceCreamAIStrategy ..> IceCream
+IceCreamAIStrategyManager ..> IceCreamAIStrategy
+IceCreamFactory ..> IceCream
+Level o-- EnemyConfig
+Level o-- FruitConfig
+Level *-- Position
+LevelManager *-- Level
+MovementBehavior ..> Enemy
+MovingFruitBehavior ..|> FruitBehavior
+MovingFruitBehavior *-- Board
+Narval --|> Enemy
+Narval ..> BoardStateProvider
+NarvalAI ..|> AI
+NarvalAI *-- Enemy
+NarvalAI *-- Board
+OrangeSquid --|> Enemy
+OrangeSquid ..> BoardStateProvider
+PatternMovement ..|> MovementBehavior
+PatternMovement ..> Enemy
+Pineapple --|> Fruit
+Pot --|> Enemy
+Pot ..> BoardStateProvider
+PotAI ..|> AI
+PotAI *-- Enemy
+PotAI *-- Board
+RecursosNivel ..> Level
+StaticFruitBehavior ..|> FruitBehavior
+StrawberryIceCream --|> IceCream
+TeleportFruitBehavior ..|> FruitBehavior
+TeleportFruitBehavior *-- Board
+Troll --|> Enemy
+TrollAI ..|> AI
+TrollAI *-- Enemy
+TrollAI *-- Board
+VanillaIceCream --|> IceCream
+YellowSquid --|> Enemy
+YellowSquid ..> BoardStateProvider
+YellowSquidAI ..|> AI
+YellowSquidAI *-- Enemy
+YellowSquidAI *-- Board
+@enduml
